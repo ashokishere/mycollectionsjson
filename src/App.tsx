@@ -19,6 +19,8 @@ import {
   Tag as TagIcon, 
   ChevronRight, 
   ChevronLeft,
+  ChevronUp,
+  ChevronDown,
   X,
   PlusCircle,
   History,
@@ -62,6 +64,9 @@ export default function App() {
   const [showPetals, setShowPetals] = useState(false);
   const [activeMessage, setActiveMessage] = useState<string | null>(null);
   const [currentTheme, setCurrentTheme] = useState<string>(() => localStorage.getItem('app_theme') || 'default');
+  const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+  const [isFloatingControlsVisible, setIsFloatingControlsVisible] = useState(true);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', currentTheme);
@@ -573,9 +578,9 @@ export default function App() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-grow flex flex-col min-h-0 bg-transparent z-10 p-8 overflow-y-auto custom-scrollbar">
+      <main className="flex-grow flex flex-col min-h-0 bg-transparent z-10 p-4 sm:p-8 overflow-y-auto custom-scrollbar">
         {/* Top Filter Bar */}
-        <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-8 bg-theme-bg/40 backdrop-blur-md p-4 z-30 rounded-2xl border border-theme-border shrink-0">
+        <div className="sticky top-0 flex flex-col lg:flex-row lg:items-center gap-4 mb-8 bg-theme-bg/80 backdrop-blur-xl p-4 z-30 rounded-2xl border border-theme-border shrink-0 shadow-xl">
           <div className="flex-grow flex items-center gap-4">
             <div className="relative">
               <button
@@ -1090,13 +1095,27 @@ export default function App() {
                 {playlist.find(v => v.id === activeVideoId)?.title || "Select video to play"}
               </div>
             </div>
-            <button 
-              onClick={handleNextInPlaylist}
-              className="px-6 py-2 bg-white text-slate-900 rounded-xl text-xs font-black shadow-lg hover:bg-slate-200 transition-all flex items-center gap-2"
-            >
-              {playlist.findIndex(v => v.id === activeVideoId) === -1 ? "START PLAYING" : "NEXT CLIP"}
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => {
+                  setPlaylist([]);
+                  setActiveVideoId(null);
+                  localStorage.removeItem('laughter_bubble_playlist');
+                  localStorage.removeItem('zenstream_playlist');
+                }}
+                className="p-2.5 bg-white/5 border border-white/10 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
+                title="Clear Workspace"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={handleNextInPlaylist}
+                className="px-6 py-2 bg-white text-slate-900 rounded-xl text-xs font-black shadow-lg hover:bg-slate-200 transition-all flex items-center gap-2 whitespace-nowrap"
+              >
+                {playlist.findIndex(v => v.id === activeVideoId) === -1 ? "START PLAYING" : "NEXT CLIP"}
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -1154,6 +1173,171 @@ export default function App() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Controls Bar */}
+      <div className={cn(
+        "fixed z-[60] flex gap-4 transition-all duration-500",
+        "right-8 top-1/2 -translate-y-1/2 flex-col hidden sm:flex", // Desktop: Right middle
+        "bottom-36 left-1/2 -translate-x-1/2 flex-row sm:hidden", // Mobile: Bottom center
+        !isFloatingControlsVisible && "opacity-0 pointer-events-none translate-y-20 sm:translate-x-20"
+      )}>
+        <div className="flex flex-col items-center gap-1 sm:items-end">
+          <button
+            onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); }}
+            className={cn(
+              "w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-3xl backdrop-blur-2xl border transition-all shadow-2xl transition-all active:scale-90",
+              isFavoritesOpen 
+                ? "bg-theme-accent text-white border-theme-accent scale-110" 
+                : "bg-slate-900/90 border-white/20 text-theme-accent hover:bg-theme-accent/20 hover:text-white"
+            )}
+            title="Favorite Curations"
+          >
+            <Star className={cn("w-6 h-6 sm:w-7 sm:h-7 transition-all", isFavoritesOpen ? "fill-white" : "fill-theme-accent/20")} />
+          </button>
+          <span className="text-[8px] font-black uppercase tracking-widest text-theme-accent/60 hidden sm:block">Curations</span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 sm:items-end">
+          <button
+            onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); }}
+            className={cn(
+              "w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center rounded-3xl backdrop-blur-2xl border transition-all shadow-2xl transition-all active:scale-90",
+              isWorkspaceOpen 
+                ? "bg-fuchsia-600 text-white border-fuchsia-400 scale-110" 
+                : "bg-slate-900/90 border-white/20 text-fuchsia-400 hover:bg-fuchsia-600/20 hover:text-white"
+            )}
+            title="My Workspace"
+          >
+            <div className="relative">
+              <ListVideo className="w-6 h-6 sm:w-7 sm:h-7" />
+              {playlist.length > 0 && (
+                <span className="absolute -top-3 -right-3 w-6 h-6 sm:w-5 sm:h-5 rounded-full bg-rose-500 text-[10px] sm:text-[9px] font-black flex items-center justify-center border-2 border-slate-950">
+                  {playlist.length}
+                </span>
+              )}
+            </div>
+          </button>
+          <span className="text-[8px] font-black uppercase tracking-widest text-fuchsia-400/60 hidden sm:block">Workspace</span>
+        </div>
+      </div>
+
+      {/* Visibility Toggle for Floating Controls */}
+      <button
+        onClick={() => setIsFloatingControlsVisible(!isFloatingControlsVisible)}
+        className={cn(
+          "fixed z-[60] w-14 h-10 sm:w-16 sm:h-10 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-2xl",
+          "right-8 top-[calc(50%+100px)] hidden sm:flex", // Desktop
+          "bottom-20 left-1/2 -translate-x-1/2 sm:hidden", // Mobile
+          isFloatingControlsVisible 
+            ? "bg-black/60 border-white/10 text-slate-500" 
+            : "bg-theme-accent border-theme-accent text-white opacity-100 scale-110 animate-pulse"
+        )}
+      >
+        {isFloatingControlsVisible ? (
+          <div className="flex items-center gap-2 px-2">
+            <X className="w-4 h-4" />
+            <span className="text-[9px] font-black uppercase tracking-tighter hidden sm:inline">Hide Menu</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3">
+            <Sparkles className="w-5 h-5 fill-white" />
+            <span className="text-[10px] font-black uppercase tracking-tighter">Open Menu</span>
+          </div>
+        )}
+      </button>
+
+      {/* Floating Panels Overlay */}
+      <AnimatePresence>
+        {isFavoritesOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm" onClick={() => setIsFavoritesOpen(false)} />
+            <motion.div
+              initial={{ y: 20, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              className={cn(
+                "fixed z-[60] backdrop-blur-3xl bg-slate-900/95 border border-white/20 rounded-3xl shadow-2xl overflow-hidden flex flex-col",
+                "sm:right-20 sm:top-1/2 sm:-translate-y-1/2 sm:w-72 sm:max-h-[80vh]", // Desktop
+                "inset-x-4 top-[10%] bottom-[10%] sm:inset-auto" // Mobile
+              )}
+            >
+              <div className="p-5 border-b border-white/10 flex items-center justify-between">
+                <h3 className="text-xs font-black uppercase tracking-widest text-theme-accent">Curations</h3>
+                <button onClick={() => setIsFavoritesOpen(false)} className="p-2"><X className="w-5 h-5 text-slate-500" /></button>
+              </div>
+              <div className="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                {favoritesData.favorites.map((fav) => {
+                  const Icon = { Bookmark, Star, Zap, ListVideo, Sparkles, Clock, Timer, Compass }[fav.icon] || Bookmark;
+                  return (
+                    <button
+                      key={fav.id}
+                      onClick={() => { addFavoritePlaylist(fav.id); setIsFavoritesOpen(false); }}
+                      className="w-full flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-theme-accent/20 hover:border-theme-accent/30 transition-all text-left"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+                        <Icon className="w-6 h-6 text-theme-accent" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-white uppercase tracking-wider truncate">{fav.name}</p>
+                        <p className="text-[10px] text-slate-500 mt-1 line-clamp-2">{fav.description}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {isWorkspaceOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm" onClick={() => setIsWorkspaceOpen(false)} />
+            <motion.div
+              initial={{ y: 20, opacity: 0, scale: 0.95 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: 20, opacity: 0, scale: 0.95 }}
+              className={cn(
+                "fixed z-[60] backdrop-blur-3xl bg-slate-900/95 border border-white/20 rounded-3xl shadow-2xl overflow-hidden flex flex-col",
+                "sm:right-20 sm:top-1/2 sm:-translate-y-1/2 sm:w-80 sm:max-h-[80vh]", // Desktop
+                "inset-x-4 top-[10%] bottom-[10%] sm:inset-auto" // Mobile
+              )}
+            >
+              <div className="p-5 border-b border-white/10 flex items-center justify-between">
+                <h3 className="text-xs font-black uppercase tracking-widest text-fuchsia-400">Workspace</h3>
+                <button onClick={() => setIsWorkspaceOpen(false)} className="p-2"><X className="w-5 h-5 text-slate-500" /></button>
+              </div>
+              <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                {playlist.length === 0 ? (
+                  <div className="py-20 text-center px-6">
+                    <Plus className="w-10 h-10 text-slate-700 mx-auto mb-4" />
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-slate-500">Workspace Empty</p>
+                  </div>
+                ) : (
+                  playlist.map((video, idx) => (
+                    <div key={`${video.id}-${idx}`} className="flex items-center gap-3 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+                      <img src={`https://img.youtube.com/vi/${getYoutubeId(video.url)}/default.jpg`} className="w-12 h-12 rounded-xl object-cover" />
+                      <div className="min-w-0 flex-grow">
+                        <p className="text-[11px] font-bold text-white leading-tight line-clamp-2">{video.title}</p>
+                      </div>
+                      <button onClick={() => removeFromPlaylist(video.id)} className="p-2 text-slate-500 hover:text-rose-400"><Trash2 className="w-4 h-4" /></button>
+                    </div>
+                  ))
+                )}
+              </div>
+              {playlist.length > 0 && (
+                <div className="p-5 border-t border-white/10 bg-black/20">
+                  <button 
+                    onClick={() => { handleNextInPlaylist(); setIsWorkspaceOpen(false); }} 
+                    className="w-full py-4 bg-white text-black font-black text-[11px] uppercase rounded-2xl tracking-widest shadow-xl active:scale-95 transition-all"
+                  >
+                    Play Sequence
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
 
