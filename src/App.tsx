@@ -862,7 +862,7 @@ export default function App() {
                     {/* Add to playlist button overlay */}
                     <button 
                       onClick={(e) => { e.stopPropagation(); addToPlaylist(video); }}
-                      className="absolute top-2 right-2 w-7 h-7 bg-white/10 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white/20"
+                      className="absolute top-2 right-2 w-8 h-8 bg-black/40 sm:bg-white/10 backdrop-blur-md border border-white/30 rounded-full flex items-center justify-center opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-white/20 z-10"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
