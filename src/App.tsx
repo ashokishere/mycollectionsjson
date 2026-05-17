@@ -21,10 +21,8 @@ import {
   ChevronLeft,
   X,
   PlusCircle,
-  Database,
   History,
   ListVideo,
-  RefreshCw,
   Sparkles,
   Bookmark,
   Star,
@@ -448,17 +446,6 @@ export default function App() {
               ))}
             </div>
 
-            <button 
-              onClick={fetchRemoteData}
-              disabled={isSyncing}
-              className={cn(
-                "flex items-center gap-2 w-full py-2 px-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:bg-white/10 hover:text-white transition-all transition-colors",
-                isSyncing && "opacity-50 cursor-not-allowed"
-              )}
-            >
-              <RefreshCw className={cn("w-3.5 h-3.5", isSyncing && "animate-spin text-theme-accent")} />
-              {isSyncing ? "Syncing..." : "Sync Library"}
-            </button>
             {lastSynced && (
               <div className="text-[8px] text-slate-500 font-mono tracking-wider ml-1">
                 Last updated: {lastSynced}
@@ -582,15 +569,7 @@ export default function App() {
               )}
             </div>
           </div>
-
-            <button 
-              onClick={() => setIsDataPanelOpen(true)}
-              className="mt-6 flex items-center justify-center gap-2 w-full py-2.5 bg-white/5 border border-dashed border-white/20 rounded-xl text-[10px] text-slate-400 hover:bg-white/10 transition-all uppercase tracking-widest font-bold"
-            >
-              <Database className="w-3.5 h-3.5" />
-              Manage Library
-            </button>
-          </div>
+        </div>
       </aside>
 
       {/* Main Content Area */}
