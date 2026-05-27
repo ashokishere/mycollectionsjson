@@ -30,11 +30,20 @@ import {
   Info,
   Clock,
   Timer,
-  Compass
+  Compass,
+  Heart,
+  Flame,
+  Sun,
+  Music,
+  Activity,
+  Droplet,
+  Smile,
+  Shield
 } from 'lucide-react';
 import { initialVideos, type Video } from './data/videos';
 import messagesData from './data/messages.json';
 import favoritesData from './data/favorite_playlists.json';
+import devotionalAlbums from './data/devotional_albums.json';
 import { cn } from './lib/utils';
 
 // Helper to extract YouTube ID from URL
@@ -63,6 +72,8 @@ export default function App() {
   const [activeMessage, setActiveMessage] = useState<string | null>(null);
   const [currentTheme, setCurrentTheme] = useState<string>(() => localStorage.getItem('app_theme') || 'default');
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
+  const [isOceanLoveOpen, setIsOceanLoveOpen] = useState(false);
+  const [activeAlbumId, setActiveAlbumId] = useState<string>("ocean-of-love");
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isFloatingControlsVisible, setIsFloatingControlsVisible] = useState(true);
 
@@ -91,6 +102,42 @@ export default function App() {
       return updated;
     });
     
+    triggerPetals();
+  };
+
+  const addAlbumSequence = (albumId: string) => {
+    const album = devotionalAlbums.find(a => a.id === albumId);
+    if (!album) return;
+
+    const orderedVideos: Video[] = [];
+    album.tracks.forEach(track => {
+      const found = videos.find(v => v.id === track.id);
+      if (found) {
+        orderedVideos.push(found);
+      }
+    });
+
+    setPlaylist(prev => {
+      const newItems = orderedVideos.filter(v => !prev.some(p => p.id === v.id));
+      const updated = [...prev, ...newItems];
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+      return updated;
+    });
+    
+    triggerPetals();
+  };
+
+  const addAlbumSingleVideo = (videoId: string) => {
+    const found = videos.find(v => v.id === videoId);
+    if (!found) return;
+
+    setPlaylist(prev => {
+      if (prev.some(p => p.id === videoId)) return prev;
+      const updated = [...prev, found];
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+      return updated;
+    });
+
     triggerPetals();
   };
 
@@ -1185,7 +1232,7 @@ export default function App() {
               className="flex flex-col gap-3"
             >
               <button
-                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); }}
+                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isFavoritesOpen 
@@ -1198,7 +1245,20 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); }}
+                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); }}
+                className={cn(
+                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
+                  isOceanLoveOpen 
+                    ? "bg-rose-600 text-white border-rose-400 scale-110" 
+                    : "bg-white/10 border-white/20 text-rose-400/80 hover:bg-white/20 hover:text-rose-400"
+                )}
+                title="The Ocean of Love"
+              >
+                <Heart className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWorkspaceOpen 
@@ -1262,6 +1322,147 @@ export default function App() {
                     </button>
                   );
                 })}
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {isOceanLoveOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/20" onClick={() => setIsOceanLoveOpen(false)} />
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              className="fixed right-20 top-1/2 -translate-y-1/2 w-84 max-h-[80vh] backdrop-blur-3xl bg-slate-900/95 border border-white/20 rounded-3xl shadow-2xl z-[60] overflow-hidden flex flex-col"
+            >
+              <div className="p-4 border-b border-white/10 flex items-center justify-between shrink-0 bg-slate-950/40">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-slate-300">Spiritual Albums</h3>
+                  <p className="text-[9px] text-slate-500 mt-0.5 font-medium">Curated Devotional Chants</p>
+                </div>
+                <button onClick={() => setIsOceanLoveOpen(false)} className="p-1 rounded-lg hover:bg-white/5 transition-colors">
+                  <X className="w-4 h-4 text-slate-400 hover:text-white" />
+                </button>
+              </div>
+
+              {/* Collapsed Album Tabs */}
+              <div className="flex border-b border-white/5 overflow-x-auto custom-scrollbar-hidden bg-black/30 p-2 gap-1.5 shrink-0 select-none">
+                {devotionalAlbums.map((album) => {
+                  const AlbumIcon = { Heart, Music, Compass, Sun, Flame, Smile }[album.icon] || Heart;
+                  const isActive = activeAlbumId === album.id;
+                  
+                  let activeColors = "bg-rose-500/20 text-rose-400 border-rose-500/30";
+                  if (album.accentColor === "indigo") activeColors = "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
+                  else if (album.accentColor === "cyan") activeColors = "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
+                  else if (album.accentColor === "yellow") activeColors = "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
+                  else if (album.accentColor === "fuchsia") activeColors = "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30";
+                  else if (album.accentColor === "amber") activeColors = "bg-amber-500/20 text-amber-400 border-amber-500/30";
+
+                  return (
+                    <button
+                      key={album.id}
+                      onClick={() => setActiveAlbumId(album.id)}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border whitespace-nowrap",
+                        isActive 
+                          ? activeColors
+                          : "bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white"
+                      )}
+                    >
+                      <AlbumIcon className="w-3.5 h-3.5 shrink-0" />
+                      {album.name}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Album Body Tracks */}
+              <div className="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                {(() => {
+                  const activeAlbum = devotionalAlbums.find(a => a.id === activeAlbumId) || devotionalAlbums[0];
+                  
+                  let accentText = "text-rose-400 group-hover:text-rose-300";
+                  let bgAccent = "bg-rose-600 hover:bg-rose-500 text-white";
+                  let ringColor = "group-hover:border-rose-500/40";
+                  
+                  if (activeAlbum.accentColor === "indigo") {
+                    accentText = "text-indigo-400 group-hover:text-indigo-300";
+                    bgAccent = "bg-indigo-600 hover:bg-indigo-500 text-white";
+                    ringColor = "group-hover:border-indigo-500/40";
+                  } else if (activeAlbum.accentColor === "cyan") {
+                    accentText = "text-cyan-400 group-hover:text-cyan-300";
+                    bgAccent = "bg-cyan-600 hover:bg-cyan-500 text-white";
+                    ringColor = "group-hover:border-cyan-500/40";
+                  } else if (activeAlbum.accentColor === "yellow") {
+                    accentText = "text-yellow-400 group-hover:text-yellow-300";
+                    bgAccent = "bg-yellow-600 hover:bg-yellow-500 text-slate-950";
+                    ringColor = "group-hover:border-yellow-500/40";
+                  } else if (activeAlbum.accentColor === "fuchsia") {
+                    accentText = "text-fuchsia-400 group-hover:text-fuchsia-300";
+                    bgAccent = "bg-fuchsia-600 hover:bg-fuchsia-500 text-white";
+                    ringColor = "group-hover:border-fuchsia-500/40";
+                  } else if (activeAlbum.accentColor === "amber") {
+                    accentText = "text-amber-400 group-hover:text-amber-300";
+                    bgAccent = "bg-amber-600 hover:bg-amber-500 text-slate-950";
+                    ringColor = "group-hover:border-amber-500/40";
+                  }
+
+                  return (
+                    <>
+                      <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5 text-center">
+                        <p className="text-[10px] text-slate-400 leading-relaxed italic mb-3 font-medium">
+                          &ldquo;{activeAlbum.description}&rdquo;
+                        </p>
+                        <button
+                          onClick={() => { addAlbumSequence(activeAlbum.id); setIsOceanLoveOpen(false); }}
+                          className={cn(
+                            "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2",
+                            bgAccent
+                          )}
+                        >
+                          <ListVideo className="w-4 h-4" />
+                          Queue Full Album Sequence
+                        </button>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {activeAlbum.tracks.map((track) => {
+                          const TrackIcon = { Flame, Sun, Sparkles, Shield, Droplet, Compass, Music, Activity, Timer, Bookmark, Smile, Heart, Zap }[track.icon] || Heart;
+                          const isInPlaylist = playlist.some(p => p.id === track.id);
+
+                          return (
+                            <button
+                              key={track.id}
+                              onClick={() => addAlbumSingleVideo(track.id)}
+                              disabled={isInPlaylist}
+                              className={cn(
+                                "w-full flex items-start gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all text-left group",
+                                isInPlaylist && "opacity-45 hover:bg-white/5 border-transparent cursor-not-allowed",
+                                ringColor
+                              )}
+                            >
+                              <div className="w-8.5 h-8.5 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                <TrackIcon className={cn("w-4 h-4 transition-transform group-hover:scale-110", accentText)} />
+                              </div>
+                              <div className="min-w-0 flex-grow">
+                                <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate mb-0.5">{track.title}</p>
+                                <p className="text-[9px] text-slate-500 line-clamp-1">{track.desc}</p>
+                              </div>
+                              <div className="shrink-0 flex items-center h-8.5">
+                                {isInPlaylist ? (
+                                  <span className="text-[8px] font-extrabold tracking-widest text-slate-500 uppercase px-1.5 py-0.5 bg-white/5 rounded">ADDED</span>
+                                ) : (
+                                  <span className={cn("text-[8px] font-extrabold tracking-widest uppercase px-1.5 py-0.5 rounded bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity", accentText)}>ADD</span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </motion.div>
           </>

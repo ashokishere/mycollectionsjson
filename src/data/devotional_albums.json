@@ -1,0 +1,128 @@
+[
+  {
+    "id": "ocean-of-love",
+    "name": "The Ocean of Love",
+    "description": "Devotional chants of divine longing, love, and union.",
+    "themeColor": "text-rose-400",
+    "accentColor": "rose",
+    "icon": "Heart",
+    "tracks": [
+      { "id": "Rc5Twttk5Mw", "title": "Hymn to Brahma", "desc": "Rig Veda cosmic chant.", "icon": "Flame" },
+      { "id": "YnBLADvOleE", "title": "Dawn Chant", "desc": "A call to rise and awaken in light.", "icon": "Sun" },
+      { "id": "kd4H7nnnB8Y", "title": "Brindavan Vihari", "desc": "Deep devotion and joy of Krishna.", "icon": "Sparkles" },
+      { "id": "OfGe2pmnA48", "title": "Om Kali", "desc": "Reverence to the divine Mother Kali.", "icon": "Shield" },
+      { "id": "zcJda9_MuGY", "title": "Do Not Dry the Ocean of My Love", "desc": "A beautiful prayer to the cosmic beloved.", "icon": "Droplet" },
+      { "id": "MNZVJDr4l90", "title": "Jai Guru, Jai Ma", "desc": "Connecting with Guru and Divine Mother.", "icon": "Compass" },
+      { "id": "LZ4heAblFzQ", "title": "My Krishna Is Blue", "desc": "Chant celebrating infinity of spirit.", "icon": "Music" },
+      { "id": "nIDLu09FRyA", "title": "Thou Art My Life", "desc": "Complete surrender of soul to the cosmic ray.", "icon": "Activity" },
+      { "id": "Gkrti3-1LjA", "title": "I Am the Bubble, Make Me the Sea", "desc": "Chant by Paramahansa Yogananda.", "icon": "Timer" },
+      { "id": "RrZT6ATYNjc", "title": "Om Namo Bhagavate...", "desc": "Deep grounding mantra.", "icon": "Bookmark" },
+      { "id": "dO2cbEY61lw", "title": "Ever New Joy", "desc": "Chant of the eternal bliss of Spirit.", "icon": "Smile" }
+    ]
+  },
+  {
+    "id": "soul-song",
+    "name": "Listen to My Soul Song",
+    "description": "Exquisite tracks calling the soul deeper into divine joy.",
+    "themeColor": "text-indigo-400",
+    "accentColor": "indigo",
+    "icon": "Music",
+    "tracks": [
+      { "id": "c4N3fCg8AR0", "title": "Hymn to Brahma", "desc": "Sanskrit hymn celebrating cosmic creation.", "icon": "Flame" },
+      { "id": "RtxaSGVLiHI", "title": "At Thy Feet", "desc": "Devotional prayer of sweet surrender.", "icon": "Bookmark" },
+      { "id": "MQZvITlGMkI", "title": "Sri Guru Sharanam", "desc": "Seeking refuge under the grace of Gurudev.", "icon": "Compass" },
+      { "id": "gHVdC3yiSu8", "title": "Will That Day Come to Me, Mother?", "desc": "Passionate query to Divine Mother.", "icon": "Heart" },
+      { "id": "0ikmHYSpT3A", "title": "Blue Lotus Feet", "desc": "Meditation on the divine blue aura.", "icon": "Sparkles" },
+      { "id": "UgmKA0pxP0s", "title": "My Krishna Is Blue", "desc": "Soul song of devotion to Krishna.", "icon": "Activity" },
+      { "id": "mxKZdxvWCrY", "title": "Govinda Jai Jai", "desc": "Rhythmic vibration of holy names.", "icon": "Sun" },
+      { "id": "NuxP3UX_SUY", "title": "When Thy Song Flows Through Me", "desc": "The ultimate connection with cosmic sound.", "icon": "Droplet" },
+      { "id": "Zf6a2fXS9VU", "title": "Jai Guru Jai", "desc": "Chant of victory to the spiritual guide.", "icon": "Shield" },
+      { "id": "Shof_WmmlG0", "title": "Om Shanti", "desc": "Blessings of profound universe peace.", "icon": "Smile" }
+    ]
+  },
+  {
+    "id": "silent-sky",
+    "name": "Come Out of the Silent Sky",
+    "description": "Divine communion from the stillness of the silent heavens.",
+    "themeColor": "text-cyan-400",
+    "accentColor": "cyan",
+    "icon": "Compass",
+    "tracks": [
+      { "id": "TR4SBHRZUE8", "title": "Aum Intro / Hymn to Brahman", "desc": "Primal vibration of Brahman.", "icon": "Flame" },
+      { "id": "R4I-zcV7tNE", "title": "I Give You My Soul Call", "desc": "Earnest prayer of direct communion.", "icon": "Activity" },
+      { "id": "FPse1MZLiuM", "title": "Who Is In My Temple?", "desc": "Searching for the light within the heart.", "icon": "Heart" },
+      { "id": "iadprkEqREE", "title": "What Lightning Flash", "desc": "The sudden awakening of inner wisdom.", "icon": "Zap" },
+      { "id": "HvKaDD1IEw0", "title": "Wink Has Not Touched My Eyes", "desc": "Restless prayer for divine vision.", "icon": "Compass" },
+      { "id": "THH3-_uJq2g", "title": "Narayan Kirtan", "desc": "Sanskrit chants to the supreme Lord.", "icon": "Sun" },
+      { "id": "LzQmWfPc5jU", "title": "Madhura, Madhura Naam", "desc": "Chants of divine sweet resonance.", "icon": "Music" },
+      { "id": "zPUzuy6hcoE", "title": "Hymn to Brahma", "desc": "Ancient cosmic sound of Brahma.", "icon": "Shield" },
+      { "id": "kE-i8p-wGdA", "title": "Dawn Chant", "desc": "Greet the morning with inner light.", "icon": "Sun" },
+      { "id": "Au30AuaIEog", "title": "Govinda Jai Jai", "desc": "Vibrant and celebratory devotion.", "icon": "Sparkles" },
+      { "id": "9jJW93JMFxs", "title": "Blue Lotus Feet", "desc": "Honoring the form of the supreme guardian.", "icon": "Droplet" },
+      { "id": "vQKGqftLSXs", "title": "Swami Ram Tirtha’s Song", "desc": "Ecstatic lyrics of spiritual freedom.", "icon": "Activity" },
+      { "id": "4WzwdIJJ8DA", "title": "Om Kali", "desc": "Venerating cosmic motherly protection.", "icon": "Shield" },
+      { "id": "FnL2A5_2sbQ", "title": "Gurudeva", "desc": "Ode to the teacher guiding to liberation.", "icon": "Bookmark" },
+      { "id": "K2ed6uMPSZc", "title": "Namo Namaste", "desc": "Divine salutations to the infinite.", "icon": "Smile" }
+    ]
+  },
+  {
+    "id": "blazing-light",
+    "name": "O Blazing Light",
+    "description": "Radiant chants celebrating the magnificent inner fire.",
+    "themeColor": "text-yellow-400",
+    "accentColor": "yellow",
+    "icon": "Sun",
+    "tracks": [
+      { "id": "zPUzuy6hcoE", "title": "Hymn to Brahma", "desc": "Holy chant of supreme consciousness.", "icon": "Flame" },
+      { "id": "kE-i8p-wGdA", "title": "Dawn Chant", "desc": "Awakening with the sunrise of soul.", "icon": "Sun" },
+      { "id": "Au30AuaIEog", "title": "Govinda Jai Jai", "desc": "Ecstatic rhythmic chant to Hari.", "icon": "Sparkles" },
+      { "id": "9jJW93JMFxs", "title": "Blue Lotus Feet", "desc": "Devout focus on pure divinity.", "icon": "Droplet" },
+      { "id": "vQKGqftLSXs", "title": "Swami Ram Tirtha’s Song", "desc": "Liberation chant of oneness.", "icon": "Activity" },
+      { "id": "4WzwdIJJ8DA", "title": "Om Kali", "desc": "Cosmic creation energy vibrations.", "icon": "Shield" },
+      { "id": "FnL2A5_2sbQ", "title": "Gurudeva", "desc": "Honoring wisdom and lineage.", "icon": "Bookmark" },
+      { "id": "K2ed6uMPSZc", "title": "Namo Namaste", "desc": "Infinite salutations and surrender.", "icon": "Smile" }
+    ]
+  },
+  {
+    "id": "heart-of-hearts",
+    "name": "Thy Heart of Hearts",
+    "description": "Longing devotion reaching the deepest sanctum of the divine.",
+    "themeColor": "text-fuchsia-400",
+    "accentColor": "fuchsia",
+    "icon": "Heart",
+    "tracks": [
+      { "id": "5AvzM_Ljdaw", "title": "Come, Listen to My Soul Song", "desc": "The voice of loving calls.", "icon": "Heart" },
+      { "id": "DAvau8w3d4A", "title": "Amaraguru, Yogananda", "desc": "Everliving guru of pure wisdom.", "icon": "Compass" },
+      { "id": "u-j-fNkNxac", "title": "O Thou Blue Sky", "desc": "Infinite sky of boundless spirit.", "icon": "Sun" },
+      { "id": "OMAS58Z6P-I", "title": "At Thy Feet", "desc": "Surrendering all limitations in peace.", "icon": "Bookmark" },
+      { "id": "O3SBN67-hDc", "title": "In the Land Beyond My Dreams", "desc": "Entering mystical deep dreamless bliss.", "icon": "Sparkles" },
+      { "id": "K5LzMw2NR-k", "title": "Thousands of Suns", "desc": "Brilliant blinding white inner aura of Spirit.", "icon": "Flame" },
+      { "id": "6OHyDyVm9wU", "title": "Cloud-Colored Christ", "desc": "Chant celebrating infinite Christ presence.", "icon": "Shield" },
+      { "id": "hkZ1wB0PEOk", "title": "Receive Me on Thy Lap", "desc": "Sweet longing for eternal safety.", "icon": "Droplet" },
+      { "id": "-ytgLWdJUik", "title": "From This Sleep, Lord", "desc": "Waking from cosmic dream to truth.", "icon": "Activity" },
+      { "id": "ZJkaKJdzUhU", "title": "Hare Krishna", "desc": "Vibrating divine names purely.", "icon": "Music" },
+      { "id": "jqj5hwxDfBA", "title": "Where Is There Love?", "desc": "The endless search ending and meeting in Ma.", "icon": "Smile" },
+      { "id": "Gd9gYcaXjco", "title": "Yogananda Sharanam", "desc": "Shelter in Paramahansa Yogananda.", "icon": "Timer" }
+    ]
+  },
+  {
+    "id": "ever-new-joy",
+    "name": "Ever New Joy",
+    "description": "Blissful, happy chants celebrating eternal conscious joy.",
+    "themeColor": "text-amber-400",
+    "accentColor": "amber",
+    "icon": "Smile",
+    "tracks": [
+      { "id": "pr5NNezfNgE", "title": "Hymn to Brahma", "desc": "Uplifting sanskrit cosmic praise.", "icon": "Flame" },
+      { "id": "3JtTQzZYQgc", "title": "Amaraguru Yogananda", "desc": "Ever-new guide of the soul.", "icon": "Compass" },
+      { "id": "-mI5NZt35X0", "title": "Search Him Out in Secret", "desc": "Silent interiorised meditation.", "icon": "Zap" },
+      { "id": "IPjp5WgxdqQ", "title": "Hey Bhagavan", "desc": "Warm personal prayer of calling.", "icon": "Heart" },
+      { "id": "ENx8UKqJATs", "title": "Hare Krishna", "desc": "Joyful chanting of the lord.", "icon": "Music" },
+      { "id": "XO5Ea_KZ6wc", "title": "I Give You My Soul Call", "desc": "The voice of direct devotion.", "icon": "Activity" },
+      { "id": "yBml0dMPA10", "title": "Ever New Joy", "desc": "Pure state of bliss.", "icon": "Smile" },
+      { "id": "dqJOYQ9v7YE", "title": "I Will Sing Thy Name", "desc": "Unbroken thread of divine chant.", "icon": "Sparkles" },
+      { "id": "hrihi0H-txw", "title": "Spirit and Nature", "desc": "Oneness of consciousness and creation.", "icon": "Sun" },
+      { "id": "FwTeRCBokZQ", "title": "Deliver Us From Delusion", "desc": "Prayer for single-pointed clarity.", "icon": "Shield" }
+    ]
+  }
+]
