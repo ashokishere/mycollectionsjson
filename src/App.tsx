@@ -38,7 +38,9 @@ import {
   Activity,
   Droplet,
   Smile,
-  Shield
+  Shield,
+  Check,
+  CheckSquare
 } from 'lucide-react';
 import { initialVideos, type Video } from './data/videos';
 import messagesData from './data/messages.json';
@@ -76,6 +78,50 @@ export default function App() {
   const [activeAlbumId, setActiveAlbumId] = useState<string>("ocean-of-love");
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isFloatingControlsVisible, setIsFloatingControlsVisible] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(24);
+
+  // Reset pagination on search or tag modifications to keep browser snappy
+  useEffect(() => {
+    setVisibleCount(24);
+  }, [searchQuery, selectedTags]);
+
+  const petalConfigs = useMemo(() => {
+    if (!showPetals) return [];
+    // We target around 35 petals - which creates a beautiful, lush overlay without killing mobile GPUs
+    const count = 35;
+    const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
+    const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
+    return Array.from({ length: count }).map((_, i) => {
+      const isJasmine = i % 2 === 0;
+      const startX = Math.random() * screenWidth;
+      const duration = 12 + Math.random() * 18;
+      const swayAmount = 100 + Math.random() * 220;
+      const size = isJasmine ? (12 + Math.random() * 10) : (18 + Math.random() * 15);
+      const zIndex = i % 10;
+      const blur = zIndex < 3 ? 'blur(1px)' : zIndex > 7 ? 'blur(0.5px)' : 'none';
+      const delay = Math.random() * 8;
+      const initialY = screenHeight + 150;
+      const initialRotateX = Math.random() * 360;
+      const initialRotateY = Math.random() * 360;
+      const initialRotateZ = Math.random() * 360;
+      
+      return {
+        id: i,
+        isJasmine,
+        startX,
+        duration,
+        swayAmount,
+        size,
+        zIndex,
+        blur,
+        delay,
+        initialY,
+        initialRotateX,
+        initialRotateY,
+        initialRotateZ,
+      };
+    });
+  }, [showPetals]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', currentTheme);
@@ -302,9 +348,31 @@ export default function App() {
     });
   }, [videos, searchQuery, selectedTags, categorizedTags]);
 
+  const visibleVideos = useMemo(() => {
+    return filteredVideos.slice(0, visibleCount);
+  }, [filteredVideos, visibleCount]);
+
   const activeVideo = useMemo(() => {
     return (videos.find(v => v.id === activeVideoId) || playlist.find(v => v.id === activeVideoId)) || null;
   }, [videos, playlist, activeVideoId]);
+
+  const nonQueuedFilteredCount = useMemo(() => {
+    return filteredVideos.filter(v => !playlist.some(p => p.id === v.id)).length;
+  }, [filteredVideos, playlist]);
+
+  const addAllFilteredToPlaylist = () => {
+    const toAdd = filteredVideos.filter(v => !playlist.some(p => p.id === v.id));
+    if (toAdd.length === 0) return;
+    
+    setPlaylist(prev => {
+      const newList = [...prev, ...toAdd];
+      if (prev.length === 0 && newList.length > 0 && !activeVideoId) {
+        setActiveVideoId(newList[0].id);
+        triggerPetals();
+      }
+      return newList;
+    });
+  };
 
   // Handle first player initialization
   useEffect(() => {
@@ -787,12 +855,29 @@ export default function App() {
           </div>
 
           {(selectedTags.length > 0 || (searchQuery && searchQuery !== 'Compassion')) && (
-            <button 
-              onClick={() => { setSelectedTags([]); setSearchQuery('Compassion'); setTopicSearchQuery(''); }}
-              className="text-[10px] text-theme-accent font-bold uppercase tracking-widest hover:text-white transition-colors px-4 border-l border-theme-border"
-            >
-              Reset All
-            </button>
+            <div className="flex items-center gap-3 pl-4 border-l border-theme-border flex-wrap sm:flex-nowrap">
+              {nonQueuedFilteredCount > 0 ? (
+                <button
+                  onClick={addAllFilteredToPlaylist}
+                  className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest hover:text-emerald-300 transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                  title="Add all matching visuals to playlist"
+                >
+                  <CheckSquare className="w-3.5 h-3.5" />
+                  Select All ({nonQueuedFilteredCount})
+                </button>
+              ) : (
+                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1.5 whitespace-nowrap">
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  All Added
+                </span>
+              )}
+              <button 
+                onClick={() => { setSelectedTags([]); setSearchQuery('Compassion'); setTopicSearchQuery(''); }}
+                className="text-[10px] text-theme-accent font-bold uppercase tracking-widest hover:text-white transition-colors pl-4 border-l border-theme-border whitespace-nowrap"
+              >
+                Reset All
+              </button>
+            </div>
           )}
         </div>
 
@@ -866,12 +951,40 @@ export default function App() {
             )}
           </AnimatePresence>
 
+          {/* Filter Status & Select All bar */}
+          {(selectedTags.length > 0 || (searchQuery && searchQuery.trim().toLowerCase() !== 'compassion')) && filteredVideos.length > 0 && (
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 px-5 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-md gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] text-slate-300 font-bold uppercase tracking-wider">
+                  {filteredVideos.length} Visual{filteredVideos.length === 1 ? '' : 's'} Match {selectedTags.length > 0 ? 'Selected Filters' : 'Search Query'}
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {nonQueuedFilteredCount > 0 ? (
+                  <button
+                    onClick={addAllFilteredToPlaylist}
+                    className="flex items-center gap-1.5 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 border border-emerald-500/20 text-white font-bold text-[10px] rounded-xl transition-all shadow-lg active:scale-[0.98]"
+                  >
+                    <CheckSquare className="w-3.5 h-3.5" />
+                    Select All / Add {nonQueuedFilteredCount} to Playlist
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-4 py-1.5 bg-white/5 text-slate-500 font-bold text-[10px] rounded-xl border border-white/5">
+                    <Check className="w-3.5 h-3.5" />
+                    All {filteredVideos.length} Added to Workspace
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Video Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-24">
             <AnimatePresence>
-              {filteredVideos.map((video) => (
+              {visibleVideos.map((video) => (
                 <motion.div
-                  layout
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   key={video.id}
@@ -909,6 +1022,18 @@ export default function App() {
               ))}
             </AnimatePresence>
           </div>
+
+          {filteredVideos.length > visibleCount && (
+            <div className="flex justify-center -mt-12 mb-24 pb-4">
+              <button
+                onClick={() => setVisibleCount(prev => prev + 24)}
+                className="px-8 py-3 bg-white/5 hover:bg-white/10 active:scale-[0.98] transition-all border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white hover:border-white/20 flex items-center gap-2 shadow-lg"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Load More Visuals
+              </button>
+            </div>
+          )}
 
           {filteredVideos.length === 0 && (
             <div className="h-64 flex flex-col items-center justify-center text-slate-600 border border-dashed border-white/5 rounded-3xl bg-white/2 backdrop-blur-sm">
@@ -1515,8 +1640,7 @@ export default function App() {
       <AnimatePresence>
         {showPetals && (
           <div className="pointer-events-none fixed inset-0 z-[100] overflow-hidden">
-            {[...Array(120)].map((_, i) => {
-              const isJasmine = i % 2 === 0;
+            {petalConfigs.map((petal) => {
               const roseColors = [
                 'from-rose-500/90 to-rose-300/40', 
                 'from-pink-500/80 to-pink-200/30', 
@@ -1527,62 +1651,54 @@ export default function App() {
               const jasmineColors = [
                 'from-white to-slate-100/40',
                 'from-cream-50 to-white/30',
-                'from-emerald-50/20 to-white/20', // Hint of green for the stem base
+                'from-emerald-50/20 to-white/20',
                 'from-amber-50/30 to-white/40',
               ];
 
-              const colorGradient = isJasmine 
-                ? jasmineColors[i % jasmineColors.length] 
-                : roseColors[i % roseColors.length];
+              const colorGradient = petal.isJasmine 
+                ? jasmineColors[petal.id % jasmineColors.length] 
+                : roseColors[petal.id % roseColors.length];
 
-              const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
-              const startX = Math.random() * screenWidth;
-              const duration = 12 + Math.random() * 18; // Even slower and longer
-              const swayAmount = 100 + Math.random() * 250;
-              const size = isJasmine ? (12 + Math.random() * 12) : (20 + Math.random() * 20);
-              const zIndex = i % 10;
-              const blur = zIndex < 3 ? 'blur(1px)' : zIndex > 7 ? 'blur(0.5px)' : 'none';
-              
               return (
                 <motion.div
-                  key={i}
+                  key={petal.id}
                   initial={{ 
-                    y: typeof window !== 'undefined' ? window.innerHeight + 150 : 1200, 
-                    x: startX, 
-                    rotateX: Math.random() * 360,
-                    rotateY: Math.random() * 360,
-                    rotateZ: Math.random() * 360,
-                    scale: 0.4 + Math.random() * 0.4,
+                    y: petal.initialY, 
+                    x: petal.startX, 
+                    rotateX: petal.initialRotateX,
+                    rotateY: petal.initialRotateY,
+                    rotateZ: petal.initialRotateZ,
+                    scale: 0.6,
                     opacity: 0,
-                    zIndex: zIndex
+                    zIndex: petal.zIndex
                   }}
                   animate={{ 
                     y: -250, 
                     x: [
-                      startX, 
-                      startX + swayAmount, 
-                      startX - swayAmount * 0.6, 
-                      startX + swayAmount * 0.4,
-                      startX - swayAmount * 0.2
+                      petal.startX, 
+                      petal.startX + petal.swayAmount, 
+                      petal.startX - petal.swayAmount * 0.6, 
+                      petal.startX + petal.swayAmount * 0.4,
+                      petal.startX - petal.swayAmount * 0.2
                     ],
                     rotateX: [0, 180, 360, 540, 720],
                     rotateY: [0, 90, 180, 270, 360],
                     rotateZ: [0, 45, -45, 90, 0],
                     opacity: [0, 1, 1, 0.8, 0],
-                    scale: [0.5, 1.2, 1.1, 0.9, 0.6]
+                    scale: [0.6, 1.1, 1.0, 0.9, 0.6]
                   }}
                   transition={{ 
-                    duration: duration, 
+                    duration: petal.duration, 
                     ease: "linear",
-                    delay: Math.random() * 10,
+                    delay: petal.delay,
                     x: {
-                      duration: duration,
+                      duration: petal.duration,
                       ease: "easeInOut",
                       times: [0, 0.25, 0.5, 0.75, 1]
                     }
                   }}
                   className="absolute left-0 top-0"
-                  style={{ filter: blur }}
+                  style={{ filter: petal.blur }}
                 >
                   <div 
                     className={cn(
@@ -1590,17 +1706,16 @@ export default function App() {
                       colorGradient
                     )}
                     style={{ 
-                      width: `${size}px`,
-                      height: isJasmine ? `${size}px` : `${size * (0.8 + Math.random() * 0.4)}px`,
-                      borderRadius: isJasmine 
-                        ? "50% 50% 50% 50% / 80% 80% 20% 20%" // More flower-like for jasmine
-                        : (i % 3 === 0 
+                      width: `${petal.size}px`,
+                      height: petal.isJasmine ? `${petal.size}px` : `${petal.size * 1.1}px`,
+                      borderRadius: petal.isJasmine 
+                        ? "50% 50% 50% 50% / 80% 80% 20% 20%"
+                        : (petal.id % 3 === 0 
                           ? "60% 40% 70% 30% / 60% 40% 70% 30%" 
-                          : i % 3 === 1 
+                          : petal.id % 3 === 1 
                             ? "50% 50% 10% 80% / 80% 80% 20% 20%"
                             : "100% 0% 100% 0% / 50% 50% 50% 50%"),
-                      transform: `rotate(${Math.random() * 180}deg)`,
-                      boxShadow: isJasmine 
+                      boxShadow: petal.isJasmine 
                         ? '0 2px 8px rgba(0,0,0,0.03)' 
                         : 'inset -2px -2px 6px rgba(0,0,0,0.1), 0 4px 10px rgba(0,0,0,0.05)',
                     }}
@@ -1608,7 +1723,7 @@ export default function App() {
                     {/* Interior Details */}
                     <div className={cn(
                       "absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] via-transparent to-transparent pointer-events-none",
-                      isJasmine ? "from-yellow-400/20" : "from-white/30"
+                      petal.isJasmine ? "from-yellow-400/20" : "from-white/30"
                     )} />
                   </div>
                 </motion.div>
