@@ -40,13 +40,15 @@ import {
   Smile,
   Shield,
   Check,
-  CheckSquare
+  CheckSquare,
+  BookOpen
 } from 'lucide-react';
 import { initialVideos, type Video } from './data/videos';
 import messagesData from './data/messages.json';
 import favoritesData from './data/favorite_playlists.json';
 import devotionalAlbums from './data/devotional_albums.json';
 import { cn } from './lib/utils';
+import TranscriptReader from './components/TranscriptReader';
 
 // Helper to extract YouTube ID from URL
 const getYoutubeId = (urlPath: string) => {
@@ -79,6 +81,7 @@ export default function App() {
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [isFloatingControlsVisible, setIsFloatingControlsVisible] = useState(true);
   const [visibleCount, setVisibleCount] = useState(24);
+  const [isReaderOpen, setIsReaderOpen] = useState(false);
 
   // Reset pagination on search or tag modifications to keep browser snappy
   useEffect(() => {
@@ -515,7 +518,10 @@ export default function App() {
       </div>
 
       {/* Sidebar/Navigation (Mobile: Bottom, Desktop: Left) */}
-      <aside className="w-full md:w-80 flex-shrink-0 h-auto md:h-screen backdrop-blur-2xl bg-theme-surface border-r border-theme-border z-20 flex flex-col p-6">
+      <aside className={cn(
+        "w-full md:w-80 flex-shrink-0 h-auto md:h-screen backdrop-blur-2xl bg-theme-surface border-r border-theme-border z-20 flex flex-col p-6 transition-all duration-300",
+        isReaderOpen && "hidden md:hidden pointer-events-none"
+      )}>
         <div className="flex flex-col gap-6 mb-10 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -569,6 +575,34 @@ export default function App() {
                 Last updated: {lastSynced}
               </div>
             )}
+
+            {/* View Switcher Tabs */}
+            <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
+              <button
+                onClick={() => setIsReaderOpen(false)}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
+                  !isReaderOpen 
+                    ? "bg-indigo-600/20 border-indigo-500/40 text-indigo-400 shadow-lg" 
+                    : "bg-white/5 border-transparent text-slate-400 hover:text-white"
+                )}
+              >
+                <Play className="w-3 h-3 fill-current shrink-0" />
+                Visuals
+              </button>
+              <button
+                onClick={() => setIsReaderOpen(true)}
+                className={cn(
+                  "flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
+                  isReaderOpen 
+                    ? "bg-indigo-600/20 border-indigo-500/40 text-indigo-400 shadow-lg" 
+                    : "bg-white/5 border-transparent text-slate-400 hover:text-white"
+                )}
+              >
+                <BookOpen className="w-3 h-3 shrink-0" />
+                Readings
+              </button>
+            </div>
           </div>
         </div>
 
@@ -692,7 +726,16 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-grow flex flex-col min-h-0 bg-transparent z-10 p-4 sm:p-8 overflow-y-auto custom-scrollbar">
-        {/* Top Filter Bar */}
+        {isReaderOpen ? (
+          <TranscriptReader
+            videos={videos}
+            activeVideoId={activeVideoId}
+            setActiveVideoId={setActiveVideoId}
+            onClose={() => setIsReaderOpen(false)}
+          />
+        ) : (
+          <>
+            {/* Top Filter Bar */}
         <div className="sticky top-0 flex flex-col lg:flex-row lg:items-center gap-4 mb-8 bg-theme-bg/80 backdrop-blur-xl p-4 z-30 rounded-2xl border border-theme-border shrink-0 shadow-xl">
           <div className="flex-grow flex items-center gap-4">
             <div className="relative">
@@ -1109,10 +1152,15 @@ export default function App() {
             </div>
           </div>
         </footer>
+          </>
+        )}
       </main>
 
       {/* Right Sidebar: Workspace/Playlist */}
-      <aside className="hidden lg:flex w-72 flex-shrink-0 h-screen backdrop-blur-2xl bg-white/2 border-l border-white/10 z-20 flex-col p-6 overflow-hidden">
+      <aside className={cn(
+        "hidden lg:flex w-72 flex-shrink-0 h-screen backdrop-blur-2xl bg-white/2 border-l border-white/10 z-20 flex-col p-6 overflow-hidden transition-all duration-300",
+        isReaderOpen && "lg:hidden pointer-events-none"
+      )}>
         <div className="flex items-center justify-between mb-8 shrink-0">
           <div className="flex flex-col">
             <h2 className="text-sm font-bold uppercase tracking-widest text-theme-text">Workspace</h2>
@@ -1233,7 +1281,7 @@ export default function App() {
 
       {/* Playlist Floating Bar */}
       <AnimatePresence>
-        {playlist.length > 0 && (
+        {playlist.length > 0 && !isReaderOpen && (
           <motion.div 
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -1347,7 +1395,10 @@ export default function App() {
       </AnimatePresence>
 
       {/* Floating Controls Bar */}
-      <div className="fixed right-4 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-3">
+      <div className={cn(
+        "fixed right-4 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-3 transition-all duration-300",
+        isReaderOpen && "hidden pointer-events-none opacity-0"
+      )}>
         <AnimatePresence>
           {isFloatingControlsVisible && (
             <motion.div

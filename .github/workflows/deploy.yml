@@ -37,6 +37,9 @@ jobs:
       - name: Pre-process Excel Data
         run: npx tsx prebuild-convert.ts
 
+      - name: Fetch and Format YouTube Transcripts
+        run: npx tsx download-transcripts.ts --all
+
       - name: Security Audit
         run: npm audit --audit-level=high || true
         # We use || true to prevent the pipeline from failing on old/unfixable vulnerabilities 
