@@ -285,6 +285,12 @@ async function main() {
         successCount++;
       } else {
         failureCount++;
+        if (failureCount >= 3) {
+          console.warn('\n🛑 Hitting multiple transcript failures (3 attempts failed).');
+          console.warn('   YouTube is likely blocking automated requests in this environment or transcripts are disabled.');
+          console.warn('   Stopping batch run early to prevent hanging. Proceeding to save what we have...');
+          break;
+        }
       }
       processedCount++;
 
