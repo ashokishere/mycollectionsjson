@@ -19,6 +19,8 @@ import {
   Tag as TagIcon, 
   ChevronRight, 
   ChevronLeft,
+  ChevronUp,
+  ChevronDown,
   X,
   PlusCircle,
   History,
@@ -408,6 +410,21 @@ export default function App() {
 
   const removeFromPlaylist = (id: string) => {
     setPlaylist(prev => prev.filter(v => v.id !== id));
+  };
+
+  const movePlaylistItem = (index: number, direction: 'up' | 'down') => {
+    setPlaylist(prev => {
+      const updated = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= updated.length) return prev;
+      
+      const temp = updated[index];
+      updated[index] = updated[targetIndex];
+      updated[targetIndex] = temp;
+      
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const playlistRef = useRef<Video[]>([]);
@@ -1241,12 +1258,43 @@ export default function App() {
                         <span className="text-[8px] text-slate-600 font-mono uppercase">YTID: {video.id}</span>
                       </div>
                     </div>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); removeFromPlaylist(video.id); }}
-                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full text-slate-600 hover:text-rose-400 hover:bg-rose-400/10 transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <button
+                        disabled={index === 0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          movePlaylistItem(index, 'up');
+                        }}
+                        className={cn(
+                          "w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-white/5 transition-all",
+                          index === 0 && "opacity-10 pointer-events-none"
+                        )}
+                        title="Move Up"
+                      >
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        disabled={index === playlist.length - 1}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          movePlaylistItem(index, 'down');
+                        }}
+                        className={cn(
+                          "w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-white/5 transition-all",
+                          index === playlist.length - 1 && "opacity-10 pointer-events-none"
+                        )}
+                        title="Move Down"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); removeFromPlaylist(video.id); }}
+                        className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 transition-all"
+                        title="Remove"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                     
                     {activeVideoId === video.id && (
                       <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
@@ -1666,11 +1714,47 @@ export default function App() {
                 ) : (
                   playlist.map((video, idx) => (
                     <div key={`${video.id}-${idx}`} className="flex items-center gap-3 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-                      <img src={`https://img.youtube.com/vi/${getYoutubeId(video.url)}/default.jpg`} className="w-10 h-10 rounded-lg object-cover" />
+                      <img src={`https://img.youtube.com/vi/${getYoutubeId(video.url)}/default.jpg`} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                       <div className="min-w-0 flex-grow">
                         <p className="text-[10px] font-bold text-white truncate">{video.title}</p>
                       </div>
-                      <button onClick={() => removeFromPlaylist(video.id)} className="p-1.5 text-slate-500 hover:text-rose-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          disabled={idx === 0}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            movePlaylistItem(idx, 'up');
+                          }}
+                          className={cn(
+                            "p-1 text-slate-400 hover:text-indigo-400 transition-all",
+                            idx === 0 && "opacity-15 pointer-events-none"
+                          )}
+                          title="Move Up"
+                        >
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          disabled={idx === playlist.length - 1}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            movePlaylistItem(idx, 'down');
+                          }}
+                          className={cn(
+                            "p-1 text-slate-400 hover:text-indigo-400 transition-all",
+                            idx === playlist.length - 1 && "opacity-15 pointer-events-none"
+                          )}
+                          title="Move Down"
+                        >
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                        <button 
+                          onClick={() => removeFromPlaylist(video.id)} 
+                          className="p-1 px-1.5 text-slate-500 hover:text-rose-400 transition-all"
+                          title="Remove"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}

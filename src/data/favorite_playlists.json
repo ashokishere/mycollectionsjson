@@ -5,42 +5,102 @@
       "name": "5 Minutes",
       "description": "Quick inspiration for your busy day.",
       "icon": "Timer",
-      "videoIds": ["FkWBsufZvz8"]
+      "videoIds": [
+        "FkWBsufZvz8",
+        "-Mxf7alEQjw",
+        "TR4SBHRZUE8",
+        "rl4ULW_OgtQ",
+        "6FNh1Jac9bo",
+        "MJR06v8qakg",
+        "xghFntmsTjQ",
+        "K2ed6uMPSZc"
+      ]
     },
     {
       "id": "20min-curation",
       "name": "20 Minutes",
       "description": "A deep breath for your soul.",
       "icon": "Clock",
-      "videoIds": ["zox8ZTFb6VI"]
+      "videoIds": [
+        "zox8ZTFb6VI",
+        "-Mxf7alEQjw",
+        "TR4SBHRZUE8",
+        "rl4ULW_OgtQ",
+        "6FNh1Jac9bo",
+        "MJR06v8qakg",
+        "xghFntmsTjQ",
+        "K2ed6uMPSZc"
+      ]
     },
     {
       "id": "30min-curation",
       "name": "30 Minutes",
       "description": "Focused meditation and guidance.",
       "icon": "Zap",
-      "videoIds": ["gN-zC07Y480"]
+      "videoIds": [
+        "gN-zC07Y480",
+        "-Mxf7alEQjw",
+        "TR4SBHRZUE8",
+        "rl4ULW_OgtQ",
+        "6FNh1Jac9bo",
+        "MJR06v8qakg",
+        "xghFntmsTjQ",
+        "K2ed6uMPSZc"
+      ]
     },
     {
       "id": "1hr-curation",
       "name": "1 Hour",
       "description": "A full spiritual discourse.",
       "icon": "Sparkles",
-      "videoIds": ["1PrQ25KkCdU"]
+      "videoIds": [
+        "1PrQ25KkCdU",
+        "-Mxf7alEQjw",
+        "TR4SBHRZUE8",
+        "rl4ULW_OgtQ",
+        "6FNh1Jac9bo",
+        "MJR06v8qakg",
+        "xghFntmsTjQ",
+        "K2ed6uMPSZc"
+      ]
     },
     {
       "id": "2hr-curation",
       "name": "2 Hours",
       "description": "Deep immersion in the path.",
       "icon": "History",
-      "videoIds": ["1PrQ25KkCdU", "vS6_aFvX6RE"]
+      "videoIds": [
+        "1PrQ25KkCdU",
+        "vS6_aFvX6RE",
+        "-Mxf7alEQjw",
+        "TR4SBHRZUE8",
+        "rl4ULW_OgtQ",
+        "6FNh1Jac9bo",
+        "MJR06v8qakg",
+        "xghFntmsTjQ",
+        "K2ed6uMPSZc"
+      ]
     },
     {
       "id": "6hr-curation",
       "name": "6 Hours",
       "description": "A complete retreat experience.",
       "icon": "Compass",
-      "videoIds": ["1PrQ25KkCdU", "zox8ZTFb6VI", "b-LzFHT3Y2M", "FkWBsufZvz8", "vS6_aFvX6RE", "gN-zC07Y480"]
+      "videoIds": [
+        "1PrQ25KkCdU",
+        "zox8ZTFb6VI",
+        "b-LzFHT3Y2M",
+        "FkWBsufZvz8",
+        "vS6_aFvX6RE",
+        "gN-zC07Y480",
+        "-Mxf7alEQjw",
+        "TR4SBHRZUE8",
+        "rl4ULW_OgtQ",
+        "6FNh1Jac9bo",
+        "MJR06v8qakg",
+        "xghFntmsTjQ",
+        "K2ed6uMPSZc"
+      ]
     }
   ]
 }
