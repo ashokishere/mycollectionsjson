@@ -131,10 +131,56 @@ function formatTranscriptLocally(title: string, rawText: string): string {
   ].join('\n\n');
 }
 
+const INITIAL_AVAILABLE_IDS = [
+  'FkWBsufZvz8',
+  'b-LzFHT3Y2M',
+  'B7pimil_1E4',
+  'Uz3_LpRdLF0',
+  'bW3hyJWpuRE',
+  'UzHb7A0WSrE',
+  '9CIbB3Rf5nY',
+  'RQ3mY-imSiI',
+  'qZQFm856Coc',
+  'SsrqB_GwE-8',
+  'rghY0MRwbYo',
+  'eL54GQXRGvI',
+  'Mgd-taUnWtI',
+  'KoQZD-5L0t0',
+  'hoXoTr7PpcI',
+  'kmDfAq0fEM8',
+  'Z22edyOsNQc',
+  '2G9i65RmG50',
+  '-GD2Y2W8b_o',
+  'Oq23a2RWZvc',
+  'uQFI4A5ZYTc',
+  'eFgAGes7unk',
+  'Sh9yejNuxcE',
+  '0MytX8wcyWg',
+  'Qhce8SDz6I8',
+  'eLfDGUiw0y4',
+  'PaNngy76hK4',
+  'axJ9zXVdiEM',
+  '0vLwGtCl4kY',
+  'tZNNSZSku6Q',
+  'mAN13n0xImw',
+  'b4s24h5OB9Y',
+  'bcPWdJ_ImKY',
+  'H7DBUDuje_s',
+  'K-NWCQOUDlI',
+  '9Ec0LDIJWd8',
+  'raiq8ofnvRE',
+  'BTutIOFVScg',
+  'rqnS4by1Onk',
+  '7BGXIKp3RWk',
+  'srH0gluMeg8',
+  'P7jeX5MyR3I',
+  'vBAaK0TZWCQ'
+];
+
 export default function TranscriptReader({ videos, activeVideoId, setActiveVideoId, onClose }: TranscriptReaderProps) {
-  const [availableIds, setAvailableIds] = useState<string[]>(['FkWBsufZvz8', 'b-LzFHT3Y2M']);
+  const [availableIds, setAvailableIds] = useState<string[]>(INITIAL_AVAILABLE_IDS);
   const [selectedVideoId, setSelectedVideoId] = useState<string>(() => {
-    if (activeVideoId && ['FkWBsufZvz8', 'b-LzFHT3Y2M'].includes(activeVideoId)) {
+    if (activeVideoId && INITIAL_AVAILABLE_IDS.includes(activeVideoId)) {
       return activeVideoId;
     }
     return 'FkWBsufZvz8';
