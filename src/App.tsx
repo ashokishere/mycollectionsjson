@@ -43,7 +43,8 @@ import {
   Shield,
   Check,
   CheckSquare,
-  BookOpen
+  BookOpen,
+  Map
 } from 'lucide-react';
 import { initialVideos, type Video } from './data/videos';
 import messagesData from './data/messages.json';
@@ -51,6 +52,34 @@ import favoritesData from './data/favorite_playlists.json';
 import devotionalAlbums from './data/devotional_albums.json';
 import { cn } from './lib/utils';
 import TranscriptReader from './components/TranscriptReader';
+
+// Static Pilgrim Tour data
+const VIRTUAL_TOURS: Video[] = [
+  {
+    id: "tour-international-headquarters",
+    title: "International Headquarters Virtual Tour",
+    url: "https://virtual-tours.yogananda.org/convocation/international-headquarters/?_gl=1*1buvibn*_ga*MTUyMTEyNTIwMC4xNzc0NzI0NTY0*_ga_W6LR31323D*czE3ODA0NTczNzAkbzEyJGcxJHQxNzgwNDU3NDY0JGo1NyRsMCRoMA..",
+    tags: ["Virtual Pilgrimage Tours", "Pilgrimage", "SRF", "Mount Washington"]
+  },
+  {
+    id: "tour-srf-lake-shrine",
+    title: "SRF Lake Shrine Virtual Tour",
+    url: "https://virtual-tours.yogananda.org/convocation/srf-lake-shrine/?_gl=1*4jm8cl*_ga*MTUyMTEyNTIwMC4xNzc0NzI0NTY0*_ga_W6LR31323D*czE3ODA0NTczNzAkbzEyJGcxJHQxNzgwNDU3NDY5JGo1MiRsMCRoMA..",
+    tags: ["Virtual Pilgrimage Tours", "Pilgrimage", "SRF", "Lake Shrine"]
+  },
+  {
+    id: "tour-hollywood-temple",
+    title: "Hollywood Temple Virtual Tour",
+    url: "https://virtual-tours.yogananda.org/convocation/hollywood-temple/?_gl=1*1l14o66*_ga*MTUyMTEyNTIwMC4xNzc0NzI0NTY0*_ga_W6LR31323D*czE3ODA0NTczNzAkbzEyJGcxJHQxNzgwNDU3NTQ5JGo2MCRsMCRoMA..",
+    tags: ["Virtual Pilgrimage Tours", "Pilgrimage", "SRF", "Hollywood"]
+  },
+  {
+    id: "tour-encinitas-hermitage",
+    title: "Encinitas Hermitage Virtual Tour",
+    url: "https://virtual-tours.yogananda.org/convocation/encinitas-hermitage/?_gl=1*1k3oe5y*_ga*MTUyMTEyNTIwMC4xNzc0NzI0NTY0*_ga_W6LR31323D*czE3ODA0NTczNzAkbzEyJGcxJHQxNzgwNDU3NTY5JGowMCRsMCRoMA..",
+    tags: ["Virtual Pilgrimage Tours", "Pilgrimage", "SRF", "Encinitas"]
+  }
+];
 
 // Helper to extract YouTube ID from URL
 const getYoutubeId = (urlPath: string) => {
@@ -61,8 +90,27 @@ const getYoutubeId = (urlPath: string) => {
   return (match && match[2].length === 11) ? match[2] : null;
 };
 
+// Unified function to get high-fidelity thumbnails
+const getVideoThumbnail = (video: Video) => {
+  if (video.id.startsWith('tour-') || !getYoutubeId(video.url)) {
+    if (video.id.includes('headquarters')) {
+      return "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=320&auto=format&fit=crop&q=60";
+    } else if (video.id.includes('lake-shrine')) {
+      return "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=320&auto=format&fit=crop&q=60";
+    } else if (video.id.includes('hollywood')) {
+      return "https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=320&auto=format&fit=crop&q=60";
+    } else if (video.id.includes('encinitas')) {
+      return "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=320&auto=format&fit=crop&q=60";
+    }
+    return "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=320&auto=format&fit=crop&q=60";
+  }
+  const yid = getYoutubeId(video.url);
+  return `https://img.youtube.com/vi/${yid}/mqdefault.jpg`;
+};
+
 export default function App() {
-  const [videos, setVideos] = useState<Video[]>(initialVideos);
+  const [videos, setVideos] = useState<Video[]>(() => [...VIRTUAL_TOURS, ...initialVideos]);
+  const [isVirtualToursOpen, setIsVirtualToursOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('Compassion');
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
@@ -80,7 +128,15 @@ export default function App() {
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const [isOceanLoveOpen, setIsOceanLoveOpen] = useState(false);
   const [activeAlbumId, setActiveAlbumId] = useState<string>("ocean-of-love");
+  const [mobileAlbumView, setMobileAlbumView] = useState<'list' | 'tracks'>('list');
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+
+  // Reset mobile album view to main listing when opening albums drawer
+  useEffect(() => {
+    if (isOceanLoveOpen) {
+      setMobileAlbumView('list');
+    }
+  }, [isOceanLoveOpen]);
   const [isFloatingControlsVisible, setIsFloatingControlsVisible] = useState(true);
   const [visibleCount, setVisibleCount] = useState(24);
   const [isReaderOpen, setIsReaderOpen] = useState(false);
@@ -527,7 +583,7 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen font-sans flex flex-col md:flex-row overflow-hidden text-slate-50">
+    <div className="min-h-screen font-sans flex flex-col md:flex-row overflow-hidden text-theme-text">
       {/* Background Atmosphere */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-theme-bg">
         <div className="absolute top-[-10%] left-[-5%] w-[400px] h-[400px] bg-theme-accent/20 rounded-full blur-[120px] opacity-50" />
@@ -562,26 +618,41 @@ export default function App() {
           <div className="space-y-4">
             <div className="flex items-center gap-2 p-1 bg-theme-surface rounded-xl border border-theme-border">
               {[
-                { id: 'default', color: 'bg-[#020617]', label: 'D' },
-                { id: 'golden', color: 'bg-[#2d1e05]', label: 'G' },
-                { id: 'white', color: 'bg-white', label: 'W' },
-                { id: 'sky', color: 'bg-[#082f49]', label: 'S' },
-                { id: 'opal', color: 'bg-[#064e3b]', label: 'O' }
+                { id: 'default', color: 'bg-[#020617]', bgValue: '#020617', label: 'D' },
+                { id: 'golden', color: 'bg-[#2d1e05]', bgValue: '#2d1e05', label: 'G' },
+                { id: 'white', color: 'bg-white', bgValue: '#ffffff', label: 'W' },
+                { id: 'sky', color: 'bg-[#082f49]', bgValue: '#082f49', label: 'S' },
+                { id: 'opal', color: 'bg-[#064e3b]', bgValue: '#064e3b', label: 'O' }
               ].map(t => (
                 <button
                   key={t.id}
                   onClick={() => setCurrentTheme(t.id)}
                   className={cn(
-                    "w-full h-7 rounded-lg flex items-center justify-center text-[8px] font-bold transition-all",
+                    "w-full h-7 rounded-lg flex items-center justify-center text-[8.5px] font-bold transition-all",
                     currentTheme === t.id 
                       ? "ring-2 ring-theme-accent ring-offset-2 ring-offset-theme-bg scale-95" 
-                      : "hover:scale-105 opacity-60 hover:opacity-100"
+                      : "hover:scale-105 opacity-80 hover:opacity-100"
                   )}
-                  style={{ backgroundColor: t.id === 'white' ? '#ffffff' : undefined }}
-                  title={t.id}
+                  style={{ backgroundColor: t.bgValue }}
+                  title={t.id === 'white' ? 'White Theme' : `${t.id.charAt(0).toUpperCase() + t.id.slice(1)} Theme`}
                 >
-                  <div className={cn("w-full h-full rounded-lg flex items-center justify-center border border-theme-border", t.color)}>
-                    <span className={t.id === 'white' ? 'text-black' : 'text-white'}>{t.label}</span>
+                  <div 
+                    className={cn(
+                      "w-full h-full rounded-lg flex items-center justify-center border transition-all", 
+                      t.id === 'white' 
+                        ? "border-amber-400/80 shadow-[0_0_8px_rgba(245,158,11,0.2)] bg-gradient-to-b from-white to-amber-50/50" 
+                        : "border-theme-border/30",
+                      t.color
+                    )}
+                  >
+                    <span 
+                      className={cn(
+                        "font-extrabold text-[9px] tracking-wide",
+                        t.id === 'white' ? "theme-toggle-btn-label-white font-black" : "theme-toggle-btn-label"
+                      )}
+                    >
+                      {t.label}
+                    </span>
                   </div>
                 </button>
               ))}
@@ -949,7 +1020,15 @@ export default function App() {
           )}
         >
           <div className="relative w-full aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 max-h-[60vh]">
-            {playerInitId && (
+            {activeVideo && (activeVideo.id.startsWith('tour-') || !getYoutubeId(activeVideo.url)) ? (
+              <iframe
+                src={activeVideo.url}
+                title={activeVideo.title}
+                className="absolute inset-0 w-full h-full border-0 bg-slate-950"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            ) : playerInitId ? (
               <YouTube
                 videoId={playerInitId}
                 onEnd={handleNextInPlaylist}
@@ -969,7 +1048,7 @@ export default function App() {
                 }}
                 className="absolute inset-0 w-full h-full"
               />
-            )}
+            ) : null}
           </div>
         </div>
 
@@ -1056,7 +1135,7 @@ export default function App() {
                 >
                   <div className="aspect-video bg-slate-900 rounded-xl mb-4 overflow-hidden relative">
                     <img 
-                      src={`https://img.youtube.com/vi/${getYoutubeId(video.url)}/mqdefault.jpg`} 
+                      src={getVideoThumbnail(video)} 
                       alt={video.title}
                       className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
                     />
@@ -1126,8 +1205,6 @@ export default function App() {
               <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-400">Resources</h4>
               <ul className="space-y-2">
                 <li><a href="https://yogananda.org" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-400 hover:text-white transition-colors underline decoration-indigo-500/20 underline-offset-4">Self-Realization Fellowship</a></li>
-                <li><a href="https://ananda.org" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-400 hover:text-white transition-colors underline decoration-indigo-500/20 underline-offset-4">Ananda Worldwide</a></li>
-                <li><a href="https://yoganandaharmony.com" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-400 hover:text-white transition-colors underline decoration-indigo-500/20 underline-offset-4">Yogananda Harmony</a></li>
               </ul>
             </div>
 
@@ -1150,7 +1227,7 @@ export default function App() {
             <div className="space-y-4">
               <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] text-indigo-400">Spiritual Wisdom</h4>
               <p className="text-xs text-slate-500 italic leading-relaxed">
-                "I am a tiny bubble of laughter, I have become the ocean of Laughter Itself."
+                "A tiny bubble of laughter, I am become the Sea of Mirth Itself!"
               </p>
               <div className="flex gap-4 pt-2">
                 <Sparkles className="w-4 h-4 text-indigo-500/40" />
@@ -1241,7 +1318,7 @@ export default function App() {
                   >
                     <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-slate-900 border border-white/5">
                       <img 
-                        src={`https://img.youtube.com/vi/${getYoutubeId(video.url)}/default.jpg`} 
+                        src={getVideoThumbnail(video)} 
                         alt="" 
                         className="w-full h-full object-cover"
                       />
@@ -1456,7 +1533,7 @@ export default function App() {
               className="flex flex-col gap-3"
             >
               <button
-                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); }}
+                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); setIsVirtualToursOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isFavoritesOpen 
@@ -1469,7 +1546,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); }}
+                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isOceanLoveOpen 
@@ -1482,7 +1559,20 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); }}
+                onClick={() => { setIsVirtualToursOpen(!isVirtualToursOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsWorkspaceOpen(false); }}
+                className={cn(
+                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
+                  isVirtualToursOpen 
+                    ? "bg-amber-600 text-white border-amber-400 scale-110" 
+                    : "bg-white/10 border-white/20 text-slate-400 hover:bg-white/20 hover:text-white"
+                )}
+                title="Virtual Pilgrimage Tours"
+              >
+                <Map className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsVirtualToursOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWorkspaceOpen 
@@ -1551,6 +1641,51 @@ export default function App() {
           </>
         )}
 
+        {isVirtualToursOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/20" onClick={() => setIsVirtualToursOpen(false)} />
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              className="fixed right-20 top-1/2 -translate-y-1/2 w-80 max-h-[80vh] backdrop-blur-3xl bg-slate-900/90 border border-white/20 rounded-3xl shadow-2xl z-[60] overflow-hidden flex flex-col"
+            >
+              <div className="p-5 border-b border-white/10 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-amber-500 font-sans">Pilgrimage</h3>
+                  <p className="text-[9px] text-slate-500 mt-0.5 font-medium">3D & 360° Holy Destinations</p>
+                </div>
+                <button onClick={() => setIsVirtualToursOpen(false)}><X className="w-4 h-4 text-slate-500" /></button>
+              </div>
+              <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                {VIRTUAL_TOURS.map((tour) => (
+                  <button
+                    key={tour.id}
+                    onClick={() => { setActiveVideoId(tour.id); setIsVirtualToursOpen(false); triggerPetals(); }}
+                    className={cn(
+                      "w-full flex items-start gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-amber-600/20 hover:border-amber-500/30 transition-all text-left",
+                      activeVideoId === tour.id && "bg-amber-600/30 border-amber-500/50"
+                    )}
+                  >
+                    <div className="w-12 h-12 rounded-xl bg-slate-950 overflow-hidden shrink-0 relative border border-white/10">
+                      <img 
+                        src={getVideoThumbnail(tour)} 
+                        alt="" 
+                        className="w-full h-full object-cover" 
+                      />
+                      <div className="absolute inset-0 bg-black/10" />
+                    </div>
+                    <div className="min-w-0 flex-grow">
+                      <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate">{tour.title}</p>
+                      <p className="text-[8.5px] text-amber-400 mt-0.5 font-semibold font-mono">🌟 Explore in 360°</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </>
+        )}
+
         {isOceanLoveOpen && (
           <>
             <div className="fixed inset-0 z-[55] bg-black/20" onClick={() => setIsOceanLoveOpen(false)} />
@@ -1558,8 +1693,9 @@ export default function App() {
               initial={{ x: 100, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 100, opacity: 0 }}
-              className="fixed right-20 top-1/2 -translate-y-1/2 w-84 max-h-[80vh] backdrop-blur-3xl bg-slate-900/95 border border-white/20 rounded-3xl shadow-2xl z-[60] overflow-hidden flex flex-col"
+              className="fixed right-20 top-1/2 -translate-y-1/2 md:w-[680px] w-[350px] max-w-[calc(100vw-120px)] h-[80vh] backdrop-blur-3xl bg-slate-900/95 border border-white/20 rounded-3xl shadow-2xl z-[60] overflow-hidden flex flex-col"
             >
+              {/* Header */}
               <div className="p-4 border-b border-white/10 flex items-center justify-between shrink-0 bg-slate-950/40">
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-widest text-slate-300">Spiritual Albums</h3>
@@ -1570,124 +1706,177 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Collapsed Album Tabs */}
-              <div className="flex border-b border-white/5 overflow-x-auto custom-scrollbar-hidden bg-black/30 p-2 gap-1.5 shrink-0 select-none">
-                {devotionalAlbums.map((album) => {
-                  const AlbumIcon = { Heart, Music, Compass, Sun, Flame, Smile }[album.icon] || Heart;
-                  const isActive = activeAlbumId === album.id;
-                  
-                  let activeColors = "bg-rose-500/20 text-rose-400 border-rose-500/30";
-                  if (album.accentColor === "indigo") activeColors = "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
-                  else if (album.accentColor === "cyan") activeColors = "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
-                  else if (album.accentColor === "yellow") activeColors = "bg-yellow-500/20 text-yellow-400 border-yellow-500/30";
-                  else if (album.accentColor === "fuchsia") activeColors = "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30";
-                  else if (album.accentColor === "amber") activeColors = "bg-amber-500/20 text-amber-400 border-amber-500/30";
+              {/* Master-Detail Combined Content */}
+              <div className="flex-grow flex overflow-hidden">
+                
+                {/* Left Master List: Albums index */}
+                <div className={cn(
+                  "md:w-60 md:border-r border-white/10 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-black/10 p-2 gap-1.5 select-none",
+                  mobileAlbumView === 'tracks' ? "hidden md:flex" : "flex w-full"
+                )}>
+                  <div className="p-2 mb-0.5 hidden md:block">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold block mb-0.5">Select Album</span>
+                  </div>
+                  {devotionalAlbums.map((album) => {
+                    const AlbumIcon = { Heart, Music, Compass, Sun, Flame, Smile }[album.icon] || Heart;
+                    const isActive = activeAlbumId === album.id;
+                    const trackCount = album.tracks?.length || 0;
+                    
+                    let activeColors = "bg-rose-500/20 text-rose-400 border-rose-500/30";
+                    if (album.accentColor === "indigo") activeColors = "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
+                    else if (album.accentColor === "cyan") activeColors = "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
+                    else if (album.accentColor === "yellow") activeColors = "bg-yellow-500/20 text-yellow-500 border-yellow-500/30";
+                    else if (album.accentColor === "fuchsia") activeColors = "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30";
+                    else if (album.accentColor === "amber") activeColors = "bg-amber-500/20 text-amber-400 border-amber-500/30";
+                    else if (album.accentColor === "emerald") activeColors = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
 
-                  return (
-                    <button
-                      key={album.id}
-                      onClick={() => setActiveAlbumId(album.id)}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border whitespace-nowrap",
-                        isActive 
-                          ? activeColors
-                          : "bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white"
-                      )}
-                    >
-                      <AlbumIcon className="w-3.5 h-3.5 shrink-0" />
-                      {album.name}
-                    </button>
-                  );
-                })}
-              </div>
+                    return (
+                      <button
+                        key={album.id}
+                        onClick={() => {
+                          setActiveAlbumId(album.id);
+                          setMobileAlbumView('tracks');
+                        }}
+                        className={cn(
+                          "flex items-center justify-between text-left px-3 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border group/item w-full",
+                          isActive 
+                            ? activeColors
+                            : "bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 pr-1">
+                          <AlbumIcon className={cn("w-3.5 h-3.5 shrink-0 transition-transform group-hover/item:scale-110", isActive ? "" : "text-slate-400")} />
+                          <span className="truncate">{album.name}</span>
+                        </div>
+                        <span className={cn(
+                          "text-[8px] font-mono px-1.5 py-0.5 rounded shrink-0 ml-1.5",
+                          isActive 
+                            ? "bg-white/15 text-current" 
+                            : "bg-white/5 text-slate-500 group-hover/item:text-slate-300 group-hover/item:bg-white/10"
+                        )}>
+                          {trackCount}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-              {/* Album Body Tracks */}
-              <div className="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar">
-                {(() => {
-                  const activeAlbum = devotionalAlbums.find(a => a.id === activeAlbumId) || devotionalAlbums[0];
-                  
-                  let accentText = "text-rose-400 group-hover:text-rose-300";
-                  let bgAccent = "bg-rose-600 hover:bg-rose-500 text-white";
-                  let ringColor = "group-hover:border-rose-500/40";
-                  
-                  if (activeAlbum.accentColor === "indigo") {
-                    accentText = "text-indigo-400 group-hover:text-indigo-300";
-                    bgAccent = "bg-indigo-600 hover:bg-indigo-500 text-white";
-                    ringColor = "group-hover:border-indigo-500/40";
-                  } else if (activeAlbum.accentColor === "cyan") {
-                    accentText = "text-cyan-400 group-hover:text-cyan-300";
-                    bgAccent = "bg-cyan-600 hover:bg-cyan-500 text-white";
-                    ringColor = "group-hover:border-cyan-500/40";
-                  } else if (activeAlbum.accentColor === "yellow") {
-                    accentText = "text-yellow-400 group-hover:text-yellow-300";
-                    bgAccent = "bg-yellow-600 hover:bg-yellow-500 text-slate-950";
-                    ringColor = "group-hover:border-yellow-500/40";
-                  } else if (activeAlbum.accentColor === "fuchsia") {
-                    accentText = "text-fuchsia-400 group-hover:text-fuchsia-300";
-                    bgAccent = "bg-fuchsia-600 hover:bg-fuchsia-500 text-white";
-                    ringColor = "group-hover:border-fuchsia-500/40";
-                  } else if (activeAlbum.accentColor === "amber") {
-                    accentText = "text-amber-400 group-hover:text-amber-300";
-                    bgAccent = "bg-amber-600 hover:bg-amber-500 text-slate-950";
-                    ringColor = "group-hover:border-amber-500/40";
-                  }
+                {/* Right Detail Panel: Album tracks */}
+                <div className={cn(
+                  "flex-grow flex flex-col min-w-0 overflow-hidden",
+                  mobileAlbumView === 'list' ? "hidden md:flex" : "flex"
+                )}>
+                  {/* On Mobile: Back to listing navigation */}
+                  {mobileAlbumView === 'tracks' && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-black/20 border-b border-white/5 md:hidden shrink-0">
+                      <button 
+                        onClick={() => setMobileAlbumView('list')}
+                        className="flex items-center gap-1 text-[9px] font-bold text-rose-400 uppercase tracking-widest py-1 px-2 hover:bg-white/5 rounded-lg transition-all"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                        Back to Albums
+                      </button>
+                    </div>
+                  )}
 
-                  return (
-                    <>
-                      <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5 text-center">
-                        <p className="text-[10px] text-slate-400 leading-relaxed italic mb-3 font-medium">
-                          &ldquo;{activeAlbum.description}&rdquo;
-                        </p>
-                        <button
-                          onClick={() => { addAlbumSequence(activeAlbum.id); setIsOceanLoveOpen(false); }}
-                          className={cn(
-                            "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2",
-                            bgAccent
-                          )}
-                        >
-                          <ListVideo className="w-4 h-4" />
-                          Queue Full Album Sequence
-                        </button>
-                      </div>
+                  {/* Album Detail Scroll Area */}
+                  <div className="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                    {(() => {
+                      const activeAlbum = devotionalAlbums.find(a => a.id === activeAlbumId) || devotionalAlbums[0];
+                      
+                      let accentText = "text-rose-400 group-hover:text-rose-300";
+                      let bgAccent = "bg-rose-600 hover:bg-rose-500 text-white";
+                      let ringColor = "group-hover:border-rose-500/40";
+                      
+                      if (activeAlbum.accentColor === "indigo") {
+                        accentText = "text-indigo-400 group-hover:text-indigo-300";
+                        bgAccent = "bg-indigo-600 hover:bg-indigo-500 text-white";
+                        ringColor = "group-hover:border-indigo-500/40";
+                      } else if (activeAlbum.accentColor === "cyan") {
+                        accentText = "text-cyan-400 group-hover:text-cyan-300";
+                        bgAccent = "bg-cyan-600 hover:bg-cyan-500 text-white";
+                        ringColor = "group-hover:border-cyan-500/40";
+                      } else if (activeAlbum.accentColor === "yellow") {
+                        accentText = "text-yellow-400 group-hover:text-yellow-300";
+                        bgAccent = "bg-yellow-600 hover:bg-yellow-500 text-slate-950";
+                        ringColor = "group-hover:border-yellow-500/40";
+                      } else if (activeAlbum.accentColor === "fuchsia") {
+                        accentText = "text-fuchsia-400 group-hover:text-fuchsia-300";
+                        bgAccent = "bg-fuchsia-600 hover:bg-fuchsia-500 text-white";
+                        ringColor = "group-hover:border-fuchsia-500/40";
+                      } else if (activeAlbum.accentColor === "amber") {
+                        accentText = "text-amber-400 group-hover:text-amber-300";
+                        bgAccent = "bg-amber-600 hover:bg-amber-500 text-slate-950";
+                        ringColor = "group-hover:border-amber-500/40";
+                      } else if (activeAlbum.accentColor === "emerald") {
+                        accentText = "text-emerald-400 group-hover:text-emerald-300";
+                        bgAccent = "bg-emerald-600 hover:bg-emerald-500 text-white";
+                        ringColor = "group-hover:border-emerald-500/40";
+                      }
 
-                      <div className="space-y-1.5">
-                        {activeAlbum.tracks.map((track) => {
-                          const TrackIcon = { Flame, Sun, Sparkles, Shield, Droplet, Compass, Music, Activity, Timer, Bookmark, Smile, Heart, Zap }[track.icon] || Heart;
-                          const isInPlaylist = playlist.some(p => p.id === track.id);
-
-                          return (
+                      return (
+                        <>
+                          <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5 text-center shrink-0">
+                            <h4 className={cn("text-[10px] font-black uppercase tracking-widest mb-1", accentText)}>
+                              {activeAlbum.name}
+                            </h4>
+                            <p className="text-[10px] text-slate-400 leading-relaxed italic mb-3 font-medium">
+                              &ldquo;{activeAlbum.description}&rdquo;
+                            </p>
                             <button
-                              key={track.id}
-                              onClick={() => addAlbumSingleVideo(track.id)}
-                              disabled={isInPlaylist}
+                              onClick={() => { addAlbumSequence(activeAlbum.id); setIsOceanLoveOpen(false); }}
                               className={cn(
-                                "w-full flex items-start gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all text-left group",
-                                isInPlaylist && "opacity-45 hover:bg-white/5 border-transparent cursor-not-allowed",
-                                ringColor
+                                "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2",
+                                bgAccent
                               )}
                             >
-                              <div className="w-8.5 h-8.5 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                                <TrackIcon className={cn("w-4 h-4 transition-transform group-hover:scale-110", accentText)} />
-                              </div>
-                              <div className="min-w-0 flex-grow">
-                                <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate mb-0.5">{track.title}</p>
-                                <p className="text-[9px] text-slate-500 line-clamp-1">{track.desc}</p>
-                              </div>
-                              <div className="shrink-0 flex items-center h-8.5">
-                                {isInPlaylist ? (
-                                  <span className="text-[8px] font-extrabold tracking-widest text-slate-500 uppercase px-1.5 py-0.5 bg-white/5 rounded">ADDED</span>
-                                ) : (
-                                  <span className={cn("text-[8px] font-extrabold tracking-widest uppercase px-1.5 py-0.5 rounded bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity", accentText)}>ADD</span>
-                                )}
-                              </div>
+                              <ListVideo className="w-4 h-4" />
+                              Queue Full Album ({activeAlbum.tracks?.length || 0} Tracks)
                             </button>
-                          );
-                        })}
-                      </div>
-                    </>
-                  );
-                })()}
+                          </div>
+
+                          <div className="space-y-1.5 pb-4">
+                            {activeAlbum.tracks.map((track) => {
+                              const TrackIcon = { Flame, Sun, Sparkles, Shield, Droplet, Compass, Music, Activity, Timer, Bookmark, Smile, Heart, Zap }[track.icon] || Heart;
+                              const isInPlaylist = playlist.some(p => p.id === track.id);
+
+                              return (
+                                <button
+                                  key={track.id}
+                                  onClick={() => addAlbumSingleVideo(track.id)}
+                                  disabled={isInPlaylist}
+                                  className={cn(
+                                    "w-full flex items-start gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all text-left group",
+                                    isInPlaylist && "opacity-45 hover:bg-white/5 border-transparent cursor-not-allowed",
+                                    ringColor
+                                  )}
+                                >
+                                  <div className="w-8.5 h-8.5 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                    <TrackIcon className={cn("w-4 h-4 transition-transform group-hover:scale-110", accentText)} />
+                                  </div>
+                                  <div className="min-w-0 flex-grow">
+                                    <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate mb-0.5">{track.title}</p>
+                                    <p className="text-[9px] text-slate-500 line-clamp-1">{track.desc}</p>
+                                  </div>
+                                  <div className="shrink-0 flex items-center h-8.5">
+                                    {isInPlaylist ? (
+                                      <span className="text-[8px] font-extrabold tracking-widest text-slate-500 uppercase px-1.5 py-0.5 bg-white/5 rounded">ADDED</span>
+                                    ) : (
+                                      <span className={cn("text-[8px] font-extrabold tracking-widest uppercase px-1.5 py-0.5 rounded bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity", accentText)}>ADD</span>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+
               </div>
+
             </motion.div>
           </>
         )}
@@ -1714,7 +1903,7 @@ export default function App() {
                 ) : (
                   playlist.map((video, idx) => (
                     <div key={`${video.id}-${idx}`} className="flex items-center gap-3 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
-                      <img src={`https://img.youtube.com/vi/${getYoutubeId(video.url)}/default.jpg`} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                      <img src={getVideoThumbnail(video)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
                       <div className="min-w-0 flex-grow">
                         <p className="text-[10px] font-bold text-white truncate">{video.title}</p>
                       </div>

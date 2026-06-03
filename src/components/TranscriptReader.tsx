@@ -132,14 +132,23 @@ function formatTranscriptLocally(title: string, rawText: string): string {
 }
 
 export default function TranscriptReader({ videos, activeVideoId, setActiveVideoId, onClose }: TranscriptReaderProps) {
-  const [selectedVideoId, setSelectedVideoId] = useState<string>(activeVideoId || 'FkWBsufZvz8');
+  const [availableIds, setAvailableIds] = useState<string[]>(['FkWBsufZvz8', 'b-LzFHT3Y2M']);
+  const [selectedVideoId, setSelectedVideoId] = useState<string>(() => {
+    if (activeVideoId && ['FkWBsufZvz8', 'b-LzFHT3Y2M'].includes(activeVideoId)) {
+      return activeVideoId;
+    }
+    return 'FkWBsufZvz8';
+  });
   const [transcript, setTranscript] = useState<TranscriptData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   // Customization controls
   const [fontSize, setFontSize] = useState<'sm' | 'base' | 'md' | 'lg' | 'xl'>('base');
-  const [paperTheme, setPaperTheme] = useState<'white' | 'sepia' | 'dark' | 'slate'>('sepia');
+  const [paperTheme, setPaperTheme] = useState<'white' | 'sepia' | 'dark' | 'slate'>(() => {
+    const act = document.documentElement.getAttribute('data-theme') || 'default';
+    return act === 'white' ? 'white' : 'sepia';
+  });
   const [subSearchQuery, setSubSearchQuery] = useState('');
   const [copied, setCopied] = useState(false);
   
@@ -147,8 +156,6 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
   const [inputRawText, setInputRawText] = useState('');
   const [showFormatterModal, setShowFormatterModal] = useState(false);
   const [formattingProgress, setFormattingProgress] = useState(false);
-
-  const [availableIds, setAvailableIds] = useState<string[]>([]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const readingAreaRef = useRef<HTMLDivElement>(null);
@@ -175,12 +182,16 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
     };
   }, []);
 
-  // Auto-align selected video with App's active video
+  // Auto-align selected video with App's active video - fallback to first available if not found
   useEffect(() => {
     if (activeVideoId) {
-      setSelectedVideoId(activeVideoId);
+      if (availableIds.includes(activeVideoId)) {
+        setSelectedVideoId(activeVideoId);
+      } else if (availableIds.length > 0) {
+        setSelectedVideoId(availableIds[0]);
+      }
     }
-  }, [activeVideoId]);
+  }, [activeVideoId, availableIds]);
 
   // Load transcript data from static json files dynamically
   useEffect(() => {
@@ -255,10 +266,12 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
 
   // List of videos with metadata highlighting transcripts status
   const searchableVideos = useMemo(() => {
-    return videos.map(v => ({
-      ...v,
-      hasTranscript: availableIds.includes(v.id)
-    }));
+    return videos
+      .filter(v => availableIds.includes(v.id))
+      .map(v => ({
+        ...v,
+        hasTranscript: true
+      }));
   }, [videos, availableIds]);
 
   // Handle Keyword Highlight and rendering for custom Markdown
@@ -398,18 +411,18 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
   const currentSelection = videos.find(v => v.id === selectedVideoId);
 
   return (
-    <div ref={containerRef} className="flex flex-col lg:flex-row fixed inset-0 w-screen h-screen backdrop-blur-3xl bg-[#090d16]/98 overflow-hidden z-50 animate-in fade-in duration-200">
+    <div ref={containerRef} className="flex flex-col lg:flex-row fixed inset-0 w-screen h-screen backdrop-blur-3xl bg-theme-bg/98 overflow-hidden z-50 animate-in fade-in duration-200">
       
       {/* Side Selector column */}
-      <div className="w-full lg:w-80 flex flex-col border-r border-white/5 h-1/3 lg:h-full shrink-0 bg-transparent p-5">
+      <div className="w-full lg:w-80 flex flex-col border-r border-theme-border h-1/3 lg:h-full shrink-0 bg-transparent p-5">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2 text-indigo-400">
+          <div className="flex items-center gap-2 text-theme-accent">
             <BookOpen className="w-4 h-4" />
-            <h3 className="text-xs font-black uppercase tracking-widest text-white">Pradeep Library</h3>
+            <h3 className="text-xs font-black uppercase tracking-widest text-theme-text">Readings Lab</h3>
           </div>
           <button 
             onClick={onClose}
-            className="p-1 px-2.5 bg-white/5 hover:bg-rose-500/10 text-slate-400 hover:text-rose-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all"
+            className="p-1 px-2.5 bg-theme-surface hover:bg-rose-500/10 text-theme-text-muted hover:text-rose-500 hover:border-rose-500/20 border border-transparent text-[10px] font-bold uppercase tracking-widest rounded-lg transition-all"
           >
             Exit Reader
           </button>
@@ -423,8 +436,8 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
               onClick={() => setSelectedVideoId(video.id)}
               className={`w-full text-left p-2.5 rounded-xl border flex items-start gap-3 transition-all ${
                 selectedVideoId === video.id
-                  ? 'bg-indigo-600/20 border-indigo-500/40 text-white'
-                  : 'bg-white/5 border-transparent hover:bg-white/10 text-slate-400'
+                  ? 'bg-theme-accent/20 border-theme-accent text-theme-text shadow-sm'
+                  : 'bg-theme-surface border-transparent hover:bg-theme-surface/80 text-theme-text-muted'
               }`}
             >
               <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-slate-950 relative">
@@ -435,10 +448,10 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
                 />
               </div>
               <div className="min-w-0 flex-grow">
-                <p className={`text-[10px] font-extrabold truncate uppercase ${selectedVideoId === video.id ? 'text-indigo-400' : 'text-slate-500'}`}>
-                  {video.hasTranscript ? '📖 Reading Ready' : '🕯️ Audio Only'}
+                <p className={`text-[10px] font-extrabold truncate uppercase ${selectedVideoId === video.id ? 'text-theme-accent' : 'text-theme-text-muted/65'}`}>
+                  📖 Reading Ready
                 </p>
-                <h4 className={`text-xs font-semibold leading-tight truncate mt-0.5 ${selectedVideoId === video.id ? 'text-white' : 'text-slate-300'}`}>
+                <h4 className={`text-xs font-semibold leading-tight mt-0.5 ${selectedVideoId === video.id ? 'text-theme-text font-bold' : 'text-theme-text/80'}`}>
                   {video.title}
                 </h4>
               </div>
@@ -448,44 +461,44 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
       </div>
 
       {/* Main Reading View */}
-      <div className="flex-grow h-2/3 lg:h-full flex flex-col bg-slate-950/20 relative">
+      <div className="flex-grow h-2/3 lg:h-full flex flex-col bg-theme-bg/10 relative">
         
         {/* Top toolbar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between p-4 px-6 border-b border-white/5 gap-4 shrink-0 bg-slate-900/30">
+        <div className="flex flex-col sm:flex-row items-center justify-between p-4 px-6 border-b border-theme-border gap-4 shrink-0 bg-theme-surface/30">
           <div className="flex items-center gap-3 w-full sm:w-auto">
             <button 
               onClick={() => {
                 setActiveVideoId(selectedVideoId);
                 onClose();
               }}
-              className="p-2 border border-white/10 hover:bg-white/5 text-slate-300 rounded-xl transition-all flex items-center justify-center"
+              className="p-2 border border-theme-border hover:bg-theme-surface text-theme-text rounded-xl transition-all flex items-center justify-center bg-theme-surface/50"
               title="Play Video Companion"
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="w-4 h-4 text-theme-accent" />
             </button>
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-white truncate leading-tight">
+              <h2 className="text-sm font-bold text-theme-text truncate leading-tight">
                 {currentSelection?.title || 'Reading Panel'}
               </h2>
-              <span className="text-[10px] text-slate-500 font-mono">ID: {selectedVideoId}</span>
+              <span className="text-[10px] text-theme-text-muted/60 font-mono">ID: {selectedVideoId}</span>
             </div>
           </div>
 
           <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
             {/* Search terms within text */}
             <div className="relative w-44">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-theme-text-muted/50" />
               <input 
                 type="text"
                 placeholder="Find in text..."
                 value={subSearchQuery}
                 onChange={(e) => setSubSearchQuery(e.target.value)}
-                className="w-full bg-white/5 text-xs py-1 pl-7 pr-3 rounded-lg border border-white/10 focus:outline-none focus:border-indigo-500 transition-colors placeholder:text-slate-600"
+                className="w-full bg-theme-surface text-xs py-1 pl-7 pr-3 rounded-lg border border-theme-border focus:outline-none focus:border-theme-accent transition-colors placeholder:text-theme-text-muted/40 text-theme-text"
               />
               {subSearchQuery && (
                 <button 
                   onClick={() => setSubSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-theme-text"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -493,7 +506,7 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
             </div>
 
             {/* Config Panel */}
-            <div className="flex items-center gap-1.5 border-l border-white/10 pl-4 shrink-0">
+            <div className="flex items-center gap-1.5 border-l border-theme-border pl-4 shrink-0">
               {/* Paper Theme Selectors */}
               {(['sepia', 'white', 'slate', 'dark'] as const).map((theme) => {
                 const colorMap = {
@@ -506,15 +519,15 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
                   <button
                     key={theme}
                     onClick={() => setPaperTheme(theme)}
-                    className={`w-4 h-4 rounded-full ${colorMap[theme]} border transition-all ${
-                      paperTheme === theme ? 'ring-2 ring-indigo-500 ring-offset-2 ring-offset-slate-900 scale-110' : 'opacity-60'
+                    className={`w-4 h-4 rounded-full ${colorMap[theme]} border border-theme-border/50 transition-all ${
+                      paperTheme === theme ? 'ring-2 ring-theme-accent ring-offset-2 ring-offset-theme-bg scale-110 shadow-sm' : 'opacity-60 hover:opacity-100'
                     }`}
                     title={`${theme} theme`}
                   />
                 );
               })}
 
-              <div className="w-px h-4 bg-white/10 mx-2" />
+              <div className="w-px h-4 bg-theme-border mx-2" />
 
               {/* Font Size Selector */}
               <button
@@ -524,9 +537,9 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
                   const nextIdx = (curIdx + 1) % sizes.length;
                   setFontSize(sizes[nextIdx]);
                 }}
-                className="p-1 px-2.5 bg-white/5 border border-white/10 text-[10px] text-slate-300 hover:text-white rounded-lg transition-all flex items-center gap-1 font-bold tracking-wider"
+                className="p-1 px-2.5 bg-theme-surface border border-theme-border text-[10px] text-theme-text-muted hover:text-theme-text rounded-lg transition-all flex items-center gap-1 font-bold tracking-wider"
               >
-                <Type className="w-3 h-3" />
+                <Type className="w-3 h-3 text-theme-accent" />
                 {fontSize.toUpperCase()}
               </button>
             </div>
@@ -537,34 +550,34 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
         <div className="flex-grow overflow-y-auto p-6 flex justify-center custom-scrollbar">
           {loading ? (
             <div className="flex flex-col items-center justify-center">
-              <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin mb-4" />
-              <p className="text-xs text-slate-500 uppercase tracking-widest font-mono">Opening spiritual records...</p>
+              <div className="w-8 h-8 rounded-full border-2 border-theme-accent border-t-transparent animate-spin mb-4" />
+              <p className="text-xs text-theme-text-muted uppercase tracking-widest font-mono">Opening spiritual records...</p>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center text-rose-400/90 text-center max-w-sm mt-12 bg-rose-500/5 p-6 rounded-2xl border border-rose-500/10">
+            <div className="flex flex-col items-center justify-center text-rose-500/90 text-center max-w-sm mt-12 bg-rose-500/5 p-6 rounded-2xl border border-rose-500/10">
               <X className="w-8 h-8 mb-3 text-rose-500" />
               <p className="text-sm font-semibold">{error}</p>
               <button 
                 onClick={() => setSelectedVideoId('FkWBsufZvz8')}
-                className="mt-4 text-xs font-bold text-indigo-400 uppercase tracking-widest"
+                className="mt-4 text-xs font-bold text-theme-accent uppercase tracking-widest"
               >
                 Go to Sample
               </button>
             </div>
           ) : !transcript ? (
             // Formatter Screen placeholder when there is no transcript available for selected video
-            <div className="flex flex-col items-center justify-center max-w-md text-center mt-12 bg-white/2 border border-white/5 p-8 rounded-[2rem] mx-4 h-fit backdrop-blur-md">
-              <div className="w-12 h-12 bg-indigo-600/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center mb-5 text-indigo-400">
+            <div className="flex flex-col items-center justify-center max-w-md text-center mt-12 bg-theme-surface border border-theme-border p-8 rounded-[2rem] mx-4 h-fit backdrop-blur-md">
+              <div className="w-12 h-12 bg-theme-accent/10 border border-theme-accent/20 rounded-2xl flex items-center justify-center mb-5 text-theme-accent">
                 <Sparkles className="w-6 h-6 animate-pulse" />
               </div>
-              <h3 className="text-sm font-black uppercase tracking-widest text-indigo-400">Custom Reading Lab</h3>
-              <p className="text-xs text-slate-300 leading-relaxed mt-2 scale-95">
+              <h3 className="text-sm font-black uppercase tracking-widest text-theme-accent">Custom Reading Lab</h3>
+              <p className="text-xs text-theme-text-muted leading-relaxed mt-2 scale-95">
                 There is currently no preloaded transcript for this specific talk. However, you can format any raw lecture text or paste captions directly using our offline formatter instantly!
               </p>
               
               <button 
                 onClick={() => setShowFormatterModal(true)}
-                className="mt-6 w-full py-3 bg-gradient-to-r from-indigo-600 to-fuchsia-600 text-white font-bold text-[11px] rounded-xl hover:from-indigo-500 hover:to-fuchsia-500 transition-all shadow-xl shadow-indigo-600/20 hover:scale-[1.01]"
+                className="mt-6 w-full py-3 bg-theme-accent text-white font-bold text-[11px] rounded-xl hover:opacity-90 transition-all shadow-md hover:scale-[1.01]"
               >
                 📚 Formatter & Paste Tool
               </button>
@@ -573,16 +586,16 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
             // Full Reading view
             <div className="w-full max-w-3xl flex flex-col h-full">
               {/* Meta stats bar */}
-              <div className="flex items-center gap-4 text-slate-500 text-[10px] uppercase font-mono tracking-wider mb-6 shrink-0 border-b border-white/5 pb-4">
-                <span>📚 Word count: <strong className="text-slate-300 font-bold">{transcript.wordCount}</strong></span>
+              <div className="flex items-center gap-4 text-theme-text-muted/80 text-[10px] uppercase font-mono tracking-wider mb-6 shrink-0 border-b border-theme-border pb-4">
+                <span>📚 Word count: <strong className="text-theme-text font-bold">{transcript.wordCount}</strong></span>
                 <span>•</span>
-                <span>⏳ Reading: <strong className="text-slate-300 font-bold">{Math.round(transcript.wordCount / 180)} mins</strong></span>
+                <span>⏳ Reading: <strong className="text-theme-text font-bold">{Math.round(transcript.wordCount / 180)} mins</strong></span>
                 <span>•</span>
                 <span className="hidden sm:inline">Attuned successfully</span>
                 <div className="ml-auto flex gap-2">
                   <button 
                     onClick={handleCopyText}
-                    className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors"
+                    className="flex items-center gap-1 text-theme-text-muted hover:text-theme-text transition-colors"
                   >
                     {copied ? <Check className="w-3" /> : <Copy className="w-3" />}
                     {copied ? 'Copied' : 'Copy'}
@@ -602,11 +615,11 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
       {/* Manual Paste & Format Modal Dialog overlay */}
       {showFormatterModal && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-slate-900 border border-white/10 rounded-3xl w-full max-w-2xl p-6 flex flex-col max-h-[85vh] shadow-2xl animate-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between mb-4 border-b border-white/5 pb-3">
-              <div className="flex items-center gap-2 text-indigo-400">
+          <div className="bg-theme-bg border border-theme-border rounded-3xl w-full max-w-2xl p-6 flex flex-col max-h-[85vh] shadow-2xl animate-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between mb-4 border-b border-theme-border pb-3">
+              <div className="flex items-center gap-2 text-theme-accent">
                 <Sparkles className="w-5 h-5" />
-                <h3 className="text-sm font-black uppercase tracking-widest text-white">Local Spiritual Formatter</h3>
+                <h3 className="text-sm font-black uppercase tracking-widest text-theme-text">Local Spiritual Formatter</h3>
               </div>
               <button 
                 onClick={() => setShowFormatterModal(false)}
@@ -617,7 +630,7 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
             </div>
 
             <div className="flex-grow overflow-y-auto space-y-4 mb-5 pr-1">
-              <p className="text-[11px] text-slate-400 leading-relaxed">
+              <p className="text-[11px] text-theme-text-muted/80 leading-relaxed">
                 Copy and paste the automated captions from any YouTube video desktop watch page (click 3 dots below title &gt; Show Transcript, select &amp; copy all text), or enter your own spiritual notes. This offline tool structures it into elegant, highly readable paragraphs instantly.
               </p>
 
@@ -625,21 +638,21 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
                 placeholder="Paste the raw subtitles here... (e.g. 'welcome to this session today we will have deep peaceful meditation on divine love...')"
                 value={inputRawText}
                 onChange={(e) => setInputRawText(e.target.value)}
-                className="w-full h-64 bg-slate-950 text-slate-300 font-mono text-xs p-4 rounded-2xl border border-white/5 focus:outline-none focus:border-indigo-500 transition-colors resize-none placeholder:text-slate-700"
+                className="w-full h-64 bg-theme-surface text-theme-text font-mono text-xs p-4 rounded-2xl border border-theme-border focus:outline-none focus:border-theme-accent transition-colors resize-none placeholder:text-theme-text-muted/40"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-white/5 pt-4 shrink-0">
+            <div className="flex items-center justify-end gap-3 border-t border-theme-border pt-4 shrink-0">
               <button
                 onClick={() => setShowFormatterModal(false)}
-                className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all"
+                className="px-4 py-2 bg-theme-surface hover:bg-theme-surface/80 text-theme-text-muted hover:text-theme-text text-xs font-bold uppercase tracking-wider rounded-xl transition-all border border-theme-border"
               >
                 Cancel
               </button>
               <button
                 onClick={handleFormatLocally}
                 disabled={formattingProgress || !inputRawText.trim()}
-                className={`px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-fuchsia-600 hover:from-indigo-500 hover:to-fuchsia-500 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 shadow-lg ${
+                className={`px-5 py-2.5 bg-theme-accent hover:opacity-90 text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 shadow-lg ${
                   (!inputRawText.trim() || formattingProgress) && 'opacity-40 cursor-not-allowed'
                 }`}
               >
