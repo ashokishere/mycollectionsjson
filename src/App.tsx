@@ -44,7 +44,8 @@ import {
   Check,
   CheckSquare,
   BookOpen,
-  Map
+  Map,
+  GripVertical
 } from 'lucide-react';
 import { initialVideos, type Video } from './data/videos';
 import messagesData from './data/messages.json';
@@ -81,10 +82,162 @@ const VIRTUAL_TOURS: Video[] = [
   }
 ];
 
+// Static Affirmations data
+const AFFIRMATIONS_TOURS: Video[] = [
+  {
+    id: "1hEhGN4PVo4",
+    title: "“I Give You My Soul Call” | A Guided Meditation",
+    url: "https://www.youtube.com/shorts/1hEhGN4PVo4",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "AR2ErMaUXwQ",
+    title: "Stillness: Basic Principle of Meditation",
+    url: "https://www.youtube.com/shorts/AR2ErMaUXwQ",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "RfPTtczIcX0",
+    title: "Guided Meditation on Peace",
+    url: "https://www.youtube.com/shorts/RfPTtczIcX0",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "WUhOL9qUBXg",
+    title: "Guided Affirmation on Psychological Success",
+    url: "https://www.youtube.com/shorts/WUhOL9qUBXg",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "CHdjOkUbBNs",
+    title: "“The Cosmic Sphere of Love” | An Affirmation by Paramahansa Yogananda",
+    url: "https://www.youtube.com/shorts/CHdjOkUbBNs",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "F69o_9IMbmA",
+    title: "Cultivating Gratitude in Daily Life",
+    url: "https://www.youtube.com/shorts/F69o_9IMbmA",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "GZ2zgmN52WI",
+    title: "A Simple Technique to Overcome Fear",
+    url: "https://www.youtube.com/shorts/GZ2zgmN52WI",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "6fGRQiTzMHY",
+    title: "Guided Affirmation on Living Fearlessly",
+    url: "https://www.youtube.com/shorts/6fGRQiTzMHY",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "-kwNgpLEwr0",
+    title: "Yogananda Said: God Is Already Yours",
+    url: "https://www.youtube.com/shorts/-kwNgpLEwr0",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "aSbehuyZc2g",
+    title: "Divine Power of Materializing Our Thoughts",
+    url: "https://www.youtube.com/shorts/aSbehuyZc2g",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "_g84PpyH0EY",
+    title: "Guided Meditation on Expanding Love",
+    url: "https://www.youtube.com/shorts/_g84PpyH0EY",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "nBAoVX9hcKg",
+    title: "Guided Affirmation on Inner Peace",
+    url: "https://www.youtube.com/shorts/nBAoVX9hcKg",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "zviwboz_WkQ",
+    title: "Change Your Life by Whispering to God",
+    url: "https://www.youtube.com/shorts/zviwboz_WkQ",
+    tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "7KpZ3zQKIAQ",
+    title: "“The Eternal Life of God” | An Affirmation by Paramahansa Yogananda",
+    url: "https://www.youtube.com/shorts/7KpZ3zQKIAQ",
+    tags: ["Affirmations", "Shorts"]
+  }
+];
+
+// Static Spiritual Wisdom teachings data
+const WISDOM_TEACHINGS: Video[] = [
+  {
+    id: "v6WX4LXOyZU",
+    title: "Paramahansa Yogananda on the Dream-Nature of the World",
+    url: "https://www.youtube.com/watch?v=v6WX4LXOyZU",
+    tags: ["Wisdom", "Teachings"]
+  },
+  {
+    id: "aHPNZdAFLdA",
+    title: "Paramahansa Yogananda on Kriya Yoga — The Greatest Proof of God",
+    url: "https://www.youtube.com/watch?v=aHPNZdAFLdA",
+    tags: ["Wisdom", "Teachings"]
+  },
+  {
+    id: "7MuoGZ0yx20",
+    title: "Paramahansa Yogananda on Kriya Yoga — The Key to Heaven",
+    url: "https://www.youtube.com/watch?v=7MuoGZ0yx20",
+    tags: ["Wisdom", "Teachings"]
+  },
+  {
+    id: "ZXPdmWX8VB4",
+    title: "Paramahansa Yogananda on Thinking of Nothing But God for One Day",
+    url: "https://www.youtube.com/watch?v=ZXPdmWX8VB4",
+    tags: ["Wisdom", "Teachings"]
+  },
+  {
+    id: "l2KMm9mxTFo",
+    title: "Paramahansa Yogananda on Finding Happiness Within",
+    url: "https://www.youtube.com/watch?v=l2KMm9mxTFo",
+    tags: ["Wisdom", "Teachings"]
+  },
+  {
+    id: "NShLqqJNBKQ",
+    title: "Paramahansa Yogananda on Karma",
+    url: "https://www.youtube.com/watch?v=NShLqqJNBKQ",
+    tags: ["Wisdom", "Teachings"]
+  },
+  {
+    id: "rdc5khxI0Hw",
+    title: "Paramahansa Yogananda on How to Destroy Suffering by Its Roots",
+    url: "https://www.youtube.com/watch?v=rdc5khxI0Hw",
+    tags: ["Wisdom", "Teachings"]
+  },
+  {
+    id: "krd41uFL2s4",
+    title: "Paramahansa Yogananda on Loving God",
+    url: "https://www.youtube.com/watch?v=krd41uFL2s4",
+    tags: ["Wisdom", "Teachings"]
+  }
+];
+
 // Helper to extract YouTube ID from URL
 const getYoutubeId = (urlPath: string) => {
   const url = urlPath.trim();
   if (url.length === 11 && !url.includes('/') && !url.includes('.') && !url.includes(':')) return url;
+  
+  // Support YouTube Shorts: extract the segment right after "/shorts/"
+  const shortsIndex = url.indexOf('/shorts/');
+  if (shortsIndex !== -1) {
+    const startIdx = shortsIndex + 8;
+    const segments = url.substring(startIdx).split(/[\?\#\&]/);
+    const potentialId = segments[0];
+    if (potentialId.length === 11) {
+      return potentialId;
+    }
+  }
+
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
   return (match && match[2].length === 11) ? match[2] : null;
@@ -109,13 +262,25 @@ const getVideoThumbnail = (video: Video) => {
 };
 
 export default function App() {
-  const [videos, setVideos] = useState<Video[]>(() => [...VIRTUAL_TOURS, ...initialVideos]);
+  const [videos, setVideos] = useState<Video[]>(() => {
+    const all = [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...initialVideos];
+    const seen = new Set<string>();
+    return all.filter(v => {
+      if (seen.has(v.id)) return false;
+      seen.add(v.id);
+      return true;
+    });
+  });
   const [isVirtualToursOpen, setIsVirtualToursOpen] = useState(false);
+  const [isAffirmationsOpen, setIsAffirmationsOpen] = useState(false);
+  const [isWisdomOpen, setIsWisdomOpen] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('Compassion');
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const [playerInitId, setPlayerInitId] = useState<string | null>(null);
   const [playlist, setPlaylist] = useState<Video[]>([]);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [isDataPanelOpen, setIsDataPanelOpen] = useState(false);
   const [isTopicOpen, setIsTopicOpen] = useState(false);
   const [topicSearchQuery, setTopicSearchQuery] = useState('');
@@ -145,6 +310,50 @@ export default function App() {
   useEffect(() => {
     setVisibleCount(24);
   }, [searchQuery, selectedTags]);
+
+  // Prefetch list of available transcripts on app startup for instant load
+  useEffect(() => {
+    const prefetchAvailable = async () => {
+      if ((window as any).__cachedAvailableIds) return;
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL || '/'}transcripts/available.json`);
+        if (response.ok) {
+          const ids = await response.json();
+          if (Array.isArray(ids)) {
+            (window as any).__cachedAvailableIds = ids;
+          }
+        }
+      } catch (err) {
+        // Silent error for optional prefetch
+      }
+    };
+    prefetchAvailable();
+  }, []);
+
+  // Prefetch the active video's transcript in the background so it loads instantly when clicked!
+  useEffect(() => {
+    if (!activeVideoId) return;
+
+    const prefetchTranscript = async () => {
+      if (!(window as any).__transcriptCache) {
+        (window as any).__transcriptCache = {};
+      }
+      const cache = (window as any).__transcriptCache;
+      if (cache[activeVideoId]) return;
+
+      try {
+        const response = await fetch(`${import.meta.env.BASE_URL || '/'}transcripts/${activeVideoId}.json`);
+        if (response.ok) {
+          const data = await response.json();
+          cache[activeVideoId] = data;
+        }
+      } catch (err) {
+        // Silent error for optional prefetch
+      }
+    };
+
+    prefetchTranscript();
+  }, [activeVideoId]);
 
   const petalConfigs = useMemo(() => {
     if (!showPetals) return [];
@@ -468,6 +677,48 @@ export default function App() {
     setPlaylist(prev => prev.filter(v => v.id !== id));
   };
 
+  const addAllAffirmationsToPlaylist = () => {
+    setPlaylist(prev => {
+      const updated = [...prev];
+      let addedAny = false;
+      AFFIRMATIONS_TOURS.forEach(video => {
+        if (!updated.some(v => v.id === video.id)) {
+          updated.push(video);
+          addedAny = true;
+        }
+      });
+      return updated;
+    });
+  };
+
+  const addAllPilgrimagesToPlaylist = () => {
+    setPlaylist(prev => {
+      const updated = [...prev];
+      let addedAny = false;
+      VIRTUAL_TOURS.forEach(video => {
+        if (!updated.some(v => v.id === video.id)) {
+          updated.push(video);
+          addedAny = true;
+        }
+      });
+      return updated;
+    });
+  };
+
+  const addAllWisdomToPlaylist = () => {
+    setPlaylist(prev => {
+      const updated = [...prev];
+      let addedAny = false;
+      WISDOM_TEACHINGS.forEach(video => {
+        if (!updated.some(v => v.id === video.id)) {
+          updated.push(video);
+          addedAny = true;
+        }
+      });
+      return updated;
+    });
+  };
+
   const movePlaylistItem = (index: number, direction: 'up' | 'down') => {
     setPlaylist(prev => {
       const updated = [...prev];
@@ -481,6 +732,43 @@ export default function App() {
       localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
       return updated;
     });
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragOverIndex !== index) {
+      setDragOverIndex(index);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+    setPlaylist(prev => {
+      const updated = [...prev];
+      const [movedItem] = updated.splice(draggedIndex, 1);
+      updated.splice(index, 0, movedItem);
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+      return updated;
+    });
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   const playlistRef = useRef<Video[]>([]);
@@ -1308,15 +1596,25 @@ export default function App() {
                     initial={{ opacity: 0, x: 20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, scale: 0.95 }}
+                    draggable
+                    onDragStart={(e: any) => handleDragStart(e, index)}
+                    onDragOver={(e: any) => handleDragOver(e, index)}
+                    onDragEnd={() => handleDragEnd()}
+                    onDrop={(e: any) => handleDrop(e, index)}
                     className={cn(
-                      "group relative flex items-center gap-3 p-2 rounded-2xl border transition-all cursor-pointer overflow-hidden",
+                      "group relative flex items-center gap-2 p-2 rounded-2xl border transition-all cursor-grab active:cursor-grabbing overflow-hidden",
                       activeVideoId === video.id 
                         ? "bg-indigo-600/20 border-indigo-500/50" 
-                        : "bg-white/5 border-transparent hover:border-white/10"
+                        : "bg-white/5 border-transparent hover:border-white/10",
+                      draggedIndex === index && "opacity-40 border-dashed border-indigo-500/40 bg-slate-900/50 scale-[0.97]",
+                      dragOverIndex === index && draggedIndex !== index && "border-indigo-400/80 bg-indigo-500/10 scale-[1.02] shadow-lg shadow-indigo-500/5"
                     )}
                     onClick={() => setActiveVideoId(video.id)}
                   >
-                    <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden bg-slate-900 border border-white/5">
+                    <div className="flex items-center justify-center p-0.5" title="Drag to reorder">
+                      <GripVertical className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 transition-colors" />
+                    </div>
+                    <div className="w-10 h-10 flex-shrink-0 rounded-lg overflow-hidden bg-slate-900 border border-white/5">
                       <img 
                         src={getVideoThumbnail(video)} 
                         alt="" 
@@ -1533,7 +1831,7 @@ export default function App() {
               className="flex flex-col gap-3"
             >
               <button
-                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); setIsVirtualToursOpen(false); }}
+                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isFavoritesOpen 
@@ -1546,7 +1844,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); }}
+                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isOceanLoveOpen 
@@ -1559,7 +1857,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsVirtualToursOpen(!isVirtualToursOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsWorkspaceOpen(false); }}
+                onClick={() => { setIsVirtualToursOpen(!isVirtualToursOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsWorkspaceOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isVirtualToursOpen 
@@ -1572,7 +1870,33 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsVirtualToursOpen(false); }}
+                onClick={() => { setIsAffirmationsOpen(!isAffirmationsOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsWisdomOpen(false); }}
+                className={cn(
+                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
+                  isAffirmationsOpen 
+                    ? "bg-emerald-600 text-white border-emerald-400 scale-110 animate-pulse-slow" 
+                    : "bg-white/10 border-white/20 text-emerald-400/80 hover:bg-white/20 hover:text-emerald-400"
+                )}
+                title="Affirmations"
+              >
+                <Sparkles className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => { setIsWisdomOpen(!isWisdomOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); }}
+                className={cn(
+                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
+                  isWisdomOpen 
+                    ? "bg-indigo-600 text-white border-indigo-400 scale-110" 
+                    : "bg-white/10 border-white/20 text-indigo-400/85 hover:bg-white/20 hover:text-indigo-400"
+                )}
+                title="Spiritual Wisdom"
+              >
+                <BookOpen className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWorkspaceOpen 
@@ -1657,30 +1981,266 @@ export default function App() {
                 </div>
                 <button onClick={() => setIsVirtualToursOpen(false)}><X className="w-4 h-4 text-slate-500" /></button>
               </div>
+
+              {/* Actions Subbar */}
+              <div className="px-5 py-2.5 bg-white/[0.02] border-b border-white/10 flex items-center justify-between shrink-0">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                  {VIRTUAL_TOURS.length} Tours
+                </span>
+                <button
+                  onClick={addAllPilgrimagesToPlaylist}
+                  className="flex items-center gap-1 text-[9px] font-bold text-amber-500 hover:text-amber-400 transition-colors uppercase tracking-widest bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded-lg border border-amber-500/20 active:scale-[0.98]"
+                >
+                  <PlusCircle className="w-3 h-3" />
+                  Add All to Workspace
+                </button>
+              </div>
+
               <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
-                {VIRTUAL_TOURS.map((tour) => (
-                  <button
-                    key={tour.id}
-                    onClick={() => { setActiveVideoId(tour.id); setIsVirtualToursOpen(false); triggerPetals(); }}
-                    className={cn(
-                      "w-full flex items-start gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-amber-600/20 hover:border-amber-500/30 transition-all text-left",
-                      activeVideoId === tour.id && "bg-amber-600/30 border-amber-500/50"
-                    )}
-                  >
-                    <div className="w-12 h-12 rounded-xl bg-slate-950 overflow-hidden shrink-0 relative border border-white/10">
-                      <img 
-                        src={getVideoThumbnail(tour)} 
-                        alt="" 
-                        className="w-full h-full object-cover" 
-                      />
-                      <div className="absolute inset-0 bg-black/10" />
+                {VIRTUAL_TOURS.map((tour) => {
+                  const isInPlaylist = playlist.some(p => p.id === tour.id);
+                  return (
+                    <div
+                      key={tour.id}
+                      onClick={() => { setActiveVideoId(tour.id); setIsVirtualToursOpen(false); triggerPetals(); }}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-amber-600/20 hover:border-amber-500/30 transition-all text-left group cursor-pointer",
+                        activeVideoId === tour.id && "bg-amber-600/30 border-amber-500/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-4 min-w-0 flex-grow">
+                        <div className="w-12 h-12 rounded-xl bg-slate-950 overflow-hidden shrink-0 relative border border-white/10">
+                          <img 
+                            src={getVideoThumbnail(tour)} 
+                            alt="" 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                          />
+                          <div className="absolute inset-0 bg-black/10" />
+                        </div>
+                        <div className="min-w-0 flex-grow">
+                          <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate group-hover:text-amber-300 transition-colors">{tour.title}</p>
+                          <p className="text-[8.5px] text-amber-400 mt-0.5 font-semibold font-mono">🌟 Explore in 360°</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isInPlaylist) {
+                            removeFromPlaylist(tour.id);
+                          } else {
+                            addToPlaylist(tour);
+                          }
+                        }}
+                        className={cn(
+                          "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200",
+                          isInPlaylist 
+                            ? "bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400" 
+                            : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                        )}
+                        title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
+                      >
+                        {isInPlaylist ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 group-hover:hidden" />
+                            <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
+                          </>
+                        ) : (
+                          <Plus className="w-3.5 h-3.5" />
+                        )}
+                      </button>
                     </div>
-                    <div className="min-w-0 flex-grow">
-                      <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate">{tour.title}</p>
-                      <p className="text-[8.5px] text-amber-400 mt-0.5 font-semibold font-mono">🌟 Explore in 360°</p>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {isAffirmationsOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/20" onClick={() => setIsAffirmationsOpen(false)} />
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              className="fixed right-20 top-1/2 -translate-y-1/2 w-80 max-h-[80vh] backdrop-blur-3xl bg-slate-900/90 border border-white/20 rounded-3xl shadow-2xl z-[60] overflow-hidden flex flex-col"
+            >
+              <div className="p-5 border-b border-white/10 flex items-center justify-between bg-emerald-950/20">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-emerald-400 font-sans">Affirmations</h3>
+                  <p className="text-[9px] text-slate-500 mt-0.5 font-medium">Elevate Thoughts & Divine Power</p>
+                </div>
+                <button onClick={() => setIsAffirmationsOpen(false)}><X className="w-4 h-4 text-slate-500" /></button>
+              </div>
+
+              {/* Actions Subbar */}
+              <div className="px-5 py-2.5 bg-white/[0.02] border-b border-white/10 flex items-center justify-between shrink-0">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                  {AFFIRMATIONS_TOURS.length} Shorts
+                </span>
+                <button
+                  onClick={addAllAffirmationsToPlaylist}
+                  className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1 rounded-lg border border-emerald-500/20 active:scale-[0.98]"
+                >
+                  <PlusCircle className="w-3 h-3" />
+                  Add All to Workspace
+                </button>
+              </div>
+
+              <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                {AFFIRMATIONS_TOURS.map((video) => {
+                  const isInPlaylist = playlist.some(p => p.id === video.id);
+                  return (
+                    <div
+                      key={video.id}
+                      onClick={() => { setActiveVideoId(video.id); setIsAffirmationsOpen(false); triggerPetals(); }}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-3 p-2.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-emerald-650/15 hover:border-emerald-500/30 transition-all text-left group cursor-pointer",
+                        activeVideoId === video.id && "bg-emerald-600/20 border-emerald-500/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-grow">
+                        <div className="w-11 h-11 rounded-lg bg-slate-950 overflow-hidden shrink-0 relative border border-white/10 flex-shrink-0">
+                          <img 
+                            src={getVideoThumbnail(video)} 
+                            alt="" 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                          />
+                          <div className="absolute inset-0 bg-black/15" />
+                        </div>
+                        <div className="min-w-0 flex-grow">
+                          <p className="text-[10px] sm:text-[10.5px] font-bold text-white leading-snug group-hover:text-emerald-300 transition-colors line-clamp-2" title={video.title}>
+                            {video.title}
+                          </p>
+                          <p className="text-[8px] text-emerald-400 mt-1 font-semibold font-mono tracking-wider uppercase flex items-center gap-1">
+                            ✨ Affirmation Short
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isInPlaylist) {
+                            removeFromPlaylist(video.id);
+                          } else {
+                            addToPlaylist(video);
+                          }
+                        }}
+                        className={cn(
+                          "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200",
+                          isInPlaylist 
+                            ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400" 
+                            : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                        )}
+                        title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
+                      >
+                        {isInPlaylist ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 group-hover:hidden" />
+                            <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
+                          </>
+                        ) : (
+                          <Plus className="w-3.5 h-3.5" />
+                        )}
+                      </button>
                     </div>
-                  </button>
-                ))}
+                  );
+                })}
+              </div>
+            </motion.div>
+          </>
+        )}
+
+        {isWisdomOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/20" onClick={() => setIsWisdomOpen(false)} />
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              className="fixed right-20 top-1/2 -translate-y-1/2 w-80 max-h-[80vh] backdrop-blur-3xl bg-slate-900/90 border border-white/20 rounded-3xl shadow-2xl z-[60] overflow-hidden flex flex-col"
+            >
+              <div className="p-5 border-b border-white/10 flex items-center justify-between bg-indigo-950/20">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-indigo-400 font-sans">Spiritual Wisdom</h3>
+                  <p className="text-[9px] text-slate-500 mt-0.5 font-medium">Teachings of Paramahansa Yogananda</p>
+                </div>
+                <button onClick={() => setIsWisdomOpen(false)}><X className="w-4 h-4 text-slate-500" /></button>
+              </div>
+
+              {/* Actions Subbar */}
+              <div className="px-5 py-2.5 bg-white/[0.02] border-b border-white/10 flex items-center justify-between shrink-0">
+                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                  {WISDOM_TEACHINGS.length} Teachings
+                </span>
+                <button
+                  onClick={addAllWisdomToPlaylist}
+                  className="flex items-center gap-1 text-[9px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest bg-indigo-500/10 hover:bg-indigo-500/20 px-2 py-1 rounded-lg border border-indigo-500/20 active:scale-[0.98]"
+                >
+                  <PlusCircle className="w-3 h-3" />
+                  Add All to Workspace
+                </button>
+              </div>
+
+              <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                {WISDOM_TEACHINGS.map((video) => {
+                  const isInPlaylist = playlist.some(p => p.id === video.id);
+                  return (
+                    <div
+                      key={video.id}
+                      onClick={() => { setActiveVideoId(video.id); setIsWisdomOpen(false); triggerPetals(); }}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-3 p-2.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-indigo-650/15 hover:border-indigo-500/30 transition-all text-left group cursor-pointer",
+                        activeVideoId === video.id && "bg-indigo-600/20 border-indigo-500/50"
+                      )}
+                    >
+                      <div className="flex items-center gap-3 min-w-0 flex-grow">
+                        <div className="w-11 h-11 rounded-lg bg-slate-950 overflow-hidden shrink-0 relative border border-white/10 flex-shrink-0">
+                          <img 
+                            src={getVideoThumbnail(video)} 
+                            alt="" 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+                          />
+                          <div className="absolute inset-0 bg-black/15" />
+                        </div>
+                        <div className="min-w-0 flex-grow">
+                          <p className="text-[10px] sm:text-[10.5px] font-bold text-white leading-snug group-hover:text-indigo-300 transition-colors line-clamp-2" title={video.title}>
+                            {video.title}
+                          </p>
+                          <p className="text-[8px] text-indigo-400 mt-1 font-semibold font-mono tracking-wider uppercase flex items-center gap-1">
+                            🕉️ Teachings Talk
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isInPlaylist) {
+                            removeFromPlaylist(video.id);
+                          } else {
+                            addToPlaylist(video);
+                          }
+                        }}
+                        className={cn(
+                          "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200",
+                          isInPlaylist 
+                            ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400" 
+                            : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                        )}
+                        title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
+                      >
+                        {isInPlaylist ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 group-hover:hidden" />
+                            <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
+                          </>
+                        ) : (
+                          <Plus className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </motion.div>
           </>
@@ -1902,7 +2462,22 @@ export default function App() {
                   </div>
                 ) : (
                   playlist.map((video, idx) => (
-                    <div key={`${video.id}-${idx}`} className="flex items-center gap-3 p-2 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all">
+                    <div 
+                      key={`${video.id}-${idx}`} 
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, idx)}
+                      onDragOver={(e) => handleDragOver(e, idx)}
+                      onDragEnd={handleDragEnd}
+                      onDrop={(e) => handleDrop(e, idx)}
+                      className={cn(
+                        "flex items-center gap-2 p-2 rounded-xl bg-white/5 border border-transparent transition-all cursor-grab active:cursor-grabbing",
+                        draggedIndex === idx && "opacity-40 border-dashed border-indigo-500/40 bg-slate-900/50 scale-[0.97]",
+                        dragOverIndex === idx && draggedIndex !== idx && "border-indigo-400/80 bg-indigo-500/10 scale-[1.02] shadow-lg shadow-indigo-500/5"
+                      )}
+                    >
+                      <div className="flex items-center justify-center p-0.5 animate-pulse-slow" title="Drag to reorder">
+                        <GripVertical className="w-3.5 h-3.5 text-slate-600 hover:text-slate-400 transition-colors" />
+                      </div>
                       <img src={getVideoThumbnail(video)} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" alt="" />
                       <div className="min-w-0 flex-grow">
                         <p className="text-[10px] font-bold text-white truncate">{video.title}</p>

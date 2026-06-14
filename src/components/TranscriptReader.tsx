@@ -152,6 +152,60 @@ const INITIAL_AVAILABLE_IDS = [
   '2G9i65RmG50',
   '-GD2Y2W8b_o',
   'Oq23a2RWZvc',
+  'g0ww8GmLsv4',
+  '5mJ0PLvGB18',
+  'kXpD3uBalaE',
+  'K-K93W0LFBQ',
+  'tiWtEwC7tgY',
+  'JqVVKmLw9_o',
+  'tWZJ4LNjwPk',
+  'R7YemF9QJFU',
+  'OvK-M4l3sr0',
+  'sU2icv7IcD0',
+  'PF5Eywyk-s8',
+  'mmz7vji2tLA',
+  'aBVuiALRg-s',
+  'fxt0VLnNeO8',
+  'xUq1DQPLHRg',
+  'xghFntmsTjQ',
+  'FP-dNd1xTcs',
+  'YfeCVRqwa9Q',
+  'Fynaa_dTOqM',
+  'QnIMMaYGIf4',
+  'N2l6GE_NKDs',
+  'fna7IbLoGJo',
+  'kUzI0W_JW7I',
+  'N20enydosZQ',
+  'RCj1eDzNxDU',
+  'O62LQLdeV6I',
+  'Tw7ILifQ11U',
+  'Fklyaxk6tZE',
+  'c1NEU9XFFj0',
+  'a56Iq9GonTI',
+  'WjKp9YdRY6s',
+  'MJR06v8qakg',
+  'We92WB7ArXk',
+  '6FNh1Jac9bo',
+  'n99CCcuRQks',
+  'UmCVAZd7ovw',
+  'c1Tzmwltp_c',
+  '2vgST3u1FDI',
+  '7XbtxFn00QQ',
+  'GnCNvDQcKvk',
+  'hpR4niszERQ',
+  'ac5uKQsdbsY',
+  'rl4ULW_OgtQ',
+  '9OvLVXgOAzs',
+  'mWUEmPN6W24',
+  'QNx_E4yoo4Y',
+  'Q8uZVhpjh48',
+  'Yx_H0-d1ZWA',
+  'LHp3JDJ_zUc',
+  'sZCnSnAin68',
+  'GeUEkwbCYDY',
+  '1Louhg339RQ',
+  'TiPcpoQSY5w',
+  'cy1J6DU_4A8',
   'uQFI4A5ZYTc',
   'eFgAGes7unk',
   'Sh9yejNuxcE',
@@ -178,20 +232,37 @@ const INITIAL_AVAILABLE_IDS = [
 ];
 
 export default function TranscriptReader({ videos, activeVideoId, setActiveVideoId, onClose }: TranscriptReaderProps) {
-  const [availableIds, setAvailableIds] = useState<string[]>(INITIAL_AVAILABLE_IDS);
+  const [availableIds, setAvailableIds] = useState<string[]>(() => {
+    return (window as any).__cachedAvailableIds || INITIAL_AVAILABLE_IDS;
+  });
   const [selectedVideoId, setSelectedVideoId] = useState<string>(() => {
     if (activeVideoId && INITIAL_AVAILABLE_IDS.includes(activeVideoId)) {
       return activeVideoId;
     }
     return 'FkWBsufZvz8';
   });
-  const [transcript, setTranscript] = useState<TranscriptData | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [transcript, setTranscript] = useState<TranscriptData | null>(() => {
+    if (!(window as any).__transcriptCache) {
+      (window as any).__transcriptCache = {};
+    }
+    return (window as any).__transcriptCache[selectedVideoId] || null;
+  });
+  const [loading, setLoading] = useState(() => {
+    // Avoid showing active spinner if transcript is already in the cache!
+    if (!(window as any).__transcriptCache) {
+      (window as any).__transcriptCache = {};
+    }
+    return !(window as any).__transcriptCache[selectedVideoId];
+  });
   const [error, setError] = useState<string | null>(null);
   
-  // Customization controls
-  const [fontSize, setFontSize] = useState<'sm' | 'base' | 'md' | 'lg' | 'xl'>('base');
+  // Customization controls - restored from localStorage for consistent user experience
+  const [fontSize, setFontSize] = useState<'sm' | 'base' | 'md' | 'lg' | 'xl'>(() => {
+    return (localStorage.getItem('reading_font_size') as 'sm' | 'base' | 'md' | 'lg' | 'xl') || 'base';
+  });
   const [paperTheme, setPaperTheme] = useState<'white' | 'sepia' | 'dark' | 'slate'>(() => {
+    const saved = localStorage.getItem('reading_paper_theme');
+    if (saved) return saved as 'white' | 'sepia' | 'dark' | 'slate';
     const act = document.documentElement.getAttribute('data-theme') || 'default';
     return act === 'white' ? 'white' : 'sepia';
   });
@@ -206,8 +277,21 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
   const containerRef = useRef<HTMLDivElement>(null);
   const readingAreaRef = useRef<HTMLDivElement>(null);
 
+  // Persist customization choices
+  useEffect(() => {
+    localStorage.setItem('reading_font_size', fontSize);
+  }, [fontSize]);
+
+  useEffect(() => {
+    localStorage.setItem('reading_paper_theme', paperTheme);
+  }, [paperTheme]);
+
   // Load list of available transcripts from public registry once
   useEffect(() => {
+    if ((window as any).__cachedAvailableIds) {
+      setAvailableIds((window as any).__cachedAvailableIds);
+      return;
+    }
     let active = true;
     const fetchAvailable = async () => {
       try {
@@ -215,6 +299,7 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
         if (response.ok) {
           const ids = await response.json();
           if (active && Array.isArray(ids)) {
+            (window as any).__cachedAvailableIds = ids;
             setAvailableIds(ids);
           }
         }
@@ -239,8 +324,21 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
     }
   }, [activeVideoId, availableIds]);
 
-  // Load transcript data from static json files dynamically
+  // Load transcript data from static json files dynamically with instant response cache
   useEffect(() => {
+    if (!(window as any).__transcriptCache) {
+      (window as any).__transcriptCache = {};
+    }
+    const cache = (window as any).__transcriptCache;
+
+    // Check if we can instantly serve from memory cache without spin!
+    if (cache[selectedVideoId]) {
+      setTranscript(cache[selectedVideoId]);
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     let active = true;
     setLoading(true);
     setError(null);
@@ -254,6 +352,7 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
         }
         const data = await response.json();
         if (active) {
+          cache[selectedVideoId] = data; // Keep in universal cache
           setTranscript(data);
         }
       } catch (err) {
