@@ -18,6 +18,7 @@ import {
   Plus
 } from 'lucide-react';
 import { type Video } from '../data/videos';
+import { cn } from '../lib/utils';
 
 // Transcripts are fetched dynamically from the /transcripts/ public folder at runtime
 
@@ -232,6 +233,9 @@ const INITIAL_AVAILABLE_IDS = [
 ];
 
 export default function TranscriptReader({ videos, activeVideoId, setActiveVideoId, onClose }: TranscriptReaderProps) {
+  const [mobileView, setMobileView] = useState<'list' | 'reading'>(() => {
+    return activeVideoId && INITIAL_AVAILABLE_IDS.includes(activeVideoId) ? 'reading' : 'list';
+  });
   const [availableIds, setAvailableIds] = useState<string[]>(() => {
     return (window as any).__cachedAvailableIds || INITIAL_AVAILABLE_IDS;
   });
@@ -318,6 +322,7 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
     if (activeVideoId) {
       if (availableIds.includes(activeVideoId)) {
         setSelectedVideoId(activeVideoId);
+        setMobileView('reading');
       } else if (availableIds.length > 0) {
         setSelectedVideoId(availableIds[0]);
       }
@@ -559,7 +564,10 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
     <div ref={containerRef} className="flex flex-col lg:flex-row fixed inset-0 w-screen h-screen backdrop-blur-3xl bg-theme-bg/98 overflow-hidden z-50 animate-in fade-in duration-200">
       
       {/* Side Selector column */}
-      <div className="w-full lg:w-80 flex flex-col border-r border-theme-border h-1/3 lg:h-full shrink-0 bg-transparent p-5">
+      <div className={cn(
+        "w-full lg:w-80 flex flex-col border-r border-theme-border h-full shrink-0 bg-transparent p-5",
+        mobileView === 'list' ? 'flex animate-in slide-in-from-left duration-200' : 'hidden lg:flex'
+      )}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-theme-accent">
             <BookOpen className="w-4 h-4" />
@@ -578,7 +586,10 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
           {searchableVideos.map((video) => (
             <button
               key={video.id}
-              onClick={() => setSelectedVideoId(video.id)}
+              onClick={() => {
+                setSelectedVideoId(video.id);
+                setMobileView('reading');
+              }}
               className={`w-full text-left p-2.5 rounded-xl border flex items-start gap-3 transition-all ${
                 selectedVideoId === video.id
                   ? 'bg-theme-accent/20 border-theme-accent text-theme-text shadow-sm'
@@ -606,17 +617,29 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
       </div>
 
       {/* Main Reading View */}
-      <div className="flex-grow h-2/3 lg:h-full flex flex-col bg-theme-bg/10 relative">
+      <div className={cn(
+        "flex-grow h-full flex flex-col bg-theme-bg/10 relative",
+        mobileView === 'reading' ? 'flex animate-in slide-in-from-right duration-200' : 'hidden lg:flex'
+      )}>
         
         {/* Top toolbar */}
         <div className="flex flex-col sm:flex-row items-center justify-between p-4 px-6 border-b border-theme-border gap-4 shrink-0 bg-theme-surface/30">
           <div className="flex items-center gap-3 w-full sm:w-auto">
+            {/* Mobile Navigation Back to Selector List */}
+            <button 
+              onClick={() => setMobileView('list')}
+              className="lg:hidden p-2 border border-theme-border hover:bg-theme-surface text-theme-text rounded-xl transition-all flex items-center justify-center bg-theme-surface/50 shrink-0"
+              title="Back to Readings List"
+            >
+              <ArrowLeft className="w-4 h-4 text-theme-accent" />
+            </button>
+
             <button 
               onClick={() => {
                 setActiveVideoId(selectedVideoId);
                 onClose();
               }}
-              className="p-2 border border-theme-border hover:bg-theme-surface text-theme-text rounded-xl transition-all flex items-center justify-center bg-theme-surface/50"
+              className="p-2 border border-theme-border hover:bg-theme-surface text-theme-text rounded-xl transition-all flex items-center justify-center bg-theme-surface/50 shrink-0"
               title="Play Video Companion"
             >
               <Eye className="w-4 h-4 text-theme-accent" />
@@ -682,10 +705,19 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
                   const nextIdx = (curIdx + 1) % sizes.length;
                   setFontSize(sizes[nextIdx]);
                 }}
-                className="p-1 px-2.5 bg-theme-surface border border-theme-border text-[10px] text-theme-text-muted hover:text-theme-text rounded-lg transition-all flex items-center gap-1 font-bold tracking-wider"
+                className="p-1 px-2.5 bg-theme-surface border border-theme-border text-[10px] text-theme-text-muted hover:text-theme-text rounded-lg transition-all flex items-center gap-1 font-bold tracking-wider mr-2"
               >
                 <Type className="w-3 h-3 text-theme-accent" />
                 {fontSize.toUpperCase()}
+              </button>
+
+              {/* Direct Exit Close Button */}
+              <button 
+                onClick={onClose}
+                className="p-2 border border-theme-border hover:bg-rose-500/10 text-theme-text-muted hover:text-rose-500 hover:border-rose-500/20 rounded-xl transition-all flex items-center justify-center bg-theme-surface/50 shrink-0"
+                title="Exit Reader"
+              >
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>

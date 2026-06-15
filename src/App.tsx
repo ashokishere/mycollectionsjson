@@ -45,12 +45,14 @@ import {
   CheckSquare,
   BookOpen,
   Map,
-  GripVertical
+  GripVertical,
+  Volume2
 } from 'lucide-react';
 import { initialVideos, type Video } from './data/videos';
 import messagesData from './data/messages.json';
 import favoritesData from './data/favorite_playlists.json';
 import devotionalAlbums from './data/devotional_albums.json';
+import instrumentalAlbums from './data/instrumental_albums.json';
 import { cn } from './lib/utils';
 import TranscriptReader from './components/TranscriptReader';
 
@@ -263,7 +265,37 @@ const getVideoThumbnail = (video: Video) => {
 
 export default function App() {
   const [videos, setVideos] = useState<Video[]>(() => {
-    const all = [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...initialVideos];
+    // Generate Video objects for devotional albums' tracks dynamically
+    const albumTracks: Video[] = [];
+    devotionalAlbums.forEach(album => {
+      if (album.tracks && Array.isArray(album.tracks)) {
+        album.tracks.forEach(track => {
+          albumTracks.push({
+            id: track.id,
+            title: track.title,
+            url: `https://www.youtube.com/watch?v=${track.id}`,
+            tags: ["Devotional Chants", "Spiritual Album", album.name]
+          });
+        });
+      }
+    });
+
+    // Generate Video objects for instrumental albums' tracks dynamically
+    const instrumentalTracks: Video[] = [];
+    instrumentalAlbums.forEach(album => {
+      if (album.tracks && Array.isArray(album.tracks)) {
+        album.tracks.forEach(track => {
+          instrumentalTracks.push({
+            id: track.id,
+            title: track.title,
+            url: `https://www.youtube.com/watch?v=${track.id}`,
+            tags: ["Instrumental", "Spiritual Album", album.name]
+          });
+        });
+      }
+    });
+
+    const all = [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks, ...initialVideos];
     const seen = new Set<string>();
     return all.filter(v => {
       if (seen.has(v.id)) return false;
@@ -294,6 +326,11 @@ export default function App() {
   const [isOceanLoveOpen, setIsOceanLoveOpen] = useState(false);
   const [activeAlbumId, setActiveAlbumId] = useState<string>("ocean-of-love");
   const [mobileAlbumView, setMobileAlbumView] = useState<'list' | 'tracks'>('list');
+  
+  const [isInstrumentalOpen, setIsInstrumentalOpen] = useState(false);
+  const [activeInstrumentalAlbumId, setActiveInstrumentalAlbumId] = useState<string>("instrumental-the-divine-gypsy");
+  const [mobileInstrumentalAlbumView, setMobileInstrumentalAlbumView] = useState<'list' | 'tracks'>('list');
+  
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
 
   // Reset mobile album view to main listing when opening albums drawer
@@ -302,6 +339,12 @@ export default function App() {
       setMobileAlbumView('list');
     }
   }, [isOceanLoveOpen]);
+
+  useEffect(() => {
+    if (isInstrumentalOpen) {
+      setMobileInstrumentalAlbumView('list');
+    }
+  }, [isInstrumentalOpen]);
   const [isFloatingControlsVisible, setIsFloatingControlsVisible] = useState(true);
   const [visibleCount, setVisibleCount] = useState(24);
   const [isReaderOpen, setIsReaderOpen] = useState(false);
@@ -422,11 +465,14 @@ export default function App() {
   };
 
   const addAlbumSequence = (albumId: string) => {
-    const album = devotionalAlbums.find(a => a.id === albumId);
+    let album: any = devotionalAlbums.find(a => a.id === albumId);
+    if (!album) {
+      album = instrumentalAlbums.find((a: any) => a.id === albumId);
+    }
     if (!album) return;
 
     const orderedVideos: Video[] = [];
-    album.tracks.forEach(track => {
+    album.tracks.forEach((track: any) => {
       const found = videos.find(v => v.id === track.id);
       if (found) {
         orderedVideos.push(found);
@@ -444,7 +490,37 @@ export default function App() {
   };
 
   const addAlbumSingleVideo = (videoId: string) => {
-    const found = videos.find(v => v.id === videoId);
+    let found = videos.find(v => v.id === videoId);
+    if (!found) {
+      // Look up and construct Video from devotionalAlbums as secondary fallback
+      for (const album of devotionalAlbums) {
+        const track = album.tracks.find((t: any) => t.id === videoId);
+        if (track) {
+          found = {
+            id: track.id,
+            title: track.title,
+            url: `https://www.youtube.com/watch?v=${track.id}`,
+            tags: ["Devotional Chants", "Spiritual Album", album.name]
+          };
+          break;
+        }
+      }
+    }
+    if (!found) {
+      // Look up and construct Video from instrumentalAlbums as tertiary fallback
+      for (const album of instrumentalAlbums) {
+        const track: any = album.tracks.find((t: any) => t.id === videoId);
+        if (track) {
+          found = {
+            id: track.id,
+            title: track.title,
+            url: `https://www.youtube.com/watch?v=${track.id}`,
+            tags: ["Instrumental", "Spiritual Album", album.name]
+          };
+          break;
+        }
+      }
+    }
     if (!found) return;
 
     setPlaylist(prev => {
@@ -1831,7 +1907,7 @@ export default function App() {
               className="flex flex-col gap-3"
             >
               <button
-                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isFavoritesOpen 
@@ -1844,7 +1920,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isOceanLoveOpen 
@@ -1857,7 +1933,20 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsVirtualToursOpen(!isVirtualToursOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsWorkspaceOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsInstrumentalOpen(!isInstrumentalOpen); setIsOceanLoveOpen(false); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                className={cn(
+                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
+                  isInstrumentalOpen 
+                    ? "bg-amber-600 text-white border-amber-400 scale-110" 
+                    : "bg-white/10 border-white/20 text-amber-400/80 hover:bg-white/20 hover:text-amber-400"
+                )}
+                title="Instrumental Albums"
+              >
+                <Volume2 className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => { setIsVirtualToursOpen(!isVirtualToursOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isVirtualToursOpen 
@@ -1870,7 +1959,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsAffirmationsOpen(!isAffirmationsOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsAffirmationsOpen(!isAffirmationsOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsWisdomOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isAffirmationsOpen 
@@ -1883,7 +1972,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWisdomOpen(!isWisdomOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); }}
+                onClick={() => { setIsWisdomOpen(!isWisdomOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWisdomOpen 
@@ -1896,7 +1985,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWorkspaceOpen 
@@ -2401,31 +2490,274 @@ export default function App() {
                               const isInPlaylist = playlist.some(p => p.id === track.id);
 
                               return (
-                                <button
+                                <div
                                   key={track.id}
-                                  onClick={() => addAlbumSingleVideo(track.id)}
-                                  disabled={isInPlaylist}
+                                  onClick={() => {
+                                    setActiveVideoId(track.id);
+                                    setIsOceanLoveOpen(false);
+                                    triggerPetals();
+                                  }}
                                   className={cn(
-                                    "w-full flex items-start gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all text-left group",
-                                    isInPlaylist && "opacity-45 hover:bg-white/5 border-transparent cursor-not-allowed",
+                                    "w-full flex items-center justify-between gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all text-left cursor-pointer group hover:border-white/20",
+                                    activeVideoId === track.id && "bg-white/10 border-white/20",
                                     ringColor
                                   )}
                                 >
-                                  <div className="w-8.5 h-8.5 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
-                                    <TrackIcon className={cn("w-4 h-4 transition-transform group-hover:scale-110", accentText)} />
+                                  <div className="flex items-center gap-3 min-w-0 flex-grow">
+                                    <div className="w-8.5 h-8.5 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                      <TrackIcon className={cn("w-4 h-4 transition-transform group-hover:scale-110", accentText)} />
+                                    </div>
+                                    <div className="min-w-0 flex-grow">
+                                      <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate mb-0.5 group-hover:text-amber-300 transition-colors">{track.title}</p>
+                                      <p className="text-[9px] text-slate-500 line-clamp-1">{track.desc}</p>
+                                    </div>
                                   </div>
-                                  <div className="min-w-0 flex-grow">
-                                    <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate mb-0.5">{track.title}</p>
-                                    <p className="text-[9px] text-slate-500 line-clamp-1">{track.desc}</p>
-                                  </div>
-                                  <div className="shrink-0 flex items-center h-8.5">
-                                    {isInPlaylist ? (
-                                      <span className="text-[8px] font-extrabold tracking-widest text-slate-500 uppercase px-1.5 py-0.5 bg-white/5 rounded">ADDED</span>
-                                    ) : (
-                                      <span className={cn("text-[8px] font-extrabold tracking-widest uppercase px-1.5 py-0.5 rounded bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity", accentText)}>ADD</span>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (isInPlaylist) {
+                                        removeFromPlaylist(track.id);
+                                      } else {
+                                        addAlbumSingleVideo(track.id);
+                                      }
+                                    }}
+                                    className={cn(
+                                      "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border transition-all duration-200",
+                                      isInPlaylist 
+                                        ? "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-red-500/20 hover:border-red-500/55 hover:text-red-400" 
+                                        : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
                                     )}
+                                    title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
+                                  >
+                                    {isInPlaylist ? (
+                                      <>
+                                        <Check className="w-3.5 h-3.5 group-hover:hidden" />
+                                        <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
+                                      </>
+                                    ) : (
+                                      <Plus className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+              </div>
+
+            </motion.div>
+          </>
+        )}
+
+        {isInstrumentalOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/20" onClick={() => setIsInstrumentalOpen(false)} />
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              className="fixed right-20 top-1/2 -translate-y-1/2 md:w-[680px] w-[350px] max-w-[calc(100vw-120px)] h-[80vh] backdrop-blur-3xl bg-slate-900/95 border border-white/20 rounded-3xl shadow-2xl z-[60] overflow-hidden flex flex-col"
+            >
+              {/* Header */}
+              <div className="p-4 border-b border-white/10 flex items-center justify-between shrink-0 bg-slate-950/40">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-amber-400">Instrumental Albums</h3>
+                  <p className="text-[9px] text-slate-500 mt-0.5 font-medium">Arrangements &amp; Meditative Chants</p>
+                </div>
+                <button onClick={() => setIsInstrumentalOpen(false)} className="p-1 rounded-lg hover:bg-white/5 transition-colors">
+                  <X className="w-4 h-4 text-slate-400 hover:text-white" />
+                </button>
+              </div>
+
+              {/* Master-Detail Combined Content */}
+              <div className="flex-grow flex overflow-hidden">
+                
+                {/* Left Master List: Albums index */}
+                <div className={cn(
+                  "md:w-60 md:border-r border-white/10 flex flex-col shrink-0 overflow-y-auto custom-scrollbar bg-black/10 p-2 gap-1.5 select-none",
+                  mobileInstrumentalAlbumView === 'tracks' ? "hidden md:flex" : "flex w-full"
+                )}>
+                  <div className="p-2 mb-0.5 hidden md:block">
+                    <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold block mb-0.5">Select Album</span>
+                  </div>
+                  {instrumentalAlbums.map((album) => {
+                    const AlbumIcon = { Heart, Music, Compass, Sun, Flame, Smile, Sparkles, Volume2 }[album.icon] || Music;
+                    const isActive = activeInstrumentalAlbumId === album.id;
+                    const trackCount = album.tracks?.length || 0;
+                    
+                    let activeColors = "bg-rose-500/20 text-rose-400 border-rose-500/30";
+                    if (album.accentColor === "indigo") activeColors = "bg-indigo-500/20 text-indigo-400 border-indigo-500/30";
+                    else if (album.accentColor === "cyan") activeColors = "bg-cyan-500/20 text-cyan-400 border-cyan-500/30";
+                    else if (album.accentColor === "yellow") activeColors = "bg-yellow-500/20 text-yellow-500 border-yellow-500/30";
+                    else if (album.accentColor === "fuchsia") activeColors = "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30";
+                    else if (album.accentColor === "amber") activeColors = "bg-amber-500/20 text-amber-400 border-amber-500/30";
+                    else if (album.accentColor === "emerald") activeColors = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+
+                    return (
+                      <button
+                        key={album.id}
+                        onClick={() => {
+                          setActiveInstrumentalAlbumId(album.id);
+                          setMobileInstrumentalAlbumView('tracks');
+                        }}
+                        className={cn(
+                          "flex items-center justify-between text-left px-3 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all border group/item w-full",
+                          isActive 
+                            ? activeColors
+                            : "bg-white/5 text-slate-400 border-white/5 hover:bg-white/10 hover:text-white"
+                        )}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 pr-1">
+                          <AlbumIcon className={cn("w-3.5 h-3.5 shrink-0 transition-transform group-hover/item:scale-110", isActive ? "" : "text-slate-400")} />
+                          <span className="truncate">{album.name}</span>
+                        </div>
+                        <span className={cn(
+                          "text-[8px] font-mono px-1.5 py-0.5 rounded shrink-0 ml-1.5",
+                          isActive 
+                            ? "bg-white/15 text-current" 
+                            : "bg-white/5 text-slate-500 group-hover/item:text-slate-300 group-hover/item:bg-white/10"
+                        )}>
+                          {trackCount}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Right Detail Panel: Album tracks */}
+                <div className={cn(
+                  "flex-grow flex flex-col min-w-0 overflow-hidden",
+                  mobileInstrumentalAlbumView === 'list' ? "hidden md:flex" : "flex"
+                )}>
+                  {/* On Mobile: Back to listing navigation */}
+                  {mobileInstrumentalAlbumView === 'tracks' && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-black/20 border-b border-white/5 md:hidden shrink-0">
+                      <button 
+                        onClick={() => setMobileInstrumentalAlbumView('list')}
+                        className="flex items-center gap-1 text-[9px] font-bold text-amber-400 uppercase tracking-widest py-1 px-2 hover:bg-white/5 rounded-lg transition-all"
+                      >
+                        <ChevronLeft className="w-3.5 h-3.5" />
+                        Back to Albums
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Album Detail Scroll Area */}
+                  <div className="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                    {(() => {
+                      const activeAlbum = instrumentalAlbums.find(a => a.id === activeInstrumentalAlbumId) || instrumentalAlbums[0];
+                      
+                      let accentText = "text-rose-400 group-hover:text-rose-300";
+                      let bgAccent = "bg-rose-600 hover:bg-rose-500 text-white";
+                      let ringColor = "group-hover:border-rose-500/40";
+                      
+                      if (activeAlbum.accentColor === "indigo") {
+                        accentText = "text-indigo-400 group-hover:text-indigo-300";
+                        bgAccent = "bg-indigo-600 hover:bg-indigo-500 text-white";
+                        ringColor = "group-hover:border-indigo-500/40";
+                      } else if (activeAlbum.accentColor === "cyan") {
+                        accentText = "text-cyan-400 group-hover:text-cyan-300";
+                        bgAccent = "bg-cyan-600 hover:bg-cyan-500 text-white";
+                        ringColor = "group-hover:border-cyan-500/40";
+                      } else if (activeAlbum.accentColor === "yellow") {
+                        accentText = "text-yellow-400 group-hover:text-yellow-300";
+                        bgAccent = "bg-yellow-600 hover:bg-yellow-500 text-slate-950";
+                        ringColor = "group-hover:border-yellow-500/40";
+                      } else if (activeAlbum.accentColor === "fuchsia") {
+                        accentText = "text-fuchsia-400 group-hover:text-fuchsia-300";
+                        bgAccent = "bg-fuchsia-600 hover:bg-fuchsia-500 text-white";
+                        ringColor = "group-hover:border-fuchsia-500/40";
+                      } else if (activeAlbum.accentColor === "amber") {
+                        accentText = "text-amber-400 group-hover:text-amber-300";
+                        bgAccent = "bg-amber-600 hover:bg-amber-500 text-slate-950";
+                        ringColor = "group-hover:border-amber-500/40";
+                      } else if (activeAlbum.accentColor === "emerald") {
+                        accentText = "text-emerald-400 group-hover:text-emerald-300";
+                        bgAccent = "bg-emerald-600 hover:bg-emerald-500 text-white";
+                        ringColor = "group-hover:border-emerald-500/40";
+                      }
+
+                      return (
+                        <>
+                          <div className="p-3.5 bg-white/5 rounded-2xl border border-white/5 text-center shrink-0">
+                            <h4 className={cn("text-[10px] font-black uppercase tracking-widest mb-1", accentText)}>
+                              {activeAlbum.name}
+                            </h4>
+                            <p className="text-[10px] text-slate-400 leading-relaxed italic mb-3 font-medium">
+                              &ldquo;{activeAlbum.description}&rdquo;
+                            </p>
+                            <button
+                              onClick={() => { addAlbumSequence(activeAlbum.id); setIsInstrumentalOpen(false); }}
+                              className={cn(
+                                "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2",
+                                bgAccent
+                              )}
+                            >
+                              <ListVideo className="w-4 h-4" />
+                              Queue Full Album ({activeAlbum.tracks?.length || 0} Tracks)
+                            </button>
+                          </div>
+
+                          <div className="space-y-1.5 pb-4">
+                            {activeAlbum.tracks.map((track) => {
+                              const TrackIcon = { Flame, Sun, Sparkles, Shield, Droplet, Compass, Music, Activity, Timer, Bookmark, Smile, Heart, Zap, Volume2 }[track.icon] || Music;
+                              const isInPlaylist = playlist.some(p => p.id === track.id);
+
+                              return (
+                                <div
+                                  key={track.id}
+                                  onClick={() => {
+                                    setActiveVideoId(track.id);
+                                    setIsInstrumentalOpen(false);
+                                    triggerPetals();
+                                  }}
+                                  className={cn(
+                                    "w-full flex items-center justify-between gap-3 p-2.5 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all text-left cursor-pointer group hover:border-white/20",
+                                    activeVideoId === track.id && "bg-white/10 border-white/20",
+                                    ringColor
+                                  )}
+                                >
+                                  <div className="flex items-center gap-3 min-w-0 flex-grow">
+                                    <div className="w-8.5 h-8.5 rounded-lg bg-white/5 flex items-center justify-center shrink-0">
+                                      <TrackIcon className={cn("w-4 h-4 transition-transform group-hover:scale-110", accentText)} />
+                                    </div>
+                                    <div className="min-w-0 flex-grow">
+                                      <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate mb-0.5 group-hover:text-amber-300 transition-colors">{track.title}</p>
+                                      <p className="text-[9px] text-slate-500 line-clamp-1">{track.desc}</p>
+                                    </div>
                                   </div>
-                                </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (isInPlaylist) {
+                                        removeFromPlaylist(track.id);
+                                      } else {
+                                        addAlbumSingleVideo(track.id);
+                                      }
+                                    }}
+                                    className={cn(
+                                      "w-7 h-7 rounded-lg flex items-center justify-center shrink-0 border transition-all duration-200",
+                                      isInPlaylist 
+                                        ? "bg-rose-500/10 border-rose-500/30 text-rose-400 hover:bg-red-500/20 hover:border-red-500/55 hover:text-red-400" 
+                                        : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                                    )}
+                                    title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
+                                  >
+                                    {isInPlaylist ? (
+                                      <>
+                                        <Check className="w-3.5 h-3.5 group-hover:hidden" />
+                                        <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
+                                      </>
+                                    ) : (
+                                      <Plus className="w-3.5 h-3.5" />
+                                    )}
+                                  </button>
+                                </div>
                               );
                             })}
                           </div>

@@ -1,0 +1,538 @@
+[
+  {
+    "id": "instrumental-the-divine-gypsy",
+    "name": "The Divine Gypsy",
+    "description": "Instrumental arrangements and meditative soundscapes of devotional cosmic chants.",
+    "themeColor": "text-amber-400",
+    "accentColor": "amber",
+    "icon": "Music",
+    "tracks": [
+      {
+        "id": "hrLrdTdTsr4",
+        "title": "Wink Has Not Touched My Eyes",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      },
+      {
+        "id": "c5C_4NTjiZs",
+        "title": "Jai Guru - Radha Govinda Jai",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Heart"
+      },
+      {
+        "id": "kzncvlw781g",
+        "title": "Aum Chant",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Compass"
+      },
+      {
+        "id": "Fa0Q3XfS3Cc",
+        "title": "Divine Gypsy",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sparkles"
+      },
+      {
+        "id": "5uK-ri-mMEE",
+        "title": "I Will Be Thine Always",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Activity"
+      },
+      {
+        "id": "km2XWg7aHGs",
+        "title": "Divine Mother's Song to the Devotee",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Volume2"
+      },
+      {
+        "id": "eqwc5nqtqbo",
+        "title": "Thousands of Suns",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Smile"
+      },
+      {
+        "id": "MHjKi1oFeIY",
+        "title": "They Have Heard Thy Name",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Flame"
+      },
+      {
+        "id": "AqFNf8QiRG4",
+        "title": "I Am the Sky",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Zap"
+      },
+      {
+        "id": "8OXYnWbPSMo",
+        "title": "O God Beautiful",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Droplet"
+      }
+    ]
+  },
+  {
+    "id": "instrumental-where-golden-dreams-dwell",
+    "name": "Where Golden Dreams Dwell",
+    "description": "Instrumental arrangements and meditative soundscapes of devotional cosmic chants.",
+    "themeColor": "text-yellow-400",
+    "accentColor": "yellow",
+    "icon": "Sun",
+    "tracks": [
+      {
+        "id": "R3oN5u57Sdg",
+        "title": "From This Sleep, Lord",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      },
+      {
+        "id": "nicK6v5xVkU",
+        "title": "In the Land Beyond My Dreams",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Heart"
+      },
+      {
+        "id": "3GJSJPBwAS8",
+        "title": "Come, Listen to My Soul Song",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Compass"
+      },
+      {
+        "id": "ESKVdyY4ZYY",
+        "title": "Search Him Out in Secret",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sparkles"
+      },
+      {
+        "id": "_yx6ZK6EqOU",
+        "title": "Ever-New Joy",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Activity"
+      },
+      {
+        "id": "rRmCDUAG6Ek",
+        "title": "Dawn Chant",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Volume2"
+      },
+      {
+        "id": "42frmqga5m0",
+        "title": "What Lightning Flash",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Smile"
+      },
+      {
+        "id": "KEvp3toAZeQ",
+        "title": "Wake, Yet Wake, O My Saint",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Flame"
+      },
+      {
+        "id": "5XiAaGgGklQ",
+        "title": "Will That Day Come to Me, Mother",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Zap"
+      },
+      {
+        "id": "Jdoz-xxcHKA",
+        "title": "O Thou Blue Sky",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Droplet"
+      },
+      {
+        "id": "7Y3W6bqoJ8k",
+        "title": "He Who Knows",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Music"
+      },
+      {
+        "id": "zgxviHCoyPs",
+        "title": "Desire, My Great Enemy",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      },
+      {
+        "id": "a4ZxVychm90",
+        "title": "When My Dream's Dream is Done",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Heart"
+      }
+    ]
+  },
+  {
+    "id": "instrumental-in-the-land-beyond-my-dreams",
+    "name": "In the Land Beyond My Dreams",
+    "description": "Instrumental arrangements and meditative soundscapes of devotional cosmic chants.",
+    "themeColor": "text-emerald-400",
+    "accentColor": "emerald",
+    "icon": "Sparkles",
+    "tracks": [
+      {
+        "id": "jCEf3uDSreo",
+        "title": "In the Land Beyond My Dreams",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      },
+      {
+        "id": "FmT8LxBhm7c",
+        "title": "Blue Lotus Feet",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Heart"
+      },
+      {
+        "id": "gENNZJit6Fc",
+        "title": "From This Sleep, Lord",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Compass"
+      },
+      {
+        "id": "hH-J-Ms1_lA",
+        "title": "Do Not Dry the Ocean of My Love",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sparkles"
+      },
+      {
+        "id": "27SW7QNn0pg",
+        "title": "Light the Lamp of Thy Love",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Activity"
+      },
+      {
+        "id": "XERunXHC-1Y",
+        "title": "Thou Art My Life",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Volume2"
+      },
+      {
+        "id": "ucwxSN14GkY",
+        "title": "In the Valley of Sorrow",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Smile"
+      },
+      {
+        "id": "lLRwJlbokyM",
+        "title": "Receive Me on Thy Lap",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Flame"
+      },
+      {
+        "id": "aYCXRprMhc8",
+        "title": "Deliver Us From Delusion",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Zap"
+      },
+      {
+        "id": "e2PsAellOiI",
+        "title": "They Have Heard Thy Name",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Droplet"
+      },
+      {
+        "id": "yD6eVsvBf5Y",
+        "title": "When Thy Song Flows Through Me",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Music"
+      },
+      {
+        "id": "k5wXErvuWZU",
+        "title": "When My Dream's Dream is Done",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      },
+      {
+        "id": "b1iXTbsaK60",
+        "title": "Come, Listen to My Soul Song",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Heart"
+      },
+      {
+        "id": "Au5yOzLvxnI",
+        "title": "I Give You My Soul Call",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Compass"
+      },
+      {
+        "id": "XO-VoGLqqSE",
+        "title": "I Will Be Thine Always",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sparkles"
+      },
+      {
+        "id": "L2fNKupQTSQ",
+        "title": "Where is There Love",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Activity"
+      },
+      {
+        "id": "3-5XODAmWbA",
+        "title": "In the Temple of Silence",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Volume2"
+      },
+      {
+        "id": "sey0eWyRj94",
+        "title": "Wink Has Not Touched My Eyes",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Smile"
+      },
+      {
+        "id": "KtV9EdJv9B0",
+        "title": "I Am the Sky",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Flame"
+      },
+      {
+        "id": "Eiw1-Tgw6Uw",
+        "title": "O Thou King of the Infinite",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Zap"
+      },
+      {
+        "id": "hZb8jkVwDcc",
+        "title": "Will That Day Come to Me, Mother",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Droplet"
+      },
+      {
+        "id": "w4t5Rp7ksh0",
+        "title": "I Am the Bubble, Make Me the Sea",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Music"
+      },
+      {
+        "id": "9mZuIDNwLG8",
+        "title": "Hymn to Brahma",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "id": "instrumental-thou-art-my-life",
+    "name": "Thou Art My Life",
+    "description": "Instrumental arrangements and meditative soundscapes of devotional cosmic chants.",
+    "themeColor": "text-rose-400",
+    "accentColor": "rose",
+    "icon": "Heart",
+    "tracks": [
+      {
+        "id": "aGT1iAkJMdA",
+        "title": "Thou Art My Life",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      },
+      {
+        "id": "LCpTZHPKBPw",
+        "title": "Deliver Us From Delusion",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Heart"
+      },
+      {
+        "id": "C65OWJ48RgU",
+        "title": "Divine Mother’s Song to the Devotee",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Compass"
+      },
+      {
+        "id": "d-j_6bDKlzI",
+        "title": "My Krishna Is Blue",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sparkles"
+      },
+      {
+        "id": "LbscWSheiNA",
+        "title": "Where Is There Love?",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Activity"
+      },
+      {
+        "id": "2YF9W94JB3U",
+        "title": "From This Sleep, Lord",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Volume2"
+      },
+      {
+        "id": "pncNctjTm1M",
+        "title": "Cloud-Colored Christ",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Smile"
+      },
+      {
+        "id": "uT1dNRLmtu8",
+        "title": "Polestar of My Life",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Flame"
+      },
+      {
+        "id": "JxO0Iml-fHk",
+        "title": "In the Valley of Sorrow",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Zap"
+      },
+      {
+        "id": "vfbI83oAZ8o",
+        "title": "Blue Lotus Feet",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Droplet"
+      },
+      {
+        "id": "EHyxtdZvlY0",
+        "title": "When Thy Song Flows Though Me",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Music"
+      },
+      {
+        "id": "0AMd2PVkmAk",
+        "title": "Hymn to Brahma",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      }
+    ]
+  },
+  {
+    "id": "instrumental-i-am-thy-sky",
+    "name": "I am thy Sky",
+    "description": "Instrumental arrangements and meditative soundscapes of devotional cosmic chants.",
+    "themeColor": "text-cyan-400",
+    "accentColor": "cyan",
+    "icon": "Compass",
+    "tracks": [
+      {
+        "id": "uQFI4A5ZYTc",
+        "title": "When I Am Only a Dream",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      },
+      {
+        "id": "MGa88qG0rt8",
+        "title": "Deliver Us From Delusion",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Heart"
+      },
+      {
+        "id": "zV8x8uCoXc8",
+        "title": "Who is in My Temple",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Compass"
+      },
+      {
+        "id": "BgDz6DoeBg4",
+        "title": "At Thy Feet",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sparkles"
+      },
+      {
+        "id": "MHw4bfEjD2c",
+        "title": "I Am the Bubble, Make Me the Sea",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Activity"
+      },
+      {
+        "id": "WMa7bIShNKI",
+        "title": "In the Valley of Sorrow",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Volume2"
+      },
+      {
+        "id": "VlnAaiqtg8k",
+        "title": "My Krishna is Blue",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Smile"
+      },
+      {
+        "id": "OB6x3u7iipU",
+        "title": "I Am the Sky",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Flame"
+      },
+      {
+        "id": "lyuP_PgXCTM",
+        "title": "Where is There Love",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Zap"
+      },
+      {
+        "id": "p1TSk004POw",
+        "title": "From This Sleep, Lord",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Droplet"
+      },
+      {
+        "id": "4Q2sx4pCm0s",
+        "title": "In the Land Beyond My Dreams",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Music"
+      },
+      {
+        "id": "IBWDk8g5C1g",
+        "title": "Listen, Listen, Listen",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      },
+      {
+        "id": "yBFJlXmngNA",
+        "title": "When Thy Song Flows Through Me",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Heart"
+      },
+      {
+        "id": "Ryc6TseZDkY",
+        "title": "Today My Mind Has Dived",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Compass"
+      },
+      {
+        "id": "BeXbDCqY3HY",
+        "title": "Om Song",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sparkles"
+      },
+      {
+        "id": "IfwGaIW_Bmo",
+        "title": "O Thou King of the Infinite",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Activity"
+      },
+      {
+        "id": "Pn06BLdU67E",
+        "title": "Om Kali",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Volume2"
+      },
+      {
+        "id": "iNl48sdciKc",
+        "title": "Divine Gypsy",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Smile"
+      },
+      {
+        "id": "KLJuiG8glFA",
+        "title": "Thousands of Suns",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Flame"
+      },
+      {
+        "id": "WhGVZppb64M",
+        "title": "O Thou Blue Sky",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Zap"
+      },
+      {
+        "id": "vQbXGiVN7LU",
+        "title": "O God Beautiful",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Droplet"
+      },
+      {
+        "id": "ehZVfqD3WQs",
+        "title": "Hymn to Brahma",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Music"
+      },
+      {
+        "id": "KtV9EdJv9B0",
+        "title": "I Am the Sky",
+        "desc": "Beautiful instrumental melody of Paramahansa Yogananda cosmic chants.",
+        "icon": "Sun"
+      }
+    ]
+  }
+]
