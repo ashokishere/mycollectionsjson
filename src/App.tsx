@@ -169,6 +169,12 @@ const AFFIRMATIONS_TOURS: Video[] = [
     title: "“The Eternal Life of God” | An Affirmation by Paramahansa Yogananda",
     url: "https://www.youtube.com/shorts/7KpZ3zQKIAQ",
     tags: ["Affirmations", "Shorts"]
+  },
+  {
+    id: "-Mxf7alEQjw",
+    title: "Overcoming Fear With Divine Vibrations | Brother Chidananda",
+    url: "https://www.youtube.com/watch?v=-Mxf7alEQjw",
+    tags: ["Affirmations", "With Coach", "Shorts"]
   }
 ];
 
