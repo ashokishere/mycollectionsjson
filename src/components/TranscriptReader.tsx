@@ -15,7 +15,8 @@ import {
   Eye,
   Settings,
   X,
-  Plus
+  Plus,
+  ExternalLink
 } from 'lucide-react';
 import { type Video } from '../data/videos';
 import { cn } from '../lib/utils';
@@ -36,6 +37,7 @@ interface TranscriptData {
   formattedMarkdown: string;
   rawText: string;
   wordCount: number;
+  fullTranscriptSegments?: Array<{ time: string; text: string }>;
 }
 
 /**
@@ -135,6 +137,13 @@ function formatTranscriptLocally(title: string, rawText: string): string {
 const INITIAL_AVAILABLE_IDS = [
   'FkWBsufZvz8',
   'b-LzFHT3Y2M',
+  'Af7bsvHoGDw',
+  'THK8N728BMo',
+  'NOOhLX4lYdo',
+  'LOuNn_KPrqc',
+  'w4aXXZw8qZY',
+  'BNud4LMtF4Y',
+  'Gc0-skd_7Pc',
   'B7pimil_1E4',
   'Uz3_LpRdLF0',
   'bW3hyJWpuRE',
@@ -232,15 +241,79 @@ const INITIAL_AVAILABLE_IDS = [
   'vBAaK0TZWCQ'
 ];
 
+const parseTimeToSeconds = (timeStr: string): number => {
+  const parts = timeStr.split(':').map(Number);
+  if (parts.length === 2) {
+    return parts[0] * 60 + parts[1];
+  } else if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  return 0;
+};
+
+function getTranscriptSegments(transcript: TranscriptData): Array<{ time: string; text: string }> {
+  if (transcript.fullTranscriptSegments && transcript.fullTranscriptSegments.length > 0) {
+    return transcript.fullTranscriptSegments;
+  }
+  
+  // Dynamic fallback: split rawText (or formattedMarkdown if rawText is small) into paragraphs or blocks
+  const textSource = transcript.rawText && transcript.rawText.length > 100 
+    ? transcript.rawText 
+    : transcript.formattedMarkdown.replace(/#.*?\n|###.*?\n|---/g, '').trim();
+
+  // Split by sentences
+  const sentences = textSource.split(/(?<=[.!?])\s+/);
+  const segments: Array<{ time: string; text: string }> = [];
+  
+  let currentGroup: string[] = [];
+  let currentWordCount = 0;
+  let estimatedSeconds = 0;
+
+  sentences.forEach((sentence) => {
+    if (!sentence.trim()) return;
+    currentGroup.push(sentence);
+    currentWordCount += sentence.split(/\s+/).length;
+    
+    // Group roughly every 3 sentences or 60 words
+    if (currentGroup.length >= 3 || currentWordCount >= 60) {
+      const minutes = Math.floor(estimatedSeconds / 60);
+      const seconds = Math.floor(estimatedSeconds % 60);
+      const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+      
+      segments.push({
+        time: timeStr,
+        text: currentGroup.join(' ').trim()
+      });
+      
+      // Assume average speaking speed of 150 words per minute (2.5 words per second)
+      estimatedSeconds += Math.max(12, Math.round(currentWordCount / 2.5));
+      currentGroup = [];
+      currentWordCount = 0;
+    }
+  });
+
+  if (currentGroup.length > 0) {
+    const minutes = Math.floor(estimatedSeconds / 60);
+    const seconds = Math.floor(estimatedSeconds % 60);
+    const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    segments.push({
+      time: timeStr,
+      text: currentGroup.join(' ').trim()
+    });
+  }
+
+  return segments;
+}
+
 export default function TranscriptReader({ videos, activeVideoId, setActiveVideoId, onClose }: TranscriptReaderProps) {
   const [mobileView, setMobileView] = useState<'list' | 'reading'>(() => {
-    return activeVideoId && INITIAL_AVAILABLE_IDS.includes(activeVideoId) ? 'reading' : 'list';
+    return activeVideoId ? 'reading' : 'list';
   });
   const [availableIds, setAvailableIds] = useState<string[]>(() => {
     return (window as any).__cachedAvailableIds || INITIAL_AVAILABLE_IDS;
   });
   const [selectedVideoId, setSelectedVideoId] = useState<string>(() => {
-    if (activeVideoId && INITIAL_AVAILABLE_IDS.includes(activeVideoId)) {
+    if (activeVideoId) {
       return activeVideoId;
     }
     return 'FkWBsufZvz8';
@@ -273,6 +346,118 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
   const [subSearchQuery, setSubSearchQuery] = useState('');
   const [copied, setCopied] = useState(false);
   
+  // New Unabridged Transcript and Search states
+  const [viewMode, setViewMode] = useState<'overview' | 'full'>('overview');
+  const [highlightedSegmentIdx, setHighlightedSegmentIdx] = useState<number | null>(null);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState<number>(0);
+  
+  // Global search states
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
+  const [isLoadingAll, setIsLoadingAll] = useState(false);
+  const [loadedCount, setLoadedCount] = useState(0);
+  const [hasPrefetchedAll, setHasPrefetchedAll] = useState(false);
+  const [pendingSegmentJump, setPendingSegmentJump] = useState<{ segmentIdx: number; time: string } | null>(null);
+
+  // Background fetcher to load and search all 90+ transcripts
+  const loadAllTranscripts = async () => {
+    setIsLoadingAll(true);
+    const idsToFetch = availableIds.filter(id => !(window as any).__transcriptCache[id]);
+    
+    if (idsToFetch.length === 0) {
+      setLoadedCount(availableIds.length);
+      setIsLoadingAll(false);
+      return;
+    }
+
+    let fetchedCount = availableIds.length - idsToFetch.length;
+    setLoadedCount(fetchedCount);
+
+    // Fetch in batches of 15 to keep browser responsive
+    const chunkSize = 15;
+    for (let i = 0; i < idsToFetch.length; i += chunkSize) {
+      const chunk = idsToFetch.slice(i, i + chunkSize);
+      await Promise.all(
+        chunk.map(async (id) => {
+          try {
+            const response = await fetch(`${import.meta.env.BASE_URL || '/'}transcripts/${id}.json`);
+            if (response.ok) {
+              const data = await response.json();
+              (window as any).__transcriptCache[id] = data;
+            }
+          } catch (e) {
+            console.warn(`Error preloading transcript ${id}:`, e);
+          }
+        })
+      );
+      fetchedCount += chunk.length;
+      setLoadedCount(fetchedCount);
+    }
+    
+    setIsLoadingAll(false);
+  };
+
+  // Derive matches across all loaded transcripts
+  const globalSearchResults = useMemo(() => {
+    if (!globalSearchQuery.trim()) return [];
+    const q = globalSearchQuery.toLowerCase();
+    const results: Array<{
+      videoId: string;
+      videoTitle: string;
+      matches: Array<{
+        text: string;
+        time: string;
+        segmentIdx: number;
+      }>;
+    }> = [];
+
+    for (const id of availableIds) {
+      const data = (window as any).__transcriptCache[id] as TranscriptData | undefined;
+      if (!data) continue;
+
+      const segmentsList = getTranscriptSegments(data);
+      const matches: Array<{ text: string; time: string; segmentIdx: number }> = [];
+
+      segmentsList.forEach((seg, idx) => {
+        if (seg.text.toLowerCase().includes(q)) {
+          matches.push({
+            text: seg.text,
+            time: seg.time,
+            segmentIdx: idx
+          });
+        }
+      });
+
+      if (matches.length > 0) {
+        results.push({
+          videoId: id,
+          videoTitle: data.title || videos.find(v => v.id === id)?.title || id,
+          matches
+        });
+      }
+    }
+
+    return results;
+  }, [globalSearchQuery, availableIds, loadedCount, videos]);
+
+  // Handle opening a global search match and scrolling to it
+  const handleSelectSearchResult = (videoId: string, segmentIdx: number, time: string) => {
+    // Sync search query in sub text filter
+    setSubSearchQuery(globalSearchQuery);
+    
+    if (selectedVideoId === videoId) {
+      setViewMode('full');
+      // Briefly let React state apply before scrolling
+      setTimeout(() => {
+        handleJumpToSegment(segmentIdx);
+        handleSeekVideo(time);
+      }, 100);
+    } else {
+      setPendingSegmentJump({ segmentIdx, time });
+      setSelectedVideoId(videoId);
+      setMobileView('reading');
+    }
+  };
+  
   // Custom manual transcript formatting states
   const [inputRawText, setInputRawText] = useState('');
   const [showFormatterModal, setShowFormatterModal] = useState(false);
@@ -280,6 +465,67 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
 
   const containerRef = useRef<HTMLDivElement>(null);
   const readingAreaRef = useRef<HTMLDivElement>(null);
+
+  // Derive segments from the loaded transcript
+  const segments = useMemo(() => {
+    if (!transcript) return [];
+    return getTranscriptSegments(transcript);
+  }, [transcript]);
+
+  // Find segments containing the query term
+  const matchingSegmentIndices = useMemo(() => {
+    if (!subSearchQuery.trim() || segments.length === 0) return [];
+    const q = subSearchQuery.toLowerCase();
+    return segments
+      .map((seg, idx) => seg.text.toLowerCase().includes(q) ? idx : -1)
+      .filter(idx => idx !== -1);
+  }, [segments, subSearchQuery]);
+
+  // Reset match index and viewmode on search or selection changes
+  useEffect(() => {
+    setCurrentMatchIndex(0);
+  }, [subSearchQuery]);
+
+  useEffect(() => {
+    setViewMode('overview');
+  }, [selectedVideoId]);
+
+  // Handle seeking the companion player
+  const handleSeekVideo = (timeStr: string) => {
+    const seconds = parseTimeToSeconds(timeStr);
+    
+    if (activeVideoId !== selectedVideoId) {
+      setActiveVideoId(selectedVideoId);
+    }
+
+    const player = (window as any).__ytPlayer;
+    if (player) {
+      try {
+        player.seekTo(seconds, true);
+        player.playVideo();
+      } catch (e) {
+        console.warn("Could not seek companion player:", e);
+      }
+    }
+  };
+
+  // Smoothly scroll to a segment and trigger momentary focus glow
+  const handleJumpToSegment = (idx: number) => {
+    const element = document.getElementById(`segment-${idx}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightedSegmentIdx(idx);
+      
+      const matchPos = matchingSegmentIndices.indexOf(idx);
+      if (matchPos !== -1) {
+        setCurrentMatchIndex(matchPos);
+      }
+
+      setTimeout(() => {
+        setHighlightedSegmentIdx(prev => prev === idx ? null : prev);
+      }, 2500);
+    }
+  };
 
   // Persist customization choices
   useEffect(() => {
@@ -317,17 +563,13 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
     };
   }, []);
 
-  // Auto-align selected video with App's active video - fallback to first available if not found
+  // Auto-align selected video with App's active video
   useEffect(() => {
     if (activeVideoId) {
-      if (availableIds.includes(activeVideoId)) {
-        setSelectedVideoId(activeVideoId);
-        setMobileView('reading');
-      } else if (availableIds.length > 0) {
-        setSelectedVideoId(availableIds[0]);
-      }
+      setSelectedVideoId(activeVideoId);
+      setMobileView('reading');
     }
-  }, [activeVideoId, availableIds]);
+  }, [activeVideoId]);
 
   // Load transcript data from static json files dynamically with instant response cache
   useEffect(() => {
@@ -378,6 +620,19 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
     };
   }, [selectedVideoId]);
 
+  // Trigger jump and seek when pendingSegmentJump and transcript is ready
+  useEffect(() => {
+    if (transcript && !loading && pendingSegmentJump) {
+      const { segmentIdx, time } = pendingSegmentJump;
+      setPendingSegmentJump(null);
+      setViewMode('full');
+      setTimeout(() => {
+        handleJumpToSegment(segmentIdx);
+        handleSeekVideo(time);
+      }, 200);
+    }
+  }, [transcript, loading, pendingSegmentJump]);
+
   // Format instantly on the client side with our smart layout machine
   const handleFormatLocally = () => {
     if (!inputRawText.trim()) return;
@@ -416,13 +671,36 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
 
   // List of videos with metadata highlighting transcripts status
   const searchableVideos = useMemo(() => {
-    return videos
-      .filter(v => availableIds.includes(v.id))
-      .map(v => ({
-        ...v,
-        hasTranscript: true
-      }));
-  }, [videos, availableIds]);
+    const filtered = videos.filter(v => availableIds.includes(v.id));
+    const hasSelected = filtered.some(v => v.id === selectedVideoId);
+    
+    if (!hasSelected && selectedVideoId) {
+      const selectedVideo = videos.find(v => v.id === selectedVideoId);
+      if (selectedVideo) {
+        return [
+          { ...selectedVideo, hasTranscript: false },
+          ...filtered.map(v => ({ ...v, hasTranscript: true }))
+        ];
+      }
+    }
+    
+    return filtered.map(v => ({
+      ...v,
+      hasTranscript: true
+    }));
+  }, [videos, availableIds, selectedVideoId]);
+
+  // Simple word-by-word text highlighter for search matches inside unabridged segments
+  const highlightText = (text: string, query: string) => {
+    if (!query.trim()) return text;
+    const q = query.toLowerCase();
+    const parts = text.split(new RegExp(`(${q})`, 'gi'));
+    return parts.map((part, idx) => 
+      part.toLowerCase() === q 
+        ? <mark key={idx} className="bg-amber-300 text-slate-900 rounded-[2px] px-0.5 font-bold shadow-sm">{part}</mark> 
+        : part
+    );
+  };
 
   // Handle Keyword Highlight and rendering for custom Markdown
   const renderMarkdownWithHighlights = (rawMd: string) => {
@@ -504,7 +782,7 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
       if (trimmed.startsWith('> ')) {
         isInList = false;
         return (
-          <blockquote key={idx} className="border-l-4 border-indigo-400 pl-4 py-1 my-4 text-slate-600 font-serif italic text-sm rounded-r-lg bg-black/5 p-3">
+          <blockquote key={idx} className="border-l-4 border-indigo-400 pl-4 py-2 my-4 opacity-85 font-serif italic text-sm rounded-r-lg bg-current/5 p-3">
             {formatBoldAndHighlights(trimmed.substring(2))}
           </blockquote>
         );
@@ -581,38 +859,127 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
           </button>
         </div>
 
-        {/* List of videos */}
-        <div className="flex-grow overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
-          {searchableVideos.map((video) => (
+        {/* Global transcript search input */}
+        <div className="mb-4 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-theme-text-muted/50" />
+          <input
+            type="text"
+            placeholder="Search all transcripts..."
+            value={globalSearchQuery}
+            onChange={(e) => {
+              const val = e.target.value;
+              setGlobalSearchQuery(val);
+              if (val.trim() && !hasPrefetchedAll) {
+                setHasPrefetchedAll(true);
+                loadAllTranscripts();
+              }
+            }}
+            className="w-full bg-theme-surface text-xs py-2 pl-9 pr-8 rounded-xl border border-theme-border focus:outline-none focus:border-theme-accent transition-all placeholder:text-theme-text-muted/40 text-theme-text shadow-sm"
+          />
+          {globalSearchQuery && (
             <button
-              key={video.id}
-              onClick={() => {
-                setSelectedVideoId(video.id);
-                setMobileView('reading');
-              }}
-              className={`w-full text-left p-2.5 rounded-xl border flex items-start gap-3 transition-all ${
-                selectedVideoId === video.id
-                  ? 'bg-theme-accent/20 border-theme-accent text-theme-text shadow-sm'
-                  : 'bg-theme-surface border-transparent hover:bg-theme-surface/80 text-theme-text-muted'
-              }`}
+              onClick={() => setGlobalSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-theme-text-muted hover:text-theme-text"
             >
-              <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-slate-950 relative">
-                <img 
-                  src={`https://img.youtube.com/vi/${video.id}/default.jpg`} 
-                  alt="" 
-                  className="w-full h-full object-cover opacity-80"
-                />
-              </div>
-              <div className="min-w-0 flex-grow">
-                <p className={`text-[10px] font-extrabold truncate uppercase ${selectedVideoId === video.id ? 'text-theme-accent' : 'text-theme-text-muted/65'}`}>
-                  📖 Reading Ready
-                </p>
-                <h4 className={`text-xs font-semibold leading-tight mt-0.5 ${selectedVideoId === video.id ? 'text-theme-text font-bold' : 'text-theme-text/80'}`}>
-                  {video.title}
-                </h4>
-              </div>
+              <X className="w-3.5 h-3.5" />
             </button>
-          ))}
+          )}
+        </div>
+
+        {/* Live scanning progress bar */}
+        {isLoadingAll && (
+          <div className="mb-4 px-1 text-[10px] text-theme-text-muted/85 flex flex-col gap-1.5 animate-pulse bg-theme-accent/5 p-2 rounded-xl border border-theme-accent/10">
+            <div className="flex items-center justify-between font-mono">
+              <span className="flex items-center gap-1.5 font-bold text-theme-accent">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-theme-accent animate-ping" />
+                Scanning: {loadedCount}/{availableIds.length} loaded
+              </span>
+              <span>{Math.round((loadedCount / availableIds.length) * 100)}%</span>
+            </div>
+            <div className="w-full bg-theme-border/40 h-1 rounded-full overflow-hidden">
+              <div 
+                className="bg-theme-accent h-full rounded-full transition-all duration-300" 
+                style={{ width: `${(loadedCount / availableIds.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* List of videos or search results */}
+        <div className="flex-grow overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+          {globalSearchQuery.trim() ? (
+            globalSearchResults.length === 0 ? (
+              <div className="text-center py-10 px-4 text-theme-text-muted/60 text-xs font-serif italic">
+                {isLoadingAll ? (
+                  <p className="animate-pulse">Loading and scanning 90+ records for "{globalSearchQuery}"...</p>
+                ) : (
+                  <p>No matches found in any lecture transcript.</p>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-[10px] font-extrabold text-theme-accent/80 uppercase tracking-widest px-1">
+                  Found in {globalSearchResults.length} {globalSearchResults.length === 1 ? 'lecture' : 'lectures'}:
+                </p>
+                {globalSearchResults.map((res) => (
+                  <div key={res.videoId} className="bg-theme-surface/30 border border-theme-border/40 rounded-2xl p-2.5 space-y-2">
+                    <h4 className="text-[11px] font-bold text-theme-text leading-tight pb-1 border-b border-theme-border/25">
+                      📚 {res.videoTitle}
+                    </h4>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto custom-scrollbar pr-0.5">
+                      {res.matches.map((match, mIdx) => (
+                        <button
+                          key={mIdx}
+                          onClick={() => {
+                            handleSelectSearchResult(res.videoId, match.segmentIdx, match.time);
+                          }}
+                          className="w-full text-left p-2 rounded-xl bg-theme-surface/50 hover:bg-theme-accent/10 border border-theme-border/30 hover:border-theme-accent/30 text-[11px] transition-all cursor-pointer group flex gap-2 items-start"
+                        >
+                          <span className="font-mono text-[9px] bg-theme-accent/10 text-theme-accent px-1.5 py-0.5 rounded shrink-0 group-hover:bg-theme-accent group-hover:text-white transition-colors">
+                            {match.time}
+                          </span>
+                          <p className="text-theme-text-muted group-hover:text-theme-text leading-relaxed font-serif line-clamp-3">
+                            {highlightText(match.text, globalSearchQuery)}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          ) : (
+            searchableVideos.map((video) => (
+              <button
+                key={video.id}
+                onClick={() => {
+                  setSelectedVideoId(video.id);
+                  setMobileView('reading');
+                }}
+                className={`w-full text-left p-2.5 rounded-xl border flex items-start gap-3 transition-all ${
+                  selectedVideoId === video.id
+                    ? 'bg-theme-accent/20 border-theme-accent text-theme-text shadow-sm'
+                    : 'bg-theme-surface border-transparent hover:bg-theme-surface/80 text-theme-text-muted'
+                }`}
+              >
+                <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-slate-950 relative">
+                  <img 
+                    src={`https://img.youtube.com/vi/${video.id}/default.jpg`} 
+                    alt="" 
+                    className="w-full h-full object-cover opacity-80"
+                  />
+                </div>
+                <div className="min-w-0 flex-grow">
+                  <p className={`text-[10px] font-extrabold truncate uppercase ${selectedVideoId === video.id ? 'text-theme-accent' : 'text-theme-text-muted/65'}`}>
+                    {video.hasTranscript ? '📖 Reading Ready' : '⚡ Custom Formatter Lab'}
+                  </p>
+                  <h4 className={`text-xs font-semibold leading-tight mt-0.5 ${selectedVideoId === video.id ? 'text-theme-text font-bold' : 'text-theme-text/80'}`}>
+                    {video.title}
+                  </h4>
+                </div>
+              </button>
+            ))
+          )}
         </div>
       </div>
 
@@ -645,10 +1012,22 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
               <Eye className="w-4 h-4 text-theme-accent" />
             </button>
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-theme-text truncate leading-tight">
+              <h2 className="text-sm font-bold text-theme-text truncate leading-tight animate-fade-in">
                 {currentSelection?.title || 'Reading Panel'}
               </h2>
-              <span className="text-[10px] text-theme-text-muted/60 font-mono">ID: {selectedVideoId}</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] text-theme-text-muted/60 font-mono">ID: {selectedVideoId}</span>
+                <span className="text-theme-border text-[10px]">•</span>
+                <a 
+                  href={`https://www.youtube.com/watch?v=${selectedVideoId}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-[10px] text-theme-accent hover:text-theme-accent/80 hover:underline flex items-center gap-0.5 font-bold tracking-wider uppercase transition-colors"
+                  title="Open this lecture video directly on YouTube in a new tab"
+                >
+                  Watch Video <ExternalLink className="w-2.5 h-2.5 inline" />
+                </a>
+              </div>
             </div>
           </div>
 
@@ -763,12 +1142,20 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
             // Full Reading view
             <div className="w-full max-w-3xl flex flex-col h-full">
               {/* Meta stats bar */}
-              <div className="flex items-center gap-4 text-theme-text-muted/80 text-[10px] uppercase font-mono tracking-wider mb-6 shrink-0 border-b border-theme-border pb-4">
-                <span>📚 Word count: <strong className="text-theme-text font-bold">{transcript.wordCount}</strong></span>
+              <div className="flex items-center gap-4 text-theme-text-muted/80 text-[10px] uppercase font-mono tracking-wider mb-6 shrink-0 border-b border-theme-border pb-4 flex-wrap">
+                <span>📚 Word count: <strong className="text-theme-text font-bold">{viewMode === 'overview' ? Math.round(transcript.wordCount * 0.6) : transcript.wordCount}</strong></span>
                 <span>•</span>
-                <span>⏳ Reading: <strong className="text-theme-text font-bold">{Math.round(transcript.wordCount / 180)} mins</strong></span>
+                <span>⏳ Reading: <strong className="text-theme-text font-bold">{viewMode === 'overview' ? Math.max(2, Math.round((transcript.wordCount * 0.6) / 180)) : Math.round(transcript.wordCount / 180)} mins</strong></span>
                 <span>•</span>
-                <span className="hidden sm:inline">Attuned successfully</span>
+                <a 
+                  href={`https://www.youtube.com/watch?v=${selectedVideoId}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-theme-accent hover:text-theme-accent/80 hover:underline flex items-center gap-1 font-bold"
+                  title="Direct URL to the video on YouTube"
+                >
+                  🎥 Direct Video URL <ExternalLink className="w-2.5 h-2.5 inline" />
+                </a>
                 <div className="ml-auto flex gap-2">
                   <button 
                     onClick={handleCopyText}
@@ -780,9 +1167,167 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
                 </div>
               </div>
 
+              {/* Segmented Mode Switch */}
+              <div className="flex items-center bg-theme-surface/50 border border-theme-border/80 p-1 rounded-xl mb-6 shrink-0 backdrop-blur-md">
+                <button
+                  onClick={() => setViewMode('overview')}
+                  className={cn(
+                    "flex-1 py-2 text-center text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer",
+                    viewMode === 'overview'
+                      ? "bg-theme-accent text-white shadow-md scale-[1.01]"
+                      : "text-theme-text-muted hover:text-theme-text"
+                  )}
+                >
+                  📖 High-Level Overview
+                </button>
+                <button
+                  onClick={() => setViewMode('full')}
+                  className={cn(
+                    "flex-1 py-2 text-center text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer",
+                    viewMode === 'full'
+                      ? "bg-theme-accent text-white shadow-md scale-[1.01]"
+                      : "text-theme-text-muted hover:text-theme-text"
+                  )}
+                >
+                  📜 Full Transcript
+                  <span className={cn(
+                    "text-[8px] font-mono px-1 rounded uppercase tracking-normal",
+                    viewMode === 'full' ? "bg-white/20 text-white" : "bg-theme-border text-theme-text-muted"
+                  )}>
+                    Unabridged
+                  </span>
+                </button>
+              </div>
+
+              {/* Keyword Search Locator Panel */}
+              {subSearchQuery.trim() && (
+                <div className="flex flex-col sm:flex-row items-center justify-between p-3 px-4 mb-6 rounded-2xl bg-theme-accent/5 border border-theme-accent/20 text-xs text-theme-text gap-3">
+                  <div className="flex items-center gap-2">
+                    <Search className="w-3.5 h-3.5 text-theme-accent shrink-0 animate-pulse" />
+                    <span>
+                      Found <strong className="text-theme-accent">{matchingSegmentIndices.length}</strong> {matchingSegmentIndices.length === 1 ? 'match' : 'matches'} in the unabridged transcript.
+                    </span>
+                  </div>
+                  {matchingSegmentIndices.length > 0 && (
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                      {/* Matching timestamps badges list */}
+                      <div className="flex items-center gap-1.5 overflow-x-auto max-w-[180px] sm:max-w-[260px] no-scrollbar shrink-0 py-0.5">
+                        {matchingSegmentIndices.map((idx, mIdx) => (
+                          <button
+                            key={idx}
+                            onClick={() => handleJumpToSegment(idx)}
+                            className={cn(
+                              "p-0.5 px-1.5 font-mono text-[10px] rounded border transition-all shrink-0 cursor-pointer",
+                              currentMatchIndex === mIdx
+                                ? "bg-theme-accent border-theme-accent text-white font-bold"
+                                : "bg-theme-surface border-theme-border text-theme-text-muted hover:text-theme-text"
+                            )}
+                          >
+                            {segments[idx].time}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => {
+                            const prevIdx = (currentMatchIndex - 1 + matchingSegmentIndices.length) % matchingSegmentIndices.length;
+                            setCurrentMatchIndex(prevIdx);
+                            handleJumpToSegment(matchingSegmentIndices[prevIdx]);
+                          }}
+                          className="p-1 px-2 bg-theme-surface hover:bg-theme-surface/80 text-theme-text-muted hover:text-theme-text rounded-md border border-theme-border font-bold text-[10px] cursor-pointer"
+                        >
+                          Prev
+                        </button>
+                        <button
+                          onClick={() => {
+                            const nextIdx = (currentMatchIndex + 1) % matchingSegmentIndices.length;
+                            setCurrentMatchIndex(nextIdx);
+                            handleJumpToSegment(matchingSegmentIndices[nextIdx]);
+                          }}
+                          className="p-1 px-2 bg-theme-surface hover:bg-theme-surface/80 text-theme-text-muted hover:text-theme-text rounded-md border border-theme-border font-bold text-[10px] cursor-pointer"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Dynamic reading scroll paper */}
               <div ref={readingAreaRef} className={`w-full p-8 sm:p-12 md:p-16 rounded-[2rem] border shadow-2xl transition-all font-serif ${paperClass} ${fontClass}`}>
-                {renderMarkdownWithHighlights(transcript.formattedMarkdown)}
+                {viewMode === 'overview' ? (
+                  <>
+                    {renderMarkdownWithHighlights(transcript.formattedMarkdown)}
+                    
+                    {/* Bottom inline expand full transcript CTA */}
+                    <div className="mt-12 pt-8 border-t border-theme-border/50 text-center">
+                      <p className="text-xs opacity-75 mb-4 font-serif italic">
+                        Want to read the complete word-for-word lecture without omissions?
+                      </p>
+                      <button
+                        onClick={() => {
+                          setViewMode('full');
+                          // Smooth scroll to top of reading container
+                          readingAreaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }}
+                        className="px-6 py-3 bg-theme-accent text-white font-bold text-[11px] uppercase tracking-widest rounded-xl hover:opacity-95 hover:scale-[1.01] transition-all shadow-md inline-flex items-center gap-2 cursor-pointer border border-transparent"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        Expand Full Transcript
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-6">
+                    {segments.map((seg, idx) => {
+                      const isHighlighted = highlightedSegmentIdx === idx;
+                      const hasMatches = subSearchQuery.trim() && seg.text.toLowerCase().includes(subSearchQuery.toLowerCase());
+                      const isCurrentMatch = subSearchQuery.trim() && matchingSegmentIndices[currentMatchIndex] === idx;
+
+                      return (
+                        <div 
+                          key={idx}
+                          id={`segment-${idx}`}
+                          className={cn(
+                            "flex gap-4 p-5 rounded-2xl border transition-all duration-300 relative",
+                            isHighlighted 
+                              ? "bg-amber-500/10 border-amber-500/40 shadow-lg scale-[1.01] ring-1 ring-amber-500/10" 
+                              : "bg-transparent border-transparent hover:bg-black/5 dark:hover:bg-white/5",
+                            hasMatches && !isHighlighted && "border-theme-accent/20 bg-theme-accent/5",
+                            isCurrentMatch && "ring-1 ring-theme-accent"
+                          )}
+                        >
+                          {/* Timeline timestamp marker */}
+                          <div className="flex flex-col items-center shrink-0">
+                            <button
+                              onClick={() => {
+                                handleSeekVideo(seg.time);
+                                setHighlightedSegmentIdx(idx);
+                                setTimeout(() => setHighlightedSegmentIdx(null), 2500);
+                              }}
+                              className={cn(
+                                "p-1.5 px-2.5 bg-theme-surface border border-theme-border hover:border-theme-accent text-theme-text-muted hover:text-theme-text rounded-lg transition-all flex items-center gap-1.5 font-mono text-[10px] font-semibold cursor-pointer shadow-sm active:scale-95",
+                                isHighlighted && "bg-theme-accent text-white border-theme-accent hover:bg-theme-accent hover:text-white"
+                              )}
+                              title="Click to play companion video at this timestamp"
+                            >
+                              <Volume2 className="w-3.5 h-3.5 shrink-0" />
+                              {seg.time}
+                            </button>
+                          </div>
+
+                          {/* Segment Transcript text */}
+                          <div className="flex-grow min-w-0 pt-0.5">
+                            <p className="leading-relaxed font-serif text-[15px] opacity-90">
+                              {highlightText(seg.text, subSearchQuery)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}

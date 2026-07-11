@@ -46,15 +46,39 @@ import {
   BookOpen,
   Map,
   GripVertical,
-  Volume2
+  Volume2,
+  Download,
+  Calendar,
+  Upload,
+  Lock,
+  Unlock,
+  Settings,
+  AlertCircle,
+  Database
 } from 'lucide-react';
 import { initialVideos, type Video } from './data/videos';
 import messagesData from './data/messages.json';
 import favoritesData from './data/favorite_playlists.json';
 import devotionalAlbums from './data/devotional_albums.json';
 import instrumentalAlbums from './data/instrumental_albums.json';
+import calendarData from './data/india_365_day_calendar_2026_with_saints_merged.json';
 import { cn } from './lib/utils';
 import TranscriptReader from './components/TranscriptReader';
+
+const LOTUS_IMAGE_URL = "https://images.unsplash.com/photo-1542631221-396af3702505?q=80&w=600&auto=format&fit=crop";
+
+const getProxiedImageUrl = (url?: string): string => {
+  if (!url) return LOTUS_IMAGE_URL;
+  if (url.includes('upload.wikimedia.org') || url.includes('wikimedia') || url.includes('wikipedia')) {
+    let filename = url.substring(url.lastIndexOf('/') + 1);
+    if (filename.includes('?')) {
+      filename = filename.split('?')[0];
+    }
+    const resolvedUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}`;
+    return `https://wsrv.nl/?url=${encodeURIComponent(resolvedUrl)}&w=400&fit=cover`;
+  }
+  return url;
+};
 
 // Static Pilgrim Tour data
 const VIRTUAL_TOURS: Video[] = [
@@ -301,7 +325,20 @@ export default function App() {
       }
     });
 
-    const all = [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks, ...initialVideos];
+    const savedVideosStr = localStorage.getItem('custom_videos_db');
+    let baseVideos = initialVideos;
+    if (savedVideosStr) {
+      try {
+        const parsed = JSON.parse(savedVideosStr);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          baseVideos = parsed;
+        }
+      } catch (e) {
+        console.error("Failed to parse custom_videos_db from localStorage");
+      }
+    }
+
+    const all = [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks, ...baseVideos];
     const seen = new Set<string>();
     return all.filter(v => {
       if (seen.has(v.id)) return false;
@@ -338,6 +375,121 @@ export default function App() {
   const [mobileInstrumentalAlbumView, setMobileInstrumentalAlbumView] = useState<'list' | 'tracks'>('list');
   
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+
+  // Admin Area State
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [adminPasscode, setAdminPasscode] = useState('');
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [isStaticMode, setIsStaticMode] = useState(false);
+
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [holyDaySaints, setHolyDaySaints] = useState<any[]>([]);
+  const [isHolyDayPopupOpen, setIsHolyDayPopupOpen] = useState(false);
+  const [calendarSearchQuery, setCalendarSearchQuery] = useState('');
+  const [testDateStr, setTestDateStr] = useState<string>(''); // Simulated date 'YYYY-MM-DD'
+
+  // Helper to match saints on a specific date (matching MM-DD)
+  const getSaintsForDate = useCallback((dateObj: Date) => {
+    const currentMonth = dateObj.getMonth() + 1; // 1-indexed
+    const currentDay = dateObj.getDate();
+
+    return (calendarData.saints_list || []).filter((saint: any) => {
+      // 1. Check if direct date matches (MM-DD)
+      if (saint.date) {
+        const parts = saint.date.split('-');
+        if (parts.length === 3) {
+          const m = parseInt(parts[1], 10);
+          const d = parseInt(parts[2], 10);
+          if (m === currentMonth && d === currentDay) return true;
+        }
+      }
+
+      // 2. Check if birth_date matches (MM-DD)
+      if (saint.birth_date && saint.birth_date !== 'various') {
+        const parts = saint.birth_date.split(' / ');
+        for (const part of parts) {
+          const dParts = part.split('-');
+          if (dParts.length === 3) {
+            const m = parseInt(dParts[1], 10);
+            const d = parseInt(dParts[2], 10);
+            if (m === currentMonth && d === currentDay) return true;
+          }
+        }
+      }
+
+      // 3. Check if death_date matches (MM-DD)
+      if (saint.death_date && saint.death_date !== 'various') {
+        const parts = saint.death_date.split(' / ');
+        for (const part of parts) {
+          const dParts = part.split('-');
+          if (dParts.length === 3) {
+            const m = parseInt(dParts[1], 10);
+            const d = parseInt(dParts[2], 10);
+            if (m === currentMonth && d === currentDay) return true;
+          }
+        }
+      }
+
+      return false;
+    });
+  }, []);
+
+  // Check for today's Holy Day Saints on mount
+  useEffect(() => {
+    const matches = getSaintsForDate(new Date());
+    if (matches.length > 0) {
+      setHolyDaySaints(matches);
+      setIsHolyDayPopupOpen(true);
+    }
+  }, [getSaintsForDate]);
+
+  // Handle manual simulated date triggers
+  const handleSimulateDate = useCallback((dateString: string) => {
+    if (!dateString) return;
+    const parts = dateString.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // 0-indexed
+      const day = parseInt(parts[2], 10);
+      const testDate = new Date(year, month, day);
+      
+      const matches = getSaintsForDate(testDate);
+      if (matches.length > 0) {
+        setHolyDaySaints(matches);
+        setIsHolyDayPopupOpen(true);
+      }
+    }
+  }, [getSaintsForDate]);
+
+  // Find videos in database related to a saint
+  const findRelatedVideosForSaint = useCallback((saint: any) => {
+    if (!saint) return [];
+    const nameLower = saint.name.toLowerCase();
+    const traditionLower = (saint.tradition || '').toLowerCase();
+    
+    const searchName = nameLower
+      .replace(/\s*\(.*?\)\s*/g, '')
+      .replace('swami ', '')
+      .replace('paramahansa ', '')
+      .replace('sri ', '')
+      .trim();
+
+    return videos.filter((v: Video) => {
+      const titleLower = v.title.toLowerCase();
+      const tagsLower = (v.tags || []).join(' ').toLowerCase();
+      
+      return (
+        titleLower.includes(searchName) ||
+        tagsLower.includes(searchName) ||
+        titleLower.includes(traditionLower) ||
+        tagsLower.includes(traditionLower)
+      );
+    });
+  }, [videos]);
 
   // Reset mobile album view to main listing when opening albums drawer
   useEffect(() => {
@@ -558,7 +710,7 @@ export default function App() {
   const playerRef = useRef<HTMLDivElement>(null);
   const playerInstance = useRef<any>(null);
 
-  // Load playlist from local storage
+  // Load playlist from local storage & admin auth state
   useEffect(() => {
     const saved = localStorage.getItem('laughter_bubble_playlist') || localStorage.getItem('zenstream_playlist');
     if (saved) {
@@ -568,10 +720,371 @@ export default function App() {
         console.error('Failed to parse saved playlist');
       }
     }
+
+    if (localStorage.getItem('admin_auth_token') === 'true') {
+      setIsAdminAuthenticated(true);
+    }
     
-    // Initial fetch from remote
+    // Fetch live-updated catalog from server
+    fetchLiveVideos();
     fetchRemoteData();
   }, []);
+
+  // Helper to update active database state and local backups
+  const applyNewCustomVideos = (customVideos: Video[]) => {
+    localStorage.setItem('custom_videos_db', JSON.stringify(customVideos));
+
+    const albumTracks: Video[] = [];
+    devotionalAlbums.forEach(album => {
+      if (album.tracks && Array.isArray(album.tracks)) {
+        album.tracks.forEach(track => {
+          albumTracks.push({
+            id: track.id,
+            title: track.title,
+            url: `https://www.youtube.com/watch?v=${track.id}`,
+            tags: ["Devotional Chants", "Spiritual Album", album.name]
+          });
+        });
+      }
+    });
+
+    const instrumentalTracks: Video[] = [];
+    instrumentalAlbums.forEach(album => {
+      if (album.tracks && Array.isArray(album.tracks)) {
+        album.tracks.forEach(track => {
+          instrumentalTracks.push({
+            id: track.id,
+            title: track.title,
+            url: `https://www.youtube.com/watch?v=${track.id}`,
+            tags: ["Instrumental", "Spiritual Album", album.name]
+          });
+        });
+      }
+    });
+
+    const all = [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks, ...customVideos];
+    const seen = new Set<string>();
+    const filtered = all.filter(v => {
+      if (seen.has(v.id)) return false;
+      seen.add(v.id);
+      return true;
+    });
+    setVideos(filtered);
+  };
+
+  // Custom client-side CSV parser to handle quotes, commas, and newlines safely
+  const parseClientCSV = (content: string): string[][] => {
+    const lines: string[][] = [];
+    let currentLine: string[] = [];
+    let currentCell = "";
+    let insideQuotes = false;
+    
+    for (let i = 0; i < content.length; i++) {
+      const char = content[i];
+      const nextChar = content[i + 1];
+      
+      if (char === '"') {
+        if (insideQuotes && nextChar === '"') {
+          currentCell += '"';
+          i++; // skip next quote
+        } else {
+          insideQuotes = !insideQuotes;
+        }
+      } else if (char === ',' && !insideQuotes) {
+        currentLine.push(currentCell);
+        currentCell = "";
+      } else if ((char === "\r" || char === "\n") && !insideQuotes) {
+        if (char === "\r" && nextChar === "\n") {
+          i++;
+        }
+        currentLine.push(currentCell);
+        lines.push(currentLine);
+        currentLine = [];
+        currentCell = "";
+      } else {
+        currentCell += char;
+      }
+    }
+    if (currentCell || currentLine.length > 0) {
+      currentLine.push(currentCell);
+      lines.push(currentLine);
+    }
+    return lines;
+  };
+
+  const processCsvData = (parsedRows: string[][]): Video[] => {
+    if (parsedRows.length === 0) {
+      throw new Error("CSV file is empty");
+    }
+
+    // Header detection
+    let headerRowIndex = 0;
+    for (let i = 0; i < Math.min(parsedRows.length, 20); i++) {
+      const row = parsedRows[i];
+      if (row && row.length >= 2) {
+        const hasKeys = row.some(cell => {
+          const c = String(cell || "").toLowerCase();
+          return c === "videoid" || c === "id" || c.includes("video") || c.includes("title") || c.includes("url") || c.includes("link") || c.includes("topic");
+        });
+        if (hasKeys) {
+          headerRowIndex = i;
+          break;
+        }
+      }
+    }
+
+    const headerRow = parsedRows[headerRowIndex];
+    let idIdx = 0, titleIdx = 1, urlIdx = 2, tagsIdx = 3;
+
+    if (headerRow) {
+      headerRow.forEach((cell, idx) => {
+        const c = String(cell || "").toLowerCase();
+        if (c === "videoid" || c === "id" || c.includes("video id") || c === "video") idIdx = idx;
+        else if (c.includes("title")) titleIdx = idx;
+        else if (c.includes("url") || c.includes("link") || c.includes("youtube")) urlIdx = idx;
+        else if (c.includes("tag") || c.includes("theme") || c.includes("category") || c.includes("topic")) tagsIdx = idx;
+      });
+    }
+
+    const videoMap: Record<string, Video> = {};
+
+    parsedRows.forEach((row, rowIndex) => {
+      if (rowIndex <= headerRowIndex) return;
+      if (!row || row.length < 2) return;
+      
+      const id = String(row[idIdx] || "").trim();
+      if (!id || id.toLowerCase() === "id" || id.toLowerCase() === "videoid" || id === "#NAME?" || id === "#REF!" || id === "#VALUE!") return;
+      
+      const title = String(row[titleIdx] || "").trim().replace(/‚Äú|‚Äù/g, '"').replace(/‚Äò|‚Äô/g, "'").replace(/‚Äî/g, "—");
+      const url = String(row[urlIdx] || "").trim();
+      if (!url) return;
+      
+      const rawTagsString = String(row[tagsIdx] || "");
+      const rawTags = rawTagsString.split(/[|,;]/).map(t => t.trim()).filter(t => t !== "");
+      
+      const normalizedTags = Array.from(new Set(rawTags.map(t => {
+        const lower = t.toLowerCase();
+        if (lower === "engilish" || lower === "english") return "English";
+        if (lower === "hindi") return "Hindi";
+        if (lower === "tamil") return "Tamil";
+        if (lower === "bengali") return "Bengali";
+        if (lower === "telugu") return "Telugu";
+        if (lower === "nepali") return "Nepali";
+        if (lower.includes("autobigraphy") || lower.includes("yoig")) return "Autobiography of a Yogi";
+        return t;
+      })));
+
+      videoMap[id] = { id, title, url, tags: normalizedTags };
+    });
+
+    return Object.values(videoMap);
+  };
+
+  const exportActiveCsv = () => {
+    // Filter out non-custom pre-bundled videos to get the clean Database.csv
+    const customOnly = videos.filter(v => {
+      const isVirtual = VIRTUAL_TOURS.some(vt => vt.id === v.id);
+      const isAffirmation = AFFIRMATIONS_TOURS.some(at => at.id === v.id);
+      const isWisdom = WISDOM_TEACHINGS.some(wt => wt.id === v.id);
+      const isAlbum = v.tags?.includes("Spiritual Album") || v.tags?.includes("Devotional Chants");
+      return !isVirtual && !isAffirmation && !isWisdom && !isAlbum;
+    });
+
+    const headers = ["VideoID", "Title", "URL", "Topic"];
+    const csvRows = [headers.join(",")];
+
+    customOnly.forEach(v => {
+      const id = v.id;
+      const title = v.title;
+      const url = v.url;
+      const tagsStr = v.tags ? v.tags.join(" | ") : "";
+
+      const row = [id, title, url, tagsStr].map(val => {
+        const s = String(val || "");
+        if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+          return `"${s.replace(/"/g, '""')}"`;
+        }
+        return s;
+      });
+      csvRows.push(row.join(","));
+    });
+
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "Database.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Fetch real-time live videos list from Express server
+  const fetchLiveVideos = async () => {
+    try {
+      const res = await fetch(`/api/videos?t=${Date.now()}`);
+      const contentType = res.headers.get('content-type');
+      if (res.ok && contentType && contentType.includes('application/json')) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          applyNewCustomVideos(data);
+          setIsStaticMode(false);
+          return true;
+        }
+      } else {
+        setIsStaticMode(true);
+      }
+    } catch (err) {
+      console.error("Express server offline, switching to Static Mode (localStorage backup):", err);
+      setIsStaticMode(true);
+    }
+
+    // Static mode fallback
+    const saved = localStorage.getItem('custom_videos_db');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (Array.isArray(data) && data.length > 0) {
+          applyNewCustomVideos(data);
+          return true;
+        }
+      } catch (e) {
+        console.error("Failed to parse custom_videos_db from local backup");
+      }
+    }
+    return false;
+  };
+
+  const verifyAdminPasscode = async () => {
+    setAdminError(null);
+    const trimmedPasscode = adminPasscode.trim();
+
+    // 1. Local offline verification check for static environments (GitHub Pages)
+    if (isStaticMode || trimmedPasscode === 'sadhana' || trimmedPasscode === 'yogananda2026') {
+      if (trimmedPasscode === 'sadhana' || trimmedPasscode === 'yogananda2026') {
+        setIsAdminAuthenticated(true);
+        localStorage.setItem('admin_auth_token', 'true');
+        setAdminPasscode('');
+        return;
+      }
+    }
+
+    // 2. Otherwise try Express server verify endpoint
+    try {
+      const res = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ passcode: adminPasscode })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setIsAdminAuthenticated(true);
+        localStorage.setItem('admin_auth_token', 'true');
+        setAdminPasscode('');
+      } else {
+        setAdminError(data.message || 'Invalid Admin Passcode');
+      }
+    } catch (err) {
+      if (trimmedPasscode === 'sadhana' || trimmedPasscode === 'yogananda2026') {
+        setIsAdminAuthenticated(true);
+        localStorage.setItem('admin_auth_token', 'true');
+        setAdminPasscode('');
+        setIsStaticMode(true);
+      } else {
+        setAdminError('Server communication error');
+      }
+    }
+  };
+
+  const handleDatabaseUpload = async (event: React.ChangeEvent<HTMLInputElement>, type: 'csv' | 'xlsx') => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    setAdminError(null);
+    setUploadSuccess(null);
+    setUploadProgress(`Processing and syncing ${file.name}...`);
+
+    // If running in static/offline mode or CSV upload, we handle entirely client-side
+    if (isStaticMode || type === 'csv') {
+      if (type === 'xlsx') {
+        setAdminError("Notice: For static/offline mode (GitHub Pages), please convert your Excel sheet to CSV (File > Save As > CSV) and upload it here. CSV is 100% supported in-browser!");
+        setIsUploading(false);
+        setUploadProgress(null);
+        return;
+      }
+
+      try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const text = e.target?.result;
+          if (typeof text !== 'string') {
+            setAdminError("Failed to read file contents");
+            setIsUploading(false);
+            setUploadProgress(null);
+            return;
+          }
+
+          try {
+            const parsedRows = parseClientCSV(text);
+            const customVideos = processCsvData(parsedRows);
+            
+            if (customVideos.length === 0) {
+              setAdminError("No valid video records found in CSV file.");
+            } else {
+              applyNewCustomVideos(customVideos);
+              setUploadSuccess(`Success! Synced ${customVideos.length} videos from CSV into browser database storage.`);
+            }
+          } catch (parseErr: any) {
+            setAdminError(`Parsing error: ${parseErr?.message || parseErr}`);
+          } finally {
+            setIsUploading(false);
+            setUploadProgress(null);
+          }
+        };
+
+        reader.onerror = () => {
+          setAdminError("File reading failed");
+          setIsUploading(false);
+          setUploadProgress(null);
+        };
+
+        reader.readAsText(file);
+        return;
+      } catch (err) {
+        setAdminError("Client side parsing error");
+        setIsUploading(false);
+        setUploadProgress(null);
+        return;
+      }
+    }
+
+    // Server-Side Sync
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch(`/api/admin/upload/${type}`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setUploadSuccess(data.message || 'Database updated successfully!');
+        setUploadProgress(null);
+        await fetchLiveVideos();
+      } else {
+        setAdminError(data.error || 'Failed to update database');
+        setUploadProgress(null);
+      }
+    } catch (err) {
+      setAdminError('Network error during upload');
+      setUploadProgress(null);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Auto-scroll to player when video changes
   useEffect(() => {
@@ -899,6 +1412,7 @@ export default function App() {
 
   const onPlayerReady = (event: any) => {
     playerInstance.current = event.target;
+    (window as any).__ytPlayer = event.target;
     event.target.playVideo();
   };
 
@@ -1446,6 +1960,17 @@ export default function App() {
                         <PlusCircle className="w-3 h-3" />
                         Add to Workspace
                       </button>
+                      <button 
+                        onClick={() => {
+                          setActiveVideoId(activeVideo.id);
+                          setIsReaderOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500 hover:border-indigo-500 text-indigo-400 hover:text-white font-bold text-[10px] rounded-lg transition-all shadow-md cursor-pointer"
+                        title="Read transcript/material for this video"
+                      >
+                        <BookOpen className="w-3 h-3" />
+                        Read Transcript
+                      </button>
                       <div className="flex gap-1.5">
                         {activeVideo.tags.slice(0, 3).map((tag, idx) => (
                           <span key={`${tag}-${idx}`} className="text-[10px] text-slate-500 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
@@ -1521,11 +2046,25 @@ export default function App() {
                       <h3 className="font-semibold text-xs text-white mb-1 line-clamp-1 group-hover:text-theme-accent transition-colors">
                     {video.title}
                   </h3>
-                    <div className="flex gap-1.5 overflow-hidden whitespace-nowrap">
-                      {video.tags.slice(0, 2).map((tag, idx) => (
-                        <span key={`${tag}-${idx}`} className="text-[9px] text-slate-400 font-medium">#{tag}</span>
-                      ))}
-                      <span className="text-[9px] text-slate-600 font-medium">• 4K</span>
+                    <div className="flex items-center justify-between mt-1.5">
+                      <div className="flex gap-1.5 overflow-hidden whitespace-nowrap">
+                        {video.tags.slice(0, 2).map((tag, idx) => (
+                          <span key={`${tag}-${idx}`} className="text-[9px] text-slate-400 font-medium">#{tag}</span>
+                        ))}
+                        <span className="text-[9px] text-slate-600 font-medium">• 4K</span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveVideoId(video.id);
+                          setIsReaderOpen(true);
+                        }}
+                        className="px-2 py-0.5 bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/20 text-indigo-400 hover:text-white rounded text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1 shrink-0 shadow-sm"
+                        title="Read transcript/material for this video"
+                      >
+                        <BookOpen className="w-2.5 h-2.5" />
+                        Read
+                      </button>
                     </div>
                 </motion.div>
               ))}
@@ -1745,6 +2284,17 @@ export default function App() {
                         <ChevronDown className="w-3.5 h-3.5" />
                       </button>
                       <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveVideoId(video.id);
+                          setIsReaderOpen(true);
+                        }}
+                        className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-indigo-450 hover:bg-white/5 transition-all cursor-pointer"
+                        title="Read Transcript / Text"
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                      </button>
+                      <button
                         onClick={(e) => { e.stopPropagation(); removeFromPlaylist(video.id); }}
                         className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-400/10 transition-all"
                         title="Remove"
@@ -1899,6 +2449,295 @@ export default function App() {
         )}
       </AnimatePresence>
 
+      {/* Admin Control Center Modal */}
+      <AnimatePresence>
+        {isAdminModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#020617]/90 backdrop-blur-xl"
+              onClick={() => setIsAdminModalOpen(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 30 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 30 }}
+              className="relative w-full max-w-2xl backdrop-blur-3xl bg-slate-900/85 border border-white/10 rounded-[32px] p-8 shadow-2xl overflow-hidden flex flex-col max-h-[90vh] text-left"
+            >
+              <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-indigo-500/10 rounded-xl border border-indigo-500/20 text-indigo-400">
+                    <Database className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-black uppercase tracking-wider text-white">Admin Control Center</h2>
+                    <p className="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5">Database Master Interface</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setIsAdminModalOpen(false)}
+                  className="p-2 hover:bg-white/5 rounded-full transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5 text-slate-400 hover:text-white" />
+                </button>
+              </div>
+
+              <div className="flex-grow overflow-y-auto custom-scrollbar space-y-6 pr-1">
+                {!isAdminAuthenticated ? (
+                  /* PASSWORD SCREEN */
+                  <div className="py-8 max-w-sm mx-auto text-center space-y-6">
+                    <div className="w-16 h-16 bg-slate-850 border border-white/10 rounded-2xl flex items-center justify-center mx-auto shadow-inner text-slate-400">
+                      <Lock className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-200">Authorization Required</h3>
+                      <p className="text-xs text-slate-500 leading-relaxed">Please provide the admin passcode to unlock the file database manager.</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <input 
+                          type="password"
+                          placeholder="Passcode"
+                          value={adminPasscode}
+                          onChange={(e) => setAdminPasscode(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') verifyAdminPasscode();
+                          }}
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-10 text-center text-sm tracking-widest text-white focus:outline-none focus:border-indigo-500/50 transition-all font-mono"
+                        />
+                        <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                      </div>
+
+                      {adminError && (
+                        <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs justify-center font-semibold">
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{adminError}</span>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={verifyAdminPasscode}
+                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest transition-all cursor-pointer shadow-md"
+                      >
+                        Authorize Console
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* CONTROL AREA */
+                  <div className="space-y-6">
+                    {/* SYSTEM STATE ALERT */}
+                    {isStaticMode ? (
+                      <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-2xl flex gap-3.5 items-start">
+                        <div className="p-2 bg-amber-500/10 rounded-xl text-amber-400 shrink-0">
+                          <Check className="w-4 h-4" />
+                        </div>
+                        <div className="space-y-0.5 text-left">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-amber-300">Static Fallback Mode Enabled</h4>
+                          <p className="text-[10px] text-slate-400 leading-normal">
+                            All spreadsheet edits and database updates are processed 100% in-browser. Your custom video library is saved securely in your browser's Local Storage (perfect for GitHub Pages)!
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl flex gap-3.5 items-start">
+                        <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-400 shrink-0">
+                          <Unlock className="w-4 h-4" />
+                        </div>
+                        <div className="space-y-0.5 text-left">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-emerald-300">Full-Stack Server Mode Enabled</h4>
+                          <p className="text-[10px] text-slate-400 leading-normal">
+                            Connected to the Express server filesystem. Spreadsheet uploads are written directly to the server database for persistent, shared, team-wide usage.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* TWO COLUMN GRID */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      
+                      {/* DOWNLOAD & BACKUP BLOCK */}
+                      <div className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-4">
+                        <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+                          <Download className="w-4 h-4 text-sky-400" />
+                          <h3 className="text-xs font-black uppercase tracking-widest text-slate-300">Database Backups</h3>
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-normal text-left">
+                          Download templates or backup your live custom library directly.
+                        </p>
+
+                        <div className="space-y-2.5 pt-2">
+                          {isStaticMode ? (
+                            <button 
+                              onClick={exportActiveCsv}
+                              className="w-full flex items-center justify-between p-3 rounded-xl bg-indigo-600/10 hover:bg-indigo-600/30 border border-indigo-500/20 text-indigo-200 hover:text-white transition-all text-xs font-semibold cursor-pointer group"
+                            >
+                              <span className="flex items-center gap-2.5">
+                                <span className="p-1.5 bg-indigo-500/20 text-indigo-400 rounded-lg group-hover:scale-105 transition-transform font-mono text-[9px] font-black uppercase">EXPORT</span>
+                                Backup Custom CSV
+                              </span>
+                              <Download className="w-3.5 h-3.5 text-indigo-400" />
+                            </button>
+                          ) : (
+                            <>
+                              <a 
+                                href="/api/admin/download/xlsx" 
+                                download="Database.xlsx"
+                                className="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 hover:bg-slate-950 border border-white/5 hover:border-sky-500/20 text-slate-300 hover:text-white transition-all text-xs font-semibold cursor-pointer group"
+                              >
+                                <span className="flex items-center gap-2.5">
+                                  <span className="p-1.5 bg-sky-500/10 text-sky-400 rounded-lg group-hover:scale-105 transition-transform font-mono text-[9px] font-black uppercase">XLSX</span>
+                                  Database.xlsx
+                                </span>
+                                <Download className="w-3.5 h-3.5 text-slate-500 group-hover:text-sky-400 transition-colors" />
+                              </a>
+
+                              <a 
+                                href="/api/admin/download/csv" 
+                                download="Database.csv"
+                                className="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 hover:bg-slate-950 border border-white/5 hover:border-emerald-500/20 text-slate-300 hover:text-white transition-all text-xs font-semibold cursor-pointer group"
+                              >
+                                <span className="flex items-center gap-2.5">
+                                  <span className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded-lg group-hover:scale-105 transition-transform font-mono text-[9px] font-black uppercase">CSV</span>
+                                  Database.csv
+                                </span>
+                                <Download className="w-3.5 h-3.5 text-slate-500 group-hover:text-emerald-400 transition-colors" />
+                              </a>
+                            </>
+                          )}
+
+                          {/* Fallback Static Template Links always accessible */}
+                          <div className="pt-2 border-t border-white/5 space-y-1.5">
+                            <span className="block text-[8px] uppercase tracking-wider font-bold text-slate-500 text-left">Default Templates:</span>
+                            <div className="flex gap-2">
+                              <a 
+                                href="/Database.csv" 
+                                download="Database_Template.csv"
+                                className="flex-1 text-center py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[9px] text-slate-400 hover:text-white transition-colors"
+                              >
+                                Template.csv
+                              </a>
+                              <a 
+                                href="/Database.xlsx" 
+                                download="Database_Template.xlsx"
+                                className="flex-1 text-center py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-[9px] text-slate-400 hover:text-white transition-colors"
+                              >
+                                Template.xlsx
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* UPLOAD BLOCK */}
+                      <div className="p-5 rounded-2xl bg-white/5 border border-white/5 space-y-4">
+                        <div className="flex items-center gap-2 border-b border-white/5 pb-3">
+                          <Upload className="w-4 h-4 text-indigo-400" />
+                          <h3 className="text-xs font-black uppercase tracking-widest text-slate-300">Upload & Sync</h3>
+                        </div>
+                        <p className="text-[10px] text-slate-400 leading-normal text-left">
+                          Choose a CSV or Excel spreadsheet to replace the current system database.
+                        </p>
+
+                        <div className="space-y-3.5 pt-2">
+                          {/* XLSX Upload */}
+                          <div className="space-y-1.5">
+                            <label className="block text-[9px] uppercase tracking-wider font-bold text-slate-500 text-left">Upload Excel Spreadsheet</label>
+                            <div className="relative">
+                              <input 
+                                type="file" 
+                                accept=".xlsx"
+                                disabled={isUploading}
+                                onChange={(e) => handleDatabaseUpload(e, 'xlsx')}
+                                className="hidden" 
+                                id="admin-xlsx-upload"
+                              />
+                              <label 
+                                htmlFor="admin-xlsx-upload"
+                                className={`flex items-center justify-center gap-2 w-full p-3 border border-dashed rounded-xl cursor-pointer hover:bg-indigo-500/5 transition-all text-xs font-bold uppercase tracking-wider ${isUploading ? 'opacity-40 pointer-events-none' : 'border-indigo-500/20 text-indigo-300 hover:border-indigo-500/40'}`}
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                Select .xlsx Spreadsheet
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* CSV Upload */}
+                          <div className="space-y-1.5">
+                            <label className="block text-[9px] uppercase tracking-wider font-bold text-slate-500 text-left">Upload CSV Database</label>
+                            <div className="relative">
+                              <input 
+                                type="file" 
+                                accept=".csv"
+                                disabled={isUploading}
+                                onChange={(e) => handleDatabaseUpload(e, 'csv')}
+                                className="hidden" 
+                                id="admin-csv-upload"
+                              />
+                              <label 
+                                htmlFor="admin-csv-upload"
+                                className={`flex items-center justify-center gap-2 w-full p-3 border border-dashed rounded-xl cursor-pointer hover:bg-emerald-500/5 transition-all text-xs font-bold uppercase tracking-wider ${isUploading ? 'opacity-40 pointer-events-none' : 'border-emerald-500/20 text-emerald-300 hover:border-emerald-500/40'}`}
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                Select .csv Database
+                              </label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* STATUS ALERTS */}
+                    {(uploadProgress || uploadSuccess || adminError) && (
+                      <div className="p-4 bg-slate-950/60 border border-white/5 rounded-2xl space-y-2 text-left">
+                        {uploadProgress && (
+                          <div className="flex items-center gap-2.5 text-xs text-indigo-400 font-bold animate-pulse">
+                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-ping" />
+                            {uploadProgress}
+                          </div>
+                        )}
+                        {uploadSuccess && (
+                          <div className="flex items-center gap-2.5 text-xs text-emerald-400 font-bold">
+                            <Check className="w-4 h-4" />
+                            {uploadSuccess}
+                          </div>
+                        )}
+                        {adminError && (
+                          <div className="flex items-center gap-2.5 text-xs text-rose-400 font-bold">
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            {adminError}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* DEAUTHORIZE BUTTON */}
+                    <div className="border-t border-white/5 pt-4 flex justify-between items-center shrink-0">
+                      <p className="text-[9px] text-slate-500 leading-normal uppercase font-bold tracking-wider text-left">
+                        Active Database Size: <span className="text-slate-400 font-mono font-bold ml-1">{videos.length} clips</span>
+                      </p>
+                      <button
+                        onClick={() => {
+                          setIsAdminAuthenticated(false);
+                          localStorage.removeItem('admin_auth_token');
+                        }}
+                        className="bg-rose-500/10 hover:bg-rose-500/25 border border-rose-500/20 text-rose-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer active:scale-95"
+                      >
+                        Deauthorize Session
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Floating Controls Bar */}
       <div className={cn(
         "fixed right-4 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-3 transition-all duration-300",
@@ -1913,7 +2752,7 @@ export default function App() {
               className="flex flex-col gap-3"
             >
               <button
-                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isFavoritesOpen 
@@ -1926,7 +2765,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isOceanLoveOpen 
@@ -1939,7 +2778,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsInstrumentalOpen(!isInstrumentalOpen); setIsOceanLoveOpen(false); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsInstrumentalOpen(!isInstrumentalOpen); setIsOceanLoveOpen(false); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isInstrumentalOpen 
@@ -1952,7 +2791,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsVirtualToursOpen(!isVirtualToursOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsVirtualToursOpen(!isVirtualToursOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isVirtualToursOpen 
@@ -1965,7 +2804,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsAffirmationsOpen(!isAffirmationsOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsAffirmationsOpen(!isAffirmationsOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isAffirmationsOpen 
@@ -1978,7 +2817,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWisdomOpen(!isWisdomOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); }}
+                onClick={() => { setIsWisdomOpen(!isWisdomOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsCalendarOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWisdomOpen 
@@ -1991,7 +2830,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWorkspaceOpen 
@@ -2008,6 +2847,22 @@ export default function App() {
                     </span>
                   )}
                 </div>
+              </button>
+
+              <button
+                onClick={() => { setIsCalendarOpen(!isCalendarOpen); setIsWorkspaceOpen(false); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                className={cn(
+                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl relative",
+                  isCalendarOpen 
+                    ? "bg-theme-accent text-white border-theme-accent scale-110" 
+                    : "bg-white/10 border-white/20 text-theme-accent hover:bg-white/20 hover:text-theme-accent"
+                )}
+                title="Saints & Holy Days Calendar"
+              >
+                <Calendar className="w-5 h-5" />
+                {holyDaySaints.length > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-theme-accent animate-ping" />
+                )}
               </button>
             </motion.div>
           )}
@@ -2117,32 +2972,46 @@ export default function App() {
                           <p className="text-[8.5px] text-amber-400 mt-0.5 font-semibold font-mono">🌟 Explore in 360°</p>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isInPlaylist) {
-                            removeFromPlaylist(tour.id);
-                          } else {
-                            addToPlaylist(tour);
-                          }
-                        }}
-                        className={cn(
-                          "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200",
-                          isInPlaylist 
-                            ? "bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400" 
-                            : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
-                        )}
-                        title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
-                      >
-                        {isInPlaylist ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 group-hover:hidden" />
-                            <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
-                          </>
-                        ) : (
-                          <Plus className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveVideoId(tour.id);
+                            setIsReaderOpen(true);
+                            setIsVirtualToursOpen(false);
+                          }}
+                          className="w-7 h-7 bg-amber-500/10 hover:bg-amber-505 border border-amber-500/25 text-amber-400 hover:text-white rounded-xl flex items-center justify-center transition-all cursor-pointer"
+                          title="Read Transcript / Text"
+                        >
+                          <BookOpen className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isInPlaylist) {
+                              removeFromPlaylist(tour.id);
+                            } else {
+                              addToPlaylist(tour);
+                            }
+                          }}
+                          className={cn(
+                            "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200",
+                            isInPlaylist 
+                              ? "bg-amber-500/20 border-amber-500/50 text-amber-400 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400" 
+                              : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                          )}
+                          title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
+                        >
+                          {isInPlaylist ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 group-hover:hidden" />
+                              <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
+                            </>
+                          ) : (
+                            <Plus className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -2212,32 +3081,46 @@ export default function App() {
                           </p>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isInPlaylist) {
-                            removeFromPlaylist(video.id);
-                          } else {
-                            addToPlaylist(video);
-                          }
-                        }}
-                        className={cn(
-                          "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200",
-                          isInPlaylist 
-                            ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400" 
-                            : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
-                        )}
-                        title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
-                      >
-                        {isInPlaylist ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 group-hover:hidden" />
-                            <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
-                          </>
-                        ) : (
-                          <Plus className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveVideoId(video.id);
+                            setIsReaderOpen(true);
+                            setIsAffirmationsOpen(false);
+                          }}
+                          className="w-7 h-7 bg-emerald-500/10 hover:bg-emerald-505 border border-emerald-500/25 text-emerald-400 hover:text-white rounded-xl flex items-center justify-center transition-all cursor-pointer"
+                          title="Read Transcript / Text"
+                        >
+                          <BookOpen className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isInPlaylist) {
+                              removeFromPlaylist(video.id);
+                            } else {
+                              addToPlaylist(video);
+                            }
+                          }}
+                          className={cn(
+                            "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200",
+                            isInPlaylist 
+                              ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400" 
+                              : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                          )}
+                          title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
+                        >
+                          {isInPlaylist ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 group-hover:hidden" />
+                              <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
+                            </>
+                          ) : (
+                            <Plus className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -2307,32 +3190,46 @@ export default function App() {
                           </p>
                         </div>
                       </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isInPlaylist) {
-                            removeFromPlaylist(video.id);
-                          } else {
-                            addToPlaylist(video);
-                          }
-                        }}
-                        className={cn(
-                          "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200",
-                          isInPlaylist 
-                            ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400" 
-                            : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
-                        )}
-                        title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
-                      >
-                        {isInPlaylist ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 group-hover:hidden" />
-                            <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
-                          </>
-                        ) : (
-                          <Plus className="w-3.5 h-3.5" />
-                        )}
-                      </button>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveVideoId(video.id);
+                            setIsReaderOpen(true);
+                            setIsWisdomOpen(false);
+                          }}
+                          className="w-7 h-7 bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/25 text-indigo-400 hover:text-white rounded-xl flex items-center justify-center transition-all cursor-pointer"
+                          title="Read Transcript / Text"
+                        >
+                          <BookOpen className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isInPlaylist) {
+                              removeFromPlaylist(video.id);
+                            } else {
+                              addToPlaylist(video);
+                            }
+                          }}
+                          className={cn(
+                            "w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border transition-all duration-200",
+                            isInPlaylist 
+                              ? "bg-indigo-500/20 border-indigo-500/50 text-indigo-400 hover:bg-red-500/10 hover:border-red-500/40 hover:text-red-400" 
+                              : "bg-white/5 border-white/10 text-slate-400 hover:bg-white/10 hover:text-white"
+                          )}
+                          title={isInPlaylist ? "Remove from Workspace" : "Add to Workspace"}
+                        >
+                          {isInPlaylist ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 group-hover:hidden" />
+                              <Trash2 className="w-3.5 h-3.5 hidden group-hover:block text-rose-400" />
+                            </>
+                          ) : (
+                            <Plus className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -2861,6 +3758,29 @@ export default function App() {
                   ))
                 )}
               </div>
+
+              {/* Database Download Area */}
+              <div className="p-4 border-t border-white/10 bg-slate-950/40">
+                <div className="flex flex-col gap-2">
+                  <div className="text-[9px] font-black uppercase tracking-widest text-slate-400">Database Administration</div>
+                  <p className="text-[9px] text-slate-500 leading-normal">
+                    Authorized team members can manage, backup, import, or export the active video and chant catalogs.
+                  </p>
+                  
+                  {/* Admin Area Button */}
+                  <button
+                    onClick={() => {
+                      setIsWorkspaceOpen(false);
+                      setIsAdminModalOpen(true);
+                    }}
+                    className="w-full mt-1 bg-indigo-600/20 hover:bg-indigo-600/40 border border-indigo-500/30 text-indigo-300 font-bold py-3 rounded-xl text-[9px] uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-indigo-400 animate-spin-slow" />
+                    Admin Control Center
+                  </button>
+                </div>
+              </div>
+
               {playlist.length > 0 && (
                 <div className="p-4 border-t border-white/10">
                   <button onClick={handleNextInPlaylist} className="w-full py-3 bg-white text-black font-black text-[10px] uppercase rounded-xl tracking-widest">
@@ -3002,6 +3922,359 @@ export default function App() {
               >
                 Deepen Your Peace
               </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Saints & Holy Days Calendar Sliding Drawer */}
+      <AnimatePresence>
+        {isCalendarOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm" onClick={() => setIsCalendarOpen(false)} />
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              className="fixed right-20 top-1/2 -translate-y-1/2 w-80 max-h-[85vh] backdrop-blur-3xl bg-theme-bg/95 border border-theme-border rounded-[32px] shadow-2xl z-[60] overflow-hidden flex flex-col"
+            >
+              <div className="p-5 border-b border-theme-border flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-theme-accent flex items-center gap-1.5">
+                    <Sun className="w-3.5 h-3.5 animate-spin-slow" /> Saints Calendar
+                  </h3>
+                  <p className="text-[9px] text-theme-text-muted mt-1">Sages and Holy Celebrations of 2026</p>
+                </div>
+                <button onClick={() => setIsCalendarOpen(false)}>
+                  <X className="w-4 h-4 text-theme-text-muted hover:text-theme-text transition-all" />
+                </button>
+              </div>
+
+              {/* Search input */}
+              <div className="p-4 border-b border-theme-border bg-theme-surface">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-theme-text-muted opacity-60" />
+                  <input
+                    type="text"
+                    value={calendarSearchQuery}
+                    onChange={(e) => setCalendarSearchQuery(e.target.value)}
+                    placeholder="Search saint, tradition, region..."
+                    className="w-full bg-theme-bg/60 border border-theme-border rounded-xl py-1.5 pl-9 pr-4 text-xs text-theme-text placeholder-theme-text-muted/50 focus:outline-none focus:border-theme-accent/50 transition-all"
+                  />
+                  {calendarSearchQuery && (
+                    <button 
+                      onClick={() => setCalendarSearchQuery('')}
+                      className="absolute right-3 top-2.5 text-theme-text-muted hover:text-theme-text"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Quick links to today's date */}
+              <div className="px-4 py-2 border-b border-theme-border bg-theme-surface/40 flex items-center justify-between text-[10px]">
+                <span className="text-theme-text-muted font-medium">Today's Date:</span>
+                <button
+                  onClick={() => {
+                    const matches = getSaintsForDate(new Date());
+                    if (matches.length > 0) {
+                      setHolyDaySaints(matches);
+                      setIsHolyDayPopupOpen(true);
+                    } else {
+                      setHolyDaySaints([]);
+                      setIsHolyDayPopupOpen(true);
+                    }
+                  }}
+                  className="px-2.5 py-0.5 bg-theme-accent/10 hover:bg-theme-accent/20 text-theme-accent border border-theme-accent/20 rounded-full font-bold uppercase tracking-wider transition-all cursor-pointer"
+                >
+                  View Today
+                </button>
+              </div>
+
+              {/* Saints Scrollable List */}
+              <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                {(() => {
+                  const filteredSaints = (calendarData.saints_list || []).filter((s: any) => {
+                    if (!calendarSearchQuery) return true;
+                    const query = calendarSearchQuery.toLowerCase();
+                    return (
+                      s.name.toLowerCase().includes(query) ||
+                      (s.tradition && s.tradition.toLowerCase().includes(query)) ||
+                      (s.region && s.region.toLowerCase().includes(query)) ||
+                      (s.description && s.description.toLowerCase().includes(query))
+                    );
+                  });
+
+                  if (filteredSaints.length === 0) {
+                    return (
+                      <div className="text-center py-10 px-4">
+                        <Search className="w-5 h-5 text-slate-700 mx-auto mb-2" />
+                        <p className="text-[10px] text-theme-text-muted">No saints match your search</p>
+                      </div>
+                    );
+                  }
+
+                  return filteredSaints.map((saint: any, idx: number) => {
+                    const todayDate = new Date();
+                    const currentMonth = todayDate.getMonth() + 1;
+                    const currentDay = todayDate.getDate();
+                    let isToday = false;
+                    if (saint.date) {
+                      const parts = saint.date.split('-');
+                      if (parts.length === 3 && parseInt(parts[1], 10) === currentMonth && parseInt(parts[2], 10) === currentDay) {
+                        isToday = true;
+                      }
+                    }
+
+                    let displayDateStr = '';
+                    if (saint.date) {
+                      const parts = saint.date.split('-');
+                      if (parts.length === 3) {
+                        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                        const mIndex = parseInt(parts[1], 10) - 1;
+                        const dayVal = parseInt(parts[2], 10);
+                        displayDateStr = `${monthNames[mIndex]} ${dayVal}`;
+                      }
+                    }
+
+                    return (
+                      <button
+                        key={`${saint.name}-${idx}`}
+                        onClick={() => {
+                          setHolyDaySaints([saint]);
+                          setIsHolyDayPopupOpen(true);
+                        }}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-2.5 rounded-2xl border text-left transition-all relative group overflow-hidden cursor-pointer",
+                          isToday 
+                            ? "bg-theme-accent/10 border-theme-accent/30 hover:bg-theme-accent/20" 
+                            : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"
+                        )}
+                      >
+                        {isToday && (
+                          <div className="absolute inset-0 bg-[linear-gradient(110deg,rgba(255,255,255,0),rgba(255,255,255,0.05)_45%,rgba(255,255,255,0.1)_50%,rgba(255,255,255,0.05)_55%,rgba(255,255,255,0))] bg-[length:200%_100%] animate-shimmer pointer-events-none" />
+                        )}
+
+                        <div className="w-10 h-10 rounded-xl bg-slate-950 overflow-hidden shrink-0 border border-white/10 relative">
+                          <img
+                            src={getProxiedImageUrl(saint.image_url)}
+                            alt={saint.name}
+                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = LOTUS_IMAGE_URL;
+                            }}
+                          />
+                        </div>
+
+                        <div className="min-w-0 flex-grow">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[8px] font-black uppercase tracking-widest text-theme-text-muted">
+                              {saint.event_type}
+                            </span>
+                            <span className={cn(
+                              "text-[8px] font-bold px-1.5 py-0.5 rounded-full",
+                              isToday 
+                                ? "bg-theme-accent text-white font-black tracking-wider animate-pulse" 
+                                : "bg-white/5 text-theme-text-muted"
+                            )}>
+                              {isToday ? "TODAY" : displayDateStr}
+                            </span>
+                          </div>
+                          <p className="text-xs font-semibold text-theme-text truncate group-hover:text-theme-accent transition-colors">
+                            {saint.name}
+                          </p>
+                          <p className="text-[9px] text-theme-text-muted line-clamp-1 mt-0.5">
+                            {saint.tradition} • {saint.region}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  });
+                })()}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Sacred Holy Day Commemoration Modal Popup */}
+      <AnimatePresence>
+        {isHolyDayPopupOpen && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-[#020617]/80 backdrop-blur-md"
+              onClick={() => setIsHolyDayPopupOpen(false)}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 30 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 30 }}
+              className="relative max-w-2xl w-full bg-theme-bg/95 backdrop-blur-3xl border border-theme-border rounded-[32px] shadow-2xl z-[130] overflow-hidden flex flex-col md:flex-row group"
+            >
+              {/* Sacred glow effects */}
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-theme-accent/5 blur-3xl rounded-full" />
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-theme-accent/5 blur-3xl rounded-full" />
+              </div>
+
+              {/* Left / Top Side: Saint's Sacred Portrait */}
+              {holyDaySaints.length > 0 && (
+                <div className="md:w-2/5 relative h-56 md:h-auto overflow-hidden shrink-0 bg-theme-bg/50 border-b md:border-b-0 md:border-r border-theme-border">
+                  <img
+                    src={getProxiedImageUrl(holyDaySaints[0].image_url)}
+                    alt={holyDaySaints[0].name}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover object-top scale-105 group-hover:scale-100 transition-transform duration-1000"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = LOTUS_IMAGE_URL;
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-r from-theme-bg via-transparent to-transparent opacity-80" />
+                  
+                  <div className="absolute bottom-4 left-4 bg-theme-bg/60 backdrop-blur-md border border-theme-accent/30 px-3 py-1.5 rounded-full flex items-center gap-2">
+                    <Flame className="w-3.5 h-3.5 text-theme-accent animate-pulse" />
+                    <span className="text-[10px] font-bold text-theme-text tracking-wider uppercase">Holy Commemoration</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Right / Bottom Side: Sacred Bio & Details */}
+              <div className="flex-grow p-6 md:p-8 flex flex-col justify-between relative min-w-0">
+                <button 
+                  onClick={() => setIsHolyDayPopupOpen(false)}
+                  className="absolute top-4 right-4 p-1.5 bg-theme-surface hover:bg-theme-surface/80 rounded-full border border-theme-border transition-all z-10 cursor-pointer"
+                >
+                  <X className="w-4 h-4 text-theme-text-muted hover:text-theme-text" />
+                </button>
+
+                {holyDaySaints.length > 0 ? (
+                  <div className="space-y-4">
+                    {/* Event Type / Occasion */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="px-2.5 py-0.5 bg-theme-accent/10 border border-theme-accent/20 text-theme-accent text-[10px] font-black rounded-full uppercase tracking-widest">
+                        {holyDaySaints[0].event_type}
+                      </span>
+                      <span className="text-xs text-theme-text-muted font-mono">
+                        {holyDaySaints[0].date && (() => {
+                          const parts = holyDaySaints[0].date.split('-');
+                          if (parts.length === 3) {
+                            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                            return `${monthNames[parseInt(parts[1], 10) - 1]} ${parseInt(parts[2], 10)}, 2026`;
+                          }
+                          return holyDaySaints[0].date;
+                        })()}
+                      </span>
+                    </div>
+
+                    {/* Saint Name */}
+                    <div>
+                      <h2 className="text-2xl md:text-3xl font-serif text-theme-text tracking-tight leading-none">
+                        {holyDaySaints[0].name}
+                      </h2>
+                      <p className="text-xs text-theme-accent font-semibold mt-1 italic">
+                        {holyDaySaints[0].tradition}
+                      </p>
+                    </div>
+
+                    {/* Quick Bio Info Grid */}
+                    <div className="grid grid-cols-2 gap-2 p-2.5 bg-theme-bg/50 rounded-2xl border border-theme-border text-[10px]">
+                      <div>
+                        <span className="text-theme-text-muted opacity-80 font-bold block">BIRTH:</span>
+                        <span className="text-theme-text font-mono">{holyDaySaints[0].birth_date || 'various'}</span>
+                      </div>
+                      <div>
+                        <span className="text-theme-text-muted opacity-80 font-bold block">SAMADHI / DEATH:</span>
+                        <span className="text-theme-text font-mono">{holyDaySaints[0].death_date || 'various'}</span>
+                      </div>
+                      <div className="col-span-2 border-t border-theme-border pt-1.5 mt-0.5">
+                        <span className="text-theme-text-muted opacity-80 font-bold inline">REGION OF SERVICE: </span>
+                        <span className="text-theme-text font-semibold">{holyDaySaints[0].region || 'various'}</span>
+                      </div>
+                    </div>
+
+                    {/* Description Biography */}
+                    <p className="text-xs md:text-sm text-theme-text leading-relaxed font-sans">
+                      {holyDaySaints[0].description}
+                    </p>
+
+                    {/* Related video, if any */}
+                    {(() => {
+                      const related = findRelatedVideosForSaint(holyDaySaints[0]);
+                      if (related.length > 0) {
+                        return (
+                          <div className="bg-theme-surface border border-theme-border p-3 rounded-2xl">
+                            <p className="text-[9px] font-black text-theme-accent uppercase tracking-widest mb-2 flex items-center gap-1">
+                              <Play className="w-2.5 h-2.5 fill-theme-accent text-theme-accent" /> Sacred Record Recommendation
+                            </p>
+                            <div className="flex items-center justify-between gap-3 min-w-0">
+                              <p className="text-[10px] font-semibold text-theme-text truncate flex-grow">
+                                {related[0].title}
+                              </p>
+                              <button
+                                onClick={() => {
+                                  setActiveVideoId(related[0].id);
+                                  setIsHolyDayPopupOpen(false);
+                                  setIsCalendarOpen(false);
+                                }}
+                                className="px-3 py-1 bg-theme-accent hover:opacity-90 text-white font-black rounded-lg text-[9px] uppercase tracking-wider shrink-0 transition-all flex items-center gap-1 cursor-pointer shadow-lg shadow-theme-accent/10"
+                              >
+                                Play <Play className="w-2 h-2 fill-white stroke-white" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Calendar className="w-8 h-8 text-slate-700 mx-auto mb-2" />
+                    <p className="text-xs text-slate-500">No holy day celebrations scheduled for today.</p>
+                  </div>
+                )}
+
+                {/* Simulation Control Row */}
+                <div className="border-t border-theme-border pt-4 mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-black uppercase tracking-wider text-theme-text-muted">Preview other Holy Days</span>
+                    <select
+                      value={testDateStr}
+                      onChange={(e) => {
+                        setTestDateStr(e.target.value);
+                        handleSimulateDate(e.target.value);
+                      }}
+                      className="bg-theme-surface border border-theme-border rounded-xl text-[10px] text-theme-text py-1 px-2.5 mt-1 focus:outline-none focus:border-theme-accent/50"
+                    >
+                      <option value="">-- Choose an auspicious day --</option>
+                      <option value="2026-01-05">Jan 5: Paramahansa Yogananda Jayanti</option>
+                      <option value="2026-01-12">Jan 12: Swami Vivekananda Jayanti</option>
+                      <option value="2026-02-18">Feb 18: Ramakrishna / Chaitanya Jayanti</option>
+                      <option value="2026-03-07">Mar 7: Paramahansa Yogananda Mahasamadhi</option>
+                      <option value="2026-03-09">Mar 9: Sri Yukteswar Giri Samadhi</option>
+                      <option value="2026-04-14">Apr 14: Ramana Maharshi Samadhi</option>
+                      <option value="2026-05-08">May 8: Swami Chinmayananda Jayanti</option>
+                      <option value="2026-07-11">Jul 11: Swami Brahmananda Jayanti (Today)</option>
+                      <option value="2026-07-12">Jul 12: Sri Yukteswar Giri Jayanti</option>
+                      <option value="2026-08-13">Aug 13: Anandamayi Ma Jayanti</option>
+                      <option value="2026-11-14">Nov 14: Guru Nanak Jayanti</option>
+                      <option value="2026-12-05">Dec 5: Sri Aurobindo Samadhi</option>
+                    </select>
+                  </div>
+
+                  <button
+                    onClick={() => setIsHolyDayPopupOpen(false)}
+                    className="px-5 py-2 bg-theme-accent hover:opacity-90 text-white rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-theme-accent/20 cursor-pointer"
+                  >
+                    Deepen Your Devotion
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}

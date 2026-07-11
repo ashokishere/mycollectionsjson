@@ -1046,5 +1046,117 @@
         "icon": "Music"
       }
     ]
+  },
+  {
+    "id": "in-temple-heart",
+    "name": "In the Temple of My Heart",
+    "description": "Inspiring and meditative cosmic chants to awaken divine presence in the inner temple of your heart.",
+    "themeColor": "text-cyan-400",
+    "accentColor": "cyan",
+    "icon": "Heart",
+    "tracks": [
+      {
+        "id": "koOT2vXXyJs",
+        "title": "Invocation to the Gurus",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Flame"
+      },
+      {
+        "id": "zaWo5l18FD4",
+        "title": "They Have Heard Thy Name",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Music"
+      },
+      {
+        "id": "_oyZK23zif0",
+        "title": "Opal Flame",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Flame"
+      },
+      {
+        "id": "BuV3m1oiSWM",
+        "title": "God of Beauty",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Sparkles"
+      },
+      {
+        "id": "NKvXkU0I6yQ",
+        "title": "Om Song",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Activity"
+      },
+      {
+        "id": "jfFzZDWNeA4",
+        "title": "In the Temple of Silence",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Shield"
+      },
+      {
+        "id": "jXLyNsbu9bI",
+        "title": "Desire, My Great Enemy",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Droplet"
+      },
+      {
+        "id": "905o-xfQpUM",
+        "title": "Divine Love's Sorrow",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Heart"
+      },
+      {
+        "id": "QuNfRtJ3OP4",
+        "title": "From This Sleep, Lord",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Sun"
+      },
+      {
+        "id": "VVqTgKySMLA",
+        "title": "Wake, Yet Wake, O My Saint",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Smile"
+      },
+      {
+        "id": "5w2W-wWF4Qw",
+        "title": "What Lightning Flash",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Zap"
+      },
+      {
+        "id": "UUVHntSSoQ8",
+        "title": "Why, O Mind, Wanderest Thou",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Compass"
+      },
+      {
+        "id": "2p8JYIxMRns",
+        "title": "Divine Mother's Song to the Devotee",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Heart"
+      },
+      {
+        "id": "6Umz_yN2vY8",
+        "title": "Today My Mind Has Dived",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Droplet"
+      },
+      {
+        "id": "mKhXU6XhLQA",
+        "title": "He Who Knows",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Sparkles"
+      },
+      {
+        "id": "wjQOnllwNb8",
+        "title": "In Samadhi",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Sun"
+      },
+      {
+        "id": "l4i3h4P2bys",
+        "title": "When My Dream's Dream is Done",
+        "desc": "Devotional cosmic chant.",
+        "icon": "Heart"
+      }
+    ]
   }
 ]
