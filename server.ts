@@ -4,6 +4,7 @@ import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import multer from "multer";
 import ExcelJS from "exceljs";
+import { Readable } from "stream";
 
 const app = express();
 const PORT = 3000;
@@ -364,6 +365,416 @@ app.post("/api/admin/upload/csv", upload.single("file"), async (req, res) => {
     });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// Audio proxy endpoint to stream audios from Google Drive or other external websites
+// It handles bypasses for Google Drive virus scans and streams chunk-by-chunk.
+app.options("/api/audio-proxy", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type");
+  res.status(200).end();
+});
+
+interface CachedDriveLink {
+  resolvedUrl: string;
+  cookieHeader: string;
+  expiresAt: number;
+}
+
+const driveLinkCache = new Map<string, CachedDriveLink>();
+const ongoingResolutions = new Map<string, Promise<CachedDriveLink>>();
+
+async function resolveDriveFile(fileId: string): Promise<CachedDriveLink> {
+  const cached = driveLinkCache.get(fileId);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached;
+  }
+
+  let promise = ongoingResolutions.get(fileId);
+  if (!promise) {
+    promise = (async () => {
+      try {
+        console.log(`[DriveResolve] Resolving link for fileId: ${fileId}`);
+        const headers: Record<string, string> = {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        };
+
+        // --- FAST PATH: Try direct download with confirm=t ---
+        console.log(`[DriveResolve] Trying fast-path confirm=t for fileId: ${fileId}`);
+        let currentUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+        let response = await fetch(currentUrl, { headers, redirect: "manual" });
+
+        // Manually follow redirects
+        while (response.status >= 300 && response.status < 400) {
+          const location = response.headers.get("location");
+          if (!location) break;
+          currentUrl = new URL(location, currentUrl).toString();
+          response = await fetch(currentUrl, { headers, redirect: "manual" });
+        }
+
+        let contentType = response.headers.get("content-type") || "";
+        let resolvedUrl = currentUrl;
+        let cookieHeader = "";
+
+        // Collect cookies from fast path redirect chain
+        const cookies = typeof response.headers.getSetCookie === "function"
+          ? response.headers.getSetCookie()
+          : (response.headers.get("set-cookie") ? [response.headers.get("set-cookie")!] : []);
+        if (cookies && cookies.length > 0) {
+          cookieHeader = cookies.map((c: string) => c.split(";")[0]).join("; ");
+        }
+
+        // If the response is HTML, it might be a small file or require dynamic confirm/scraping
+        if (contentType.includes("text/html")) {
+          console.log(`[DriveResolve] Fast path returned HTML. Falling back to scraping uc warning for fileId: ${fileId}`);
+          
+          let scrapeUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+          const scrapeHeaders: Record<string, string> = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          };
+          
+          let scrapeResponse = await fetch(scrapeUrl, { headers: scrapeHeaders, redirect: "manual" });
+
+          while (scrapeResponse.status >= 300 && scrapeResponse.status < 400) {
+            const location = scrapeResponse.headers.get("location");
+            if (!location) break;
+
+            const redirectCookies = typeof scrapeResponse.headers.getSetCookie === "function"
+              ? scrapeResponse.headers.getSetCookie()
+              : (scrapeResponse.headers.get("set-cookie") ? [scrapeResponse.headers.get("set-cookie")!] : []);
+            
+            if (redirectCookies && redirectCookies.length > 0) {
+              const newCookiesStr = redirectCookies.map((c: string) => c.split(";")[0]).join("; ");
+              if (scrapeHeaders["Cookie"]) {
+                scrapeHeaders["Cookie"] = scrapeHeaders["Cookie"] + "; " + newCookiesStr;
+              } else {
+                scrapeHeaders["Cookie"] = newCookiesStr;
+              }
+            }
+
+            scrapeUrl = new URL(location, scrapeUrl).toString();
+            scrapeResponse = await fetch(scrapeUrl, { headers: scrapeHeaders, redirect: "manual" });
+          }
+
+          const scrapeContentType = scrapeResponse.headers.get("content-type") || "";
+          resolvedUrl = scrapeUrl;
+          cookieHeader = scrapeHeaders["Cookie"] || "";
+
+          if (scrapeContentType.includes("text/html")) {
+            const htmlContent = await scrapeResponse.text();
+            const scrapeCookies = typeof scrapeResponse.headers.getSetCookie === "function"
+              ? scrapeResponse.headers.getSetCookie()
+              : (scrapeResponse.headers.get("set-cookie") ? [scrapeResponse.headers.get("set-cookie")!] : []);
+
+            const confirmMatch = htmlContent.match(/name=["']confirm["']\s+value=["']([^"']+)["']/) || 
+                                 htmlContent.match(/value=["']([^"']+)["']\s+name=["']confirm["']/) ||
+                                 htmlContent.match(/confirm=([a-zA-Z0-9_-]+)/);
+            const uuidMatch = htmlContent.match(/name=["']uuid["']\s+value=["']([^"']+)["']/) ||
+                              htmlContent.match(/value=["']([^"']+)["']\s+name=["']uuid["']/);
+
+            if (confirmMatch && confirmMatch[1]) {
+              const confirmToken = confirmMatch[1];
+              const uuidToken = uuidMatch ? uuidMatch[1] : "";
+
+              if (uuidToken) {
+                resolvedUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=${confirmToken}&uuid=${uuidToken}`;
+              } else {
+                resolvedUrl = `https://drive.google.com/uc?export=download&id=${fileId}&confirm=${confirmToken}`;
+              }
+
+              if (scrapeCookies && scrapeCookies.length > 0) {
+                const responseCookiesStr = scrapeCookies.map((c: string) => c.split(";")[0]).join("; ");
+                if (cookieHeader) {
+                  cookieHeader = cookieHeader + "; " + responseCookiesStr;
+                } else {
+                  cookieHeader = responseCookiesStr;
+                }
+              }
+            }
+          }
+        }
+
+        const cachedResult: CachedDriveLink = {
+          resolvedUrl,
+          cookieHeader,
+          expiresAt: Date.now() + 60 * 60 * 1000 // 1 hour
+        };
+
+        console.log(`[DriveResolve] Resolved URL: ${resolvedUrl}`);
+        driveLinkCache.set(fileId, cachedResult);
+        return cachedResult;
+      } finally {
+        ongoingResolutions.delete(fileId);
+      }
+    })();
+    ongoingResolutions.set(fileId, promise);
+  }
+
+  return promise;
+}
+
+// Support OPTIONS preflight requests for CORS
+app.options("/api/audio-proxy", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+  res.status(204).end();
+});
+
+app.get("/api/audio-proxy", async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+
+  const targetUrl = req.query.url as string;
+  if (!targetUrl) {
+    return res.status(400).send("Missing url parameter");
+  }
+
+  console.log(`[AudioProxy] Request received for: ${targetUrl}`);
+  if (req.headers.range) {
+    console.log(`[AudioProxy] Request Range: ${req.headers.range}`);
+  }
+
+  try {
+    let resolvedUrl = targetUrl.trim();
+    let fileId = "";
+
+    // Check if Google Drive
+    if (resolvedUrl.includes("drive.google.com") || resolvedUrl.includes("docs.google.com")) {
+      const dMatch = resolvedUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+      if (dMatch && dMatch[1]) {
+        fileId = dMatch[1];
+      } else {
+        const idMatch = resolvedUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (idMatch && idMatch[1]) {
+          fileId = idMatch[1];
+        }
+      }
+    }
+
+    // Set up request headers
+    const headers: Record<string, string> = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    };
+
+    // Forward range request header if it exists
+    if (req.headers.range) {
+      headers["Range"] = req.headers.range;
+    }
+
+    if (fileId) {
+      const resolved = await resolveDriveFile(fileId);
+      resolvedUrl = resolved.resolvedUrl;
+      if (resolved.cookieHeader) {
+        headers["Cookie"] = resolved.cookieHeader;
+      }
+    }
+
+    console.log(`[AudioProxy] Fetching stream from: ${resolvedUrl}`);
+    let response = await fetch(resolvedUrl, { headers });
+    let contentType = response.headers.get("content-type") || "";
+
+    // Fallback 1: If initial fetch with cookies fails, try WITHOUT cookies immediately (highly robust for cookie/session expirations)
+    if (fileId && headers["Cookie"] && (!response.ok || contentType.includes("text/html"))) {
+      console.log(`[AudioProxy] Initial stream fetch failed or returned HTML. Retrying immediately WITHOUT cookies...`);
+      const headersNoCookie = { ...headers };
+      delete headersNoCookie["Cookie"];
+      const testResponse = await fetch(resolvedUrl, { headers: headersNoCookie });
+      const testContentType = testResponse.headers.get("content-type") || "";
+      if (testResponse.ok && !testContentType.includes("text/html")) {
+        response = testResponse;
+        contentType = testContentType;
+        console.log(`[AudioProxy] Cookieless retry succeeded!`);
+      }
+    }
+
+    // Fallback 2: Full re-resolution if still failing
+    if (fileId && (!response.ok || contentType.includes("text/html"))) {
+      console.warn(`[AudioProxy] Stream fetch still failed or returned HTML. Retrying resolution from scratch...`);
+      driveLinkCache.delete(fileId);
+      const resolved = await resolveDriveFile(fileId);
+      resolvedUrl = resolved.resolvedUrl;
+      
+      const headersWithCookie = { ...headers };
+      if (resolved.cookieHeader) {
+        headersWithCookie["Cookie"] = resolved.cookieHeader;
+      }
+      response = await fetch(resolvedUrl, { headers: headersWithCookie });
+      contentType = response.headers.get("content-type") || "";
+
+      // Fallback 3: If full re-resolved URL fails with cookies, try WITHOUT cookies
+      if (!response.ok || contentType.includes("text/html")) {
+        console.warn(`[AudioProxy] Full re-resolution with cookies failed. Trying cookieless fetch...`);
+        const headersNoCookie = { ...headers };
+        delete headersNoCookie["Cookie"];
+        response = await fetch(resolvedUrl, { headers: headersNoCookie });
+        contentType = response.headers.get("content-type") || "";
+      }
+    }
+
+    // If the response is STILL text/html, it means we cannot download the file (not public or share restricted)
+    if (contentType.includes("text/html")) {
+      console.error(`[AudioProxy] Stream is HTML. Access denied or share permissions restrictive.`);
+      if (response.body) {
+        response.body.cancel().catch(() => {});
+      }
+      return res.status(403).send("Could not play audio. Please ensure the link is public, accessible, or a valid Google Drive file with sharing set to 'Anyone with the link can view'.");
+    }
+
+    // Guess content-type from Content-Disposition if it's application/octet-stream or binary
+    const contentDisposition = response.headers.get("content-disposition") || "";
+    if (contentDisposition && (!contentType || contentType.includes("application/octet-stream") || contentType.includes("binary/"))) {
+      const filenameMatch = contentDisposition.match(/filename="?([^";\n]+)"?/i);
+      if (filenameMatch && filenameMatch[1]) {
+        const filename = filenameMatch[1].trim();
+        if (filename.endsWith(".mp3")) {
+          contentType = "audio/mpeg";
+        } else if (filename.endsWith(".wav")) {
+          contentType = "audio/wav";
+        } else if (filename.endsWith(".m4a")) {
+          contentType = "audio/x-m4a";
+        } else if (filename.endsWith(".mp4")) {
+          contentType = "audio/mp4";
+        } else if (filename.endsWith(".ogg")) {
+          contentType = "audio/ogg";
+        }
+      }
+    }
+
+    // Fallback content-type
+    if (!contentType || contentType.includes("application/octet-stream") || contentType.includes("binary/")) {
+      contentType = "audio/mpeg";
+    }
+
+    console.log(`[AudioProxy] Stream content-type: ${contentType}, Status: ${response.status}`);
+
+    // Parse requested range
+    let isManuallySlicing = false;
+    let start = 0;
+    let end: number | null = null;
+    let totalLength = 0;
+
+    const rangeHeader = req.headers.range;
+    if (rangeHeader) {
+      const match = rangeHeader.match(/bytes=(\d+)-(\d*)/);
+      if (match) {
+        start = parseInt(match[1], 10);
+        if (match[2]) {
+          end = parseInt(match[2], 10);
+        }
+      }
+    }
+
+    // Set response headers and handle manual slicing if upstream returned 200 instead of 206
+    if (response.status === 200 && rangeHeader) {
+      isManuallySlicing = true;
+      const lengthStr = response.headers.get("content-length");
+      totalLength = lengthStr ? parseInt(lengthStr, 10) : 0;
+      if (end === null && totalLength > 0) {
+        end = totalLength - 1;
+      }
+      
+      res.status(206);
+      res.setHeader("Content-Type", contentType);
+      res.setHeader("Accept-Ranges", "bytes");
+      if (totalLength > 0 && end !== null) {
+        res.setHeader("Content-Range", `bytes ${start}-${end}/${totalLength}`);
+        res.setHeader("Content-Length", `${end - start + 1}`);
+        console.log(`[AudioProxy] Performing manual Range slicing: bytes ${start}-${end}/${totalLength}`);
+      }
+    } else {
+      res.status(response.status);
+      res.setHeader("Content-Type", contentType);
+      
+      const contentRange = response.headers.get("content-range");
+      if (contentRange) {
+        res.setHeader("Content-Range", contentRange);
+        console.log(`[AudioProxy] Forwarded Content-Range: ${contentRange}`);
+      }
+      
+      const contentLength = response.headers.get("content-length");
+      if (contentLength) {
+        res.setHeader("Content-Length", contentLength);
+        console.log(`[AudioProxy] Forwarded Content-Length: ${contentLength}`);
+      }
+      
+      const acceptRanges = response.headers.get("accept-ranges");
+      if (acceptRanges) {
+        res.setHeader("Accept-Ranges", acceptRanges);
+      } else {
+        res.setHeader("Accept-Ranges", "bytes");
+      }
+    }
+
+    if (req.method === "HEAD") {
+      res.end();
+      if (response.body) {
+        response.body.cancel().catch(() => {});
+      }
+      return;
+    }
+
+    if (!response.body) {
+      return res.end();
+    }
+
+    const reader = response.body.getReader();
+    req.on("close", () => {
+      reader.cancel().catch(() => {});
+    });
+
+    try {
+      let bytesRead = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        if (isManuallySlicing) {
+          const chunkLength = value.length;
+          const chunkStart = bytesRead;
+          const chunkEnd = bytesRead + chunkLength - 1;
+
+          bytesRead += chunkLength;
+
+          if (chunkEnd < start) {
+            continue;
+          }
+
+          if (end !== null && chunkStart > end) {
+            break;
+          }
+
+          const sliceStart = Math.max(0, start - chunkStart);
+          const sliceEnd = end !== null ? Math.min(chunkLength - 1, end - chunkStart) : chunkLength - 1;
+
+          if (sliceStart === 0 && sliceEnd === chunkLength - 1) {
+            res.write(value);
+          } else {
+            res.write(value.subarray(sliceStart, sliceEnd + 1));
+          }
+        } else {
+          res.write(value);
+        }
+      }
+      res.end();
+    } catch (streamErr: any) {
+      console.error("[AudioProxy] Error during streaming stream chunks:", streamErr);
+      reader.cancel().catch(() => {});
+      if (!res.headersSent) {
+        res.status(500).end();
+      }
+    }
+
+  } catch (err: any) {
+    console.error("[AudioProxy] Audio proxy error:", err);
+    if (!res.headersSent) {
+      res.status(500).send("Proxy error: " + err.message);
+    }
   }
 });
 

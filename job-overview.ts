@@ -242,6 +242,65 @@ The love of God and Guru is unconditional and ever-flowing. When we surrender ou
 **Jai Guru!**`;
 }
 
+async function saveAndSyncDatabase(workbook: ExcelJS.Workbook) {
+  const excelPath = path.join(process.cwd(), "Database.xlsx");
+  const csvPath = path.join(process.cwd(), "Database.csv");
+
+  // Save main Database.xlsx
+  await workbook.xlsx.writeFile(excelPath);
+  console.log("✅ Database.xlsx updated successfully!");
+
+  // Convert Excel sheet to CSV
+  const worksheet = workbook.worksheets[0];
+  const csvRows: string[][] = [];
+  
+  worksheet.eachRow({ includeEmpty: true }, (row) => {
+    // We want the first 6 columns
+    const rowValues: string[] = [];
+    for (let col = 1; col <= 6; col++) {
+      const cellValue = row.getCell(col).value;
+      rowValues.push(cellValue === null || cellValue === undefined ? "" : String(cellValue));
+    }
+    // Only include if at least one column has data
+    if (rowValues.some(val => val !== "")) {
+      csvRows.push(rowValues);
+    }
+  });
+
+  // Helper to format CSV row safely with quotes
+  const formatCsvContent = (rows: string[][]): string => {
+    return rows.map(row => 
+      row.map(val => {
+        const s = String(val || "");
+        if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
+          return `"${s.replace(/"/g, '""')}"`;
+        }
+        return s;
+      }).join(",")
+    ).join("\n");
+  };
+
+  const csvContent = formatCsvContent(csvRows);
+  fs.writeFileSync(csvPath, csvContent, "utf-8");
+  console.log("✅ Database.csv updated successfully!");
+
+  // Sync with public directory
+  const publicDir = path.join(process.cwd(), "public");
+  if (fs.existsSync(publicDir)) {
+    await workbook.xlsx.writeFile(path.join(publicDir, "Database.xlsx"));
+    fs.writeFileSync(path.join(publicDir, "Database.csv"), csvContent, "utf-8");
+    console.log("✅ public/Database.xlsx and public/Database.csv synchronized!");
+  }
+
+  // Sync with dist directory
+  const distDir = path.join(process.cwd(), "dist");
+  if (fs.existsSync(distDir)) {
+    await workbook.xlsx.writeFile(path.join(distDir, "Database.xlsx"));
+    fs.writeFileSync(path.join(distDir, "Database.csv"), csvContent, "utf-8");
+    console.log("✅ dist/Database.xlsx and dist/Database.csv synchronized!");
+  }
+}
+
 async function runBatch() {
   console.log("🕉️ STARTING INCREMENTAL SPIRITUAL OVERVIEW & TRANSCRIPT BATCH JOB 🕉️");
   console.log(`🎯 Configured Batch Size: ${BATCH_SIZE} videos`);
@@ -602,40 +661,31 @@ Ensure the JSON is perfectly valid, with proper escaping of quotes, newlines, an
         }
       }
 
-      // 3. Store the updates in memory
-      excelUpdates.push({
-        rowNumber: video.rowNumber,
-        topic: updatedTopic,
-        status: "completed",
-        talkBy: speakerName
-      });
-      
+      // 3. Update sheet row in memory directly
+      const row = worksheet.getRow(video.rowNumber);
+      row.getCell(topicColIdx).value = updatedTopic;
+      row.getCell(statusColIdx).value = "completed";
+      row.getCell(talkByColIdx).value = speakerName;
+      row.commit();
+
       console.log(`✅ Update queued: status = "completed", talkBy = "${speakerName}"`);
       completedCount++;
     } catch (err: any) {
       console.error(`❌ Error processing row ${video.rowNumber} (ID: ${video.id}):`, err.message || err);
-      // Store failed status in updates
-      excelUpdates.push({
-        rowNumber: video.rowNumber,
-        topic: video.topic,
-        status: `failed: ${err.message || String(err)}`,
-        talkBy: "Unknown"
-      });
+      // Update sheet row with failed status in memory
+      const row = worksheet.getRow(video.rowNumber);
+      row.getCell(statusColIdx).value = `failed: ${err.message || String(err)}`;
+      row.getCell(talkByColIdx).value = "Unknown";
+      row.commit();
     }
 
     // 💾 SAVE INCREMENTALLY AFTER EVERY VIDEO (Prevents data loss on task/system timeout)
     console.log(`💾 Saving progress incrementally for Row ${video.rowNumber}...`);
-    const tempUpdatesPath = path.join(process.cwd(), "temp-updates.json");
-    fs.writeFileSync(tempUpdatesPath, JSON.stringify(excelUpdates, null, 2), "utf-8");
     try {
-      execSync("python3 update-excel.py", { stdio: "inherit" });
-      console.log(`✅ Row ${video.rowNumber} successfully synced to Database.xlsx and Database.csv!`);
-    } catch (pyErr: any) {
-      console.error(`⚠️ Failed to run incremental Python Excel update:`, pyErr.message || pyErr);
-    } finally {
-      if (fs.existsSync(tempUpdatesPath)) {
-        fs.unlinkSync(tempUpdatesPath);
-      }
+      await saveAndSyncDatabase(workbook);
+      console.log(`✅ Row ${video.rowNumber} successfully saved and synchronized!`);
+    } catch (saveErr: any) {
+      console.error(`⚠️ Failed to save database incrementally:`, saveErr.message || saveErr);
     }
 
     // 🔄 Sync Database.xlsx changes with src/data/videos.json so UI is updated live!

@@ -64,6 +64,7 @@ import instrumentalAlbums from './data/instrumental_albums.json';
 import calendarData from './data/india_365_day_calendar_2026_with_saints_merged.json';
 import { cn } from './lib/utils';
 import TranscriptReader from './components/TranscriptReader';
+import AudioPlayerSection from './components/AudioPlayerSection';
 
 const LOTUS_IMAGE_URL = "https://images.unsplash.com/photo-1542631221-396af3702505?q=80&w=600&auto=format&fit=crop";
 
@@ -506,6 +507,7 @@ export default function App() {
   const [isFloatingControlsVisible, setIsFloatingControlsVisible] = useState(true);
   const [visibleCount, setVisibleCount] = useState(24);
   const [isReaderOpen, setIsReaderOpen] = useState(false);
+  const [isAudioOpen, setIsAudioOpen] = useState(false);
 
   // Reset pagination on search or tag modifications to keep browser snappy
   useEffect(() => {
@@ -1477,7 +1479,7 @@ export default function App() {
       {/* Sidebar/Navigation (Mobile: Bottom, Desktop: Left) */}
       <aside className={cn(
         "w-full md:w-80 flex-shrink-0 h-auto md:h-screen backdrop-blur-2xl bg-theme-surface border-r border-theme-border z-20 flex flex-col p-6 transition-all duration-300",
-        isReaderOpen && "hidden md:hidden pointer-events-none"
+        (isReaderOpen || isAudioOpen) && "hidden md:hidden pointer-events-none"
       )}>
         <div className="flex flex-col gap-6 mb-10 shrink-0">
           <div className="flex items-center justify-between">
@@ -1549,30 +1551,51 @@ export default function App() {
             )}
 
             {/* View Switcher Tabs */}
-            <div className="grid grid-cols-2 gap-2 pt-3 border-t border-white/5">
+            <div className="grid grid-cols-3 gap-1 pt-3 border-t border-white/5">
               <button
-                onClick={() => setIsReaderOpen(false)}
+                onClick={() => {
+                  setIsReaderOpen(false);
+                  setIsAudioOpen(false);
+                }}
                 className={cn(
-                  "flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
-                  !isReaderOpen 
+                  "flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border",
+                  (!isReaderOpen && !isAudioOpen)
                     ? "bg-indigo-600/20 border-indigo-500/40 text-indigo-400 shadow-lg" 
                     : "bg-white/5 border-transparent text-slate-400 hover:text-white"
                 )}
               >
                 <Play className="w-3 h-3 fill-current shrink-0" />
-                Visuals
+                <span>Visuals</span>
               </button>
               <button
-                onClick={() => setIsReaderOpen(true)}
+                onClick={() => {
+                  setIsReaderOpen(true);
+                  setIsAudioOpen(false);
+                }}
                 className={cn(
-                  "flex items-center justify-center gap-1.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all border",
+                  "flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border",
                   isReaderOpen 
                     ? "bg-indigo-600/20 border-indigo-500/40 text-indigo-400 shadow-lg" 
                     : "bg-white/5 border-transparent text-slate-400 hover:text-white"
                 )}
               >
-                <BookOpen className="w-3 h-3 shrink-0" />
-                Readings
+                <BookOpen className="w-3.5 h-3.5 shrink-0" />
+                <span>Readings</span>
+              </button>
+              <button
+                onClick={() => {
+                  setIsReaderOpen(false);
+                  setIsAudioOpen(true);
+                }}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border",
+                  isAudioOpen 
+                    ? "bg-indigo-600/20 border-indigo-500/40 text-indigo-400 shadow-lg" 
+                    : "bg-white/5 border-transparent text-slate-400 hover:text-white"
+                )}
+              >
+                <Music className="w-3.5 h-3.5 shrink-0" />
+                <span>Audios</span>
               </button>
             </div>
           </div>
@@ -1704,6 +1727,10 @@ export default function App() {
             activeVideoId={activeVideoId}
             setActiveVideoId={setActiveVideoId}
             onClose={() => setIsReaderOpen(false)}
+          />
+        ) : isAudioOpen ? (
+          <AudioPlayerSection
+            onClose={() => setIsAudioOpen(false)}
           />
         ) : (
           <>
@@ -2162,7 +2189,7 @@ export default function App() {
       {/* Right Sidebar: Workspace/Playlist */}
       <aside className={cn(
         "hidden lg:flex w-72 flex-shrink-0 h-screen backdrop-blur-2xl bg-white/2 border-l border-white/10 z-20 flex-col p-6 overflow-hidden transition-all duration-300",
-        isReaderOpen && "lg:hidden pointer-events-none"
+        (isReaderOpen || isAudioOpen) && "lg:hidden pointer-events-none"
       )}>
         <div className="flex items-center justify-between mb-8 shrink-0">
           <div className="flex flex-col">
@@ -2336,7 +2363,7 @@ export default function App() {
 
       {/* Playlist Floating Bar */}
       <AnimatePresence>
-        {playlist.length > 0 && !isReaderOpen && (
+        {playlist.length > 0 && !isReaderOpen && !isAudioOpen && (
           <motion.div 
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -2741,7 +2768,7 @@ export default function App() {
       {/* Floating Controls Bar */}
       <div className={cn(
         "fixed right-4 top-1/2 -translate-y-1/2 z-[60] flex flex-col gap-3 transition-all duration-300",
-        isReaderOpen && "hidden pointer-events-none opacity-0"
+        (isReaderOpen || isAudioOpen) && "hidden pointer-events-none opacity-0"
       )}>
         <AnimatePresence>
           {isFloatingControlsVisible && (
