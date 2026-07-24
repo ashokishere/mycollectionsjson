@@ -24,6 +24,17 @@
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Swami_Vivekananda.jpg"
     },
     {
+      "date": "2026-01-13",
+      "event_type": "Samadhi",
+      "name": "Swami Premananda",
+      "tradition": "Ramakrishna Math & Mission",
+      "region": "Bengal",
+      "birth_date": "1860-07-28",
+      "death_date": "1918-01-13",
+      "description": "Samadhi of Swami Premananda.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swami_Premananda.jpg"
+    },
+    {
       "date": "2026-02-18",
       "event_type": "Jayanti",
       "name": "Chaitanya Mahaprabhu / Ramakrishna Paramahamsa",
@@ -32,7 +43,29 @@
       "birth_date": "1486-02-18 / 1836-02-18",
       "death_date": "1533-06-14 / 1886-08-16",
       "description": "Birth of Chaitanya Mahaprabhu and Ramakrishna Paramahamsa, both Bengal saints.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Chaitanya_Mahaprabhu.jpg"
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Chaitanya_Mahaprabhu.jpg"
+    },
+    {
+      "date": "2026-02-18",
+      "event_type": "Jayanti",
+      "name": "Ramakrishna Paramahamsa",
+      "tradition": "Ramakrishna Math & Mission",
+      "region": "Bengal",
+      "birth_date": "1836-02-18",
+      "death_date": "1886-08-16",
+      "description": "19th-century saint of Bengal, known for intense devotion to Kali and teaching of harmony of religions.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/3/36/Ramakrishna_Paramahamsa.jpg"
+    },
+    {
+      "date": "2026-02-20",
+      "event_type": "Samadhi",
+      "name": "Rajarsi Janakananda",
+      "tradition": "YSS / SRF",
+      "region": "USA",
+      "birth_date": "1892-05-05",
+      "death_date": "1952-02-20",
+      "description": "Rajarsi Janakananda (James J. Lynn) Samadhi Day.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/e/ea/James_Jesse_Lynn.jpg"
     },
     {
       "date": "2026-03-01",
@@ -57,6 +90,17 @@
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/3/36/Paramahansa_Yogananda.jpg"
     },
     {
+      "date": "2026-03-09",
+      "event_type": "Samadhi",
+      "name": "Sri Yukteswar Giri",
+      "tradition": "YSS/SRF",
+      "region": "Bengal",
+      "birth_date": "1855-07-12",
+      "death_date": "1936-03-09",
+      "description": "Samadhi of Sri Yukteswar Giri.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Sri_Yukteswar.jpg"
+    },
+    {
       "date": "2026-03-10",
       "event_type": "Jayanti",
       "name": "Swami Vivekananda (alternate)",
@@ -79,6 +123,17 @@
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Appar.jpg"
     },
     {
+      "date": "2026-03-27",
+      "event_type": "Jayanti",
+      "name": "Swaminarayan",
+      "tradition": "Swaminarayan Sampradaya",
+      "region": "Gujarat",
+      "birth_date": "1781-03-27",
+      "death_date": "1830-06-01",
+      "description": "Founder of Swaminarayan Sampradaya, born in Gujarat.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swaminarayan.jpg"
+    },
+    {
       "date": "2026-04-08",
       "event_type": "Jayanti",
       "name": "Adi Shankaracharya",
@@ -90,15 +145,15 @@
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/2/22/Adi_Shankara.jpg"
     },
     {
-      "date": "2026-04-18",
+      "date": "2026-04-10",
       "event_type": "Samadhi",
-      "name": "Adi Shankaracharya",
-      "tradition": "Advaita Vedanta",
-      "region": "Kerala",
-      "birth_date": "788-04-08",
-      "death_date": "820-04-18",
-      "description": "Vimana Sankranti (death) of Adi Shankaracharya.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/2/22/Adi_Shankara.jpg"
+      "name": "Swami Brahmananda",
+      "tradition": "Ramakrishna Math & Mission",
+      "region": "Bengal",
+      "birth_date": "1863-07-11",
+      "death_date": "1922-04-10",
+      "description": "Samadhi of Swami Brahmananda.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swami_Brahmananda.jpg"
     },
     {
       "date": "2026-04-14",
@@ -112,6 +167,39 @@
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/9/9c/Ramana_Maharshi.jpg"
     },
     {
+      "date": "2026-04-18",
+      "event_type": "Samadhi",
+      "name": "Adi Shankaracharya",
+      "tradition": "Advaita Vedanta",
+      "region": "Kerala",
+      "birth_date": "788-04-08",
+      "death_date": "820-04-18",
+      "description": "Vimana Sankranti (death) of Adi Shankaracharya.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/2/22/Adi_Shankara.jpg"
+    },
+    {
+      "date": "2026-04-24",
+      "event_type": "Samadhi",
+      "name": "Sathya Sai Baba",
+      "tradition": "General Hindu",
+      "region": "Andhra Pradesh",
+      "birth_date": "1923-11-13",
+      "death_date": "2011-04-24",
+      "description": "Samadhi of Sathya Sai Baba.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Sathya_Sai_Baba.jpg"
+    },
+    {
+      "date": "2026-05-05",
+      "event_type": "Jayanti",
+      "name": "Rajarsi Janakananda",
+      "tradition": "YSS / SRF",
+      "region": "USA",
+      "birth_date": "1892-05-05",
+      "death_date": "1952-02-20",
+      "description": "Rajarsi Janakananda (James J. Lynn) Birth Day. Chief disciple of Paramahansa Yogananda and first president of Self-Realization Fellowship / Yogoda Satsanga Society of India.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/e/ea/James_Jesse_Lynn.jpg"
+    },
+    {
       "date": "2026-05-08",
       "event_type": "Jayanti",
       "name": "Swami Chinmayananda",
@@ -120,7 +208,7 @@
       "birth_date": "1916-05-08",
       "death_date": "1993-08-03",
       "description": "Founder of Chinmaya Mission, known for Vedanta discourses and tours worldwide.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swami_Chinmayananda.jpg"
+      "image_url": "https://chinmayanewyork.org/wp-content/uploads/2015/07/SWAMI-CHINMAYANANDA-366x350.jpg"
     },
     {
       "date": "2026-05-15",
@@ -145,6 +233,17 @@
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Manikkavasagar.jpg"
     },
     {
+      "date": "2026-06-01",
+      "event_type": "Samadhi",
+      "name": "Swaminarayan",
+      "tradition": "Swaminarayan Sampradaya",
+      "region": "Gujarat",
+      "birth_date": "1781-03-27",
+      "death_date": "1830-06-01",
+      "description": "Samadhi of Swaminarayan.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swaminarayan.jpg"
+    },
+    {
       "date": "2026-06-14",
       "event_type": "Samadhi",
       "name": "Chaitanya Mahaprabhu",
@@ -153,7 +252,7 @@
       "birth_date": "1486-02-18",
       "death_date": "1533-06-14",
       "description": "Samadhi of Chaitanya Mahaprabhu at Puri.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Chaitanya_Mahaprabhu.jpg"
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Chaitanya_Mahaprabhu.jpg"
     },
     {
       "date": "2026-06-15",
@@ -167,6 +266,17 @@
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Karaikkal_Ammaiyar.jpg"
     },
     {
+      "date": "2026-07-04",
+      "event_type": "Samadhi",
+      "name": "Swami Vivekananda",
+      "tradition": "Ramakrishna Math & Mission",
+      "region": "Bengal",
+      "birth_date": "1863-01-12",
+      "death_date": "1902-07-04",
+      "description": "Samadhi of Swami Vivekananda.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Swami_Vivekananda.jpg"
+    },
+    {
       "date": "2026-07-08",
       "event_type": "Jayanti",
       "name": "Swami Sivananda",
@@ -175,7 +285,7 @@
       "birth_date": "1887-07-08",
       "death_date": "1963-07-14",
       "description": "Founder of Divine Life Society, emphasized yoga, Vedanta, and service.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swami_Sivananda.jpg"
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Sivananda_Saraswati.jpg"
     },
     {
       "date": "2026-07-11",
@@ -208,7 +318,18 @@
       "birth_date": "1887-07-08",
       "death_date": "1963-07-14",
       "description": "Samadhi of Swami Sivananda Maharaj at Rishikesh.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swami_Sivananda.jpg"
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/e/ee/Sivananda_Saraswati.jpg"
+    },
+    {
+      "date": "2026-07-25",
+      "event_type": "Babaji Day",
+      "name": "Mahavatar Babaji",
+      "tradition": "Kriya Yoga / YSS / SRF",
+      "region": "Himalayas",
+      "birth_date": "unknown",
+      "death_date": "immortal",
+      "description": "Mahavatar Babaji Day. Commemorating the meeting of Mahavatar Babaji with Lahiri Mahasaya in the Himalayas in 1861, and his promise to always remain in his physical form.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/e/e5/Babaji-transparent.png"
     },
     {
       "date": "2026-07-28",
@@ -222,39 +343,6 @@
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swami_Premananda.jpg"
     },
     {
-      "date": "2026-01-13",
-      "event_type": "Samadhi",
-      "name": "Swami Premananda",
-      "tradition": "Ramakrishna Math & Mission",
-      "region": "Bengal",
-      "birth_date": "1860-07-28",
-      "death_date": "1918-01-13",
-      "description": "Samadhi of Swami Premananda.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swami_Premananda.jpg"
-    },
-    {
-      "date": "2026-04-10",
-      "event_type": "Samadhi",
-      "name": "Swami Brahmananda",
-      "tradition": "Ramakrishna Math & Mission",
-      "region": "Bengal",
-      "birth_date": "1863-07-11",
-      "death_date": "1922-04-10",
-      "description": "Samadhi of Swami Brahmananda.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swami_Brahmananda.jpg"
-    },
-    {
-      "date": "2026-03-09",
-      "event_type": "Samadhi",
-      "name": "Sri Yukteswar Giri",
-      "tradition": "YSS/SRF",
-      "region": "Bengal",
-      "birth_date": "1855-07-12",
-      "death_date": "1936-03-09",
-      "description": "Samadhi of Sri Yukteswar Giri.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Sri_Yukteswar.jpg"
-    },
-    {
       "date": "2026-08-03",
       "event_type": "Samadhi",
       "name": "Swami Chinmayananda",
@@ -263,7 +351,7 @@
       "birth_date": "1916-05-08",
       "death_date": "1993-08-03",
       "description": "Samadhi of Swami Chinmayananda.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swami_Chinmayananda.jpg"
+      "image_url": "https://chinmayanewyork.org/wp-content/uploads/2015/07/SWAMI-CHINMAYANANDA-366x350.jpg"
     },
     {
       "date": "2026-08-13",
@@ -274,7 +362,7 @@
       "birth_date": "1896-08-13",
       "death_date": "1982-08-27",
       "description": "Modern saint known for her divine life, spontaneous songs, and West Bengal base.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Anandamayi_Ma.jpg"
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Sri_Anandamayi_Ma.jpg"
     },
     {
       "date": "2026-08-16",
@@ -296,7 +384,7 @@
       "birth_date": "1896-08-13",
       "death_date": "1982-08-27",
       "description": "Samadhi of Anandamayi Ma.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Anandamayi_Ma.jpg"
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Sri_Anandamayi_Ma.jpg"
     },
     {
       "date": "2026-08-31",
@@ -319,182 +407,6 @@
       "death_date": "various",
       "description": "Composite Vaishnava and Bhakti saints day (many major Vaishnava/Bhakti saints traditionally commemorated in this period).",
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tulsidas.jpg"
-    },
-    {
-      "date": "2026-10-01",
-      "event_type": "Jayanti/Samadhi",
-      "name": "Ramanujacharya / Ramanand",
-      "tradition": "Sri Vaishnavism / Ramanandi Sampradaya",
-      "region": "Tamil Nadu / Uttar Pradesh",
-      "birth_date": "1017-10-01 / 1399-10-01",
-      "death_date": "1137-10-01 / 1476-10-01",
-      "description": "Jayanti and Samadhi of Ramanujacharya and Ramanand (both on 1 Oct in tradition).",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Ramanujacharya.jpg"
-    },
-    {
-      "date": "2026-10-08",
-      "event_type": "Jayanti/Samadhi",
-      "name": "Madhvacharya",
-      "tradition": "Dvaita Vedanta",
-      "region": "Karnataka",
-      "birth_date": "1238-10-08",
-      "death_date": "1317-10-08",
-      "description": "Jayanti and Samadhi of Madhvacharya (both on 8 Oct in tradition).",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Madhvacharya.jpg"
-    },
-    {
-      "date": "2026-10-09",
-      "event_type": "Videha_Mukti",
-      "name": "Basava / Allama Prabhu / Ashtadeva / Sivaprakasa / Santalinga / Kumaradeva",
-      "tradition": "Virashaiva (Lingayat) / Shaiva Siddhanta",
-      "region": "Karnataka",
-      "birth_date": "various",
-      "death_date": "various",
-      "description": "Videha mukti of key Virashaiva and related Shaiva saints (traditionally grouped in early October).",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Basava.jpg"
-    },
-    {
-      "date": "2026-10-15",
-      "event_type": "Videha_Mukti",
-      "name": "Nandanar (Nathyar)",
-      "tradition": "Shaiva Siddhanta",
-      "region": "Tamil Nadu",
-      "birth_date": "600-10-15",
-      "death_date": "680-10-15",
-      "description": "Videha mukti of Nandanar, Nayanmar saint devoted to Shiva.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Nandanar.jpg"
-    },
-    {
-      "date": "2026-10-21",
-      "event_type": "Samadhi",
-      "name": "Sri Muthuswami Dikshitar",
-      "tradition": "Carnatic / Shaiva",
-      "region": "Tamil Nadu",
-      "birth_date": "1776-01-08",
-      "death_date": "1847-10-21",
-      "description": "Carnatic composer-saint, known for temple music and Sahitya, many hymns to Shiva.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Muthuswami_Dikshitar.jpg"
-    },
-    {
-      "date": "2026-11-13",
-      "event_type": "Jayanti",
-      "name": "Sathya Sai Baba",
-      "tradition": "General Hindu",
-      "region": "Andhra Pradesh",
-      "birth_date": "1923-11-13",
-      "death_date": "2011-04-24",
-      "description": "Modern saint from Puttaparti, Andhra Pradesh, known for miracles and social work.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Sathya_Sai_Baba.jpg"
-    },
-    {
-      "date": "2026-04-24",
-      "event_type": "Samadhi",
-      "name": "Sathya Sai Baba",
-      "tradition": "General Hindu",
-      "region": "Andhra Pradesh",
-      "birth_date": "1923-11-13",
-      "death_date": "2011-04-24",
-      "description": "Samadhi of Sathya Sai Baba.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Sathya_Sai_Baba.jpg"
-    },
-    {
-      "date": "2026-11-14",
-      "event_type": "Jayanti",
-      "name": "Guru Nanak",
-      "tradition": "Sikhism",
-      "region": "Punjab/UP region",
-      "birth_date": "1469-11-14",
-      "death_date": "1539-09-22",
-      "description": "Founder of Sikhism, born in Punjab area, teachings respected across India.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Guru_Nanak.jpg"
-    },
-    {
-      "date": "2026-09-22",
-      "event_type": "Samadhi",
-      "name": "Guru Nanak",
-      "tradition": "Sikhism",
-      "region": "Punjab/UP region",
-      "birth_date": "1469-11-14",
-      "death_date": "1539-09-22",
-      "description": "Samadhi of Guru Nanak Dev.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Guru_Nanak.jpg"
-    },
-    {
-      "date": "2026-11-17",
-      "event_type": "Samadhi",
-      "name": "The Mother (Mirra Alfassa)",
-      "tradition": "Integral Yoga",
-      "region": "Pondicherry/Auroville",
-      "birth_date": "1878-11-21",
-      "death_date": "1973-11-17",
-      "description": "Samadhi of The Mother at Pondicherry.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Mirra_Alfassa.jpg"
-    },
-    {
-      "date": "2026-11-21",
-      "event_type": "Jayanti",
-      "name": "The Mother (Mirra Alfassa)",
-      "tradition": "Integral Yoga",
-      "region": "Pondicherry/Auroville",
-      "birth_date": "1878-11-21",
-      "death_date": "1973-11-17",
-      "description": "Spiritual collaborator of Sri Aurobindo, founder of Auroville.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Mirra_Alfassa.jpg"
-    },
-    {
-      "date": "2026-12-05",
-      "event_type": "Samadhi",
-      "name": "Sri Aurobindo",
-      "tradition": "Integral Yoga",
-      "region": "Bengal/Pondicherry",
-      "birth_date": "1872-12-05",
-      "death_date": "1950-12-05",
-      "description": "Yogi, philosopher, and nationalist from Bengal, founder of Integral Yoga in Pondicherry.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Sri_Aurobindo.jpg"
-    },
-    {
-      "date": "2026-07-04",
-      "event_type": "Samadhi",
-      "name": "Swami Vivekananda",
-      "tradition": "Ramakrishna Math & Mission",
-      "region": "Bengal",
-      "birth_date": "1863-01-12",
-      "death_date": "1902-07-04",
-      "description": "Samadhi of Swami Vivekananda.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/9/9b/Swami_Vivekananda.jpg"
-    },
-    {
-      "date": "2026-02-18",
-      "event_type": "Jayanti",
-      "name": "Ramakrishna Paramahamsa",
-      "tradition": "Ramakrishna Math & Mission",
-      "region": "Bengal",
-      "birth_date": "1836-02-18",
-      "death_date": "1886-08-16",
-      "description": "19th-century saint of Bengal, known for intense devotion to Kali and teaching of harmony of religions.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/3/36/Ramakrishna_Paramahamsa.jpg"
-    },
-    {
-      "date": "2026-03-27",
-      "event_type": "Jayanti",
-      "name": "Swaminarayan",
-      "tradition": "Swaminarayan Sampradaya",
-      "region": "Gujarat",
-      "birth_date": "1781-03-27",
-      "death_date": "1830-06-01",
-      "description": "Founder of Swaminarayan Sampradaya, born in Gujarat.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swaminarayan.jpg"
-    },
-    {
-      "date": "2026-06-01",
-      "event_type": "Samadhi",
-      "name": "Swaminarayan",
-      "tradition": "Swaminarayan Sampradaya",
-      "region": "Gujarat",
-      "birth_date": "1781-03-27",
-      "death_date": "1830-06-01",
-      "description": "Samadhi of Swaminarayan.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Swaminarayan.jpg"
     },
     {
       "date": "2026-09-01",
@@ -539,28 +451,6 @@
       "death_date": "1645-09-01",
       "description": "Warkari saint, known for his Abhangs to Vithoba, central figure of Maharashtra Bhakti movement.",
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Tukaram.jpg"
-    },
-    {
-      "date": "2026-10-01",
-      "event_type": "Jayanti",
-      "name": "Ramanand",
-      "tradition": "Ramanandi Sampradaya",
-      "region": "Uttar Pradesh",
-      "birth_date": "1399-10-01",
-      "death_date": "1476-10-01",
-      "description": "Founder of Ramanandi Sampradaya, emphasized Rama bhakti and social equality.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Ramanand.jpg"
-    },
-    {
-      "date": "2026-10-01",
-      "event_type": "Samadhi",
-      "name": "Ramanand",
-      "tradition": "Ramanandi Sampradaya",
-      "region": "Uttar Pradesh",
-      "birth_date": "1399-10-01",
-      "death_date": "1476-10-01",
-      "description": "Samadhi of Ramanand.",
-      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Ramanand.jpg"
     },
     {
       "date": "2026-09-01",
@@ -880,6 +770,171 @@
       "death_date": "1500-09-01",
       "description": "Warkari saint, devotee of Vithoba, known for her Abhangs and intense bhakti.",
       "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Kanhopatra.jpg"
+    },
+    {
+      "date": "2026-09-22",
+      "event_type": "Samadhi",
+      "name": "Guru Nanak",
+      "tradition": "Sikhism",
+      "region": "Punjab/UP region",
+      "birth_date": "1469-11-14",
+      "death_date": "1539-09-22",
+      "description": "Samadhi of Guru Nanak Dev.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Guru_Nanak.jpg"
+    },
+    {
+      "date": "2026-09-26",
+      "event_type": "Samadhi",
+      "name": "Lahiri Mahasaya (Shyama Charan Lahiri)",
+      "tradition": "Kriya Yoga",
+      "region": "Bengal",
+      "birth_date": "1828-09-30",
+      "death_date": "1895-09-26",
+      "description": "Lahiri Mahasaya (Shyama Charan Lahiri) Samadhi Day.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/8/87/Lahiri_Mahasaya.jpg"
+    },
+    {
+      "date": "2026-09-30",
+      "event_type": "Jayanti",
+      "name": "Lahiri Mahasaya (Shyama Charan Lahiri)",
+      "tradition": "Kriya Yoga",
+      "region": "Bengal",
+      "birth_date": "1828-09-30",
+      "death_date": "1895-09-26",
+      "description": "Lahiri Mahasaya (Shyama Charan Lahiri) Birth day. Reviver of Kriya Yoga lineage in modern times.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/8/87/Lahiri_Mahasaya.jpg"
+    },
+    {
+      "date": "2026-10-01",
+      "event_type": "Jayanti/Samadhi",
+      "name": "Ramanujacharya / Ramanand",
+      "tradition": "Sri Vaishnavism / Ramanandi Sampradaya",
+      "region": "Tamil Nadu / Uttar Pradesh",
+      "birth_date": "1017-10-01 / 1399-10-01",
+      "death_date": "1137-10-01 / 1476-10-01",
+      "description": "Jayanti and Samadhi of Ramanujacharya and Ramanand (both on 1 Oct in tradition).",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Ramanujacharya.jpg"
+    },
+    {
+      "date": "2026-10-01",
+      "event_type": "Jayanti",
+      "name": "Ramanand",
+      "tradition": "Ramanandi Sampradaya",
+      "region": "Uttar Pradesh",
+      "birth_date": "1399-10-01",
+      "death_date": "1476-10-01",
+      "description": "Founder of Ramanandi Sampradaya, emphasized Rama bhakti and social equality.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Ramanand.jpg"
+    },
+    {
+      "date": "2026-10-01",
+      "event_type": "Samadhi",
+      "name": "Ramanand",
+      "tradition": "Ramanandi Sampradaya",
+      "region": "Uttar Pradesh",
+      "birth_date": "1399-10-01",
+      "death_date": "1476-10-01",
+      "description": "Samadhi of Ramanand.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Ramanand.jpg"
+    },
+    {
+      "date": "2026-10-08",
+      "event_type": "Jayanti/Samadhi",
+      "name": "Madhvacharya",
+      "tradition": "Dvaita Vedanta",
+      "region": "Karnataka",
+      "birth_date": "1238-10-08",
+      "death_date": "1317-10-08",
+      "description": "Jayanti and Samadhi of Madhvacharya (both on 8 Oct in tradition).",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Madhvacharya.jpg"
+    },
+    {
+      "date": "2026-10-09",
+      "event_type": "Videha_Mukti",
+      "name": "Basava / Allama Prabhu / Ashtadeva / Sivaprakasa / Santalinga / Kumaradeva",
+      "tradition": "Virashaiva (Lingayat) / Shaiva Siddhanta",
+      "region": "Karnataka",
+      "birth_date": "various",
+      "death_date": "various",
+      "description": "Videha mukti of key Virashaiva and related Shaiva saints (traditionally grouped in early October).",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Basava.jpg"
+    },
+    {
+      "date": "2026-10-15",
+      "event_type": "Videha_Mukti",
+      "name": "Nandanar (Nathyar)",
+      "tradition": "Shaiva Siddhanta",
+      "region": "Tamil Nadu",
+      "birth_date": "600-10-15",
+      "death_date": "680-10-15",
+      "description": "Videha mukti of Nandanar, Nayanmar saint devoted to Shiva.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Nandanar.jpg"
+    },
+    {
+      "date": "2026-10-21",
+      "event_type": "Samadhi",
+      "name": "Sri Muthuswami Dikshitar",
+      "tradition": "Carnatic / Shaiva",
+      "region": "Tamil Nadu",
+      "birth_date": "1776-01-08",
+      "death_date": "1847-10-21",
+      "description": "Carnatic composer-saint, known for temple music and Sahitya, many hymns to Shiva.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Muthuswami_Dikshitar.jpg"
+    },
+    {
+      "date": "2026-11-13",
+      "event_type": "Jayanti",
+      "name": "Sathya Sai Baba",
+      "tradition": "General Hindu",
+      "region": "Andhra Pradesh",
+      "birth_date": "1923-11-13",
+      "death_date": "2011-04-24",
+      "description": "Modern saint from Puttaparti, Andhra Pradesh, known for miracles and social work.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Sathya_Sai_Baba.jpg"
+    },
+    {
+      "date": "2026-11-14",
+      "event_type": "Jayanti",
+      "name": "Guru Nanak",
+      "tradition": "Sikhism",
+      "region": "Punjab/UP region",
+      "birth_date": "1469-11-14",
+      "death_date": "1539-09-22",
+      "description": "Founder of Sikhism, born in Punjab area, teachings respected across India.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Guru_Nanak.jpg"
+    },
+    {
+      "date": "2026-11-17",
+      "event_type": "Samadhi",
+      "name": "The Mother (Mirra Alfassa)",
+      "tradition": "Integral Yoga",
+      "region": "Pondicherry/Auroville",
+      "birth_date": "1878-11-21",
+      "death_date": "1973-11-17",
+      "description": "Samadhi of The Mother at Pondicherry.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Mirra_Alfassa.jpg"
+    },
+    {
+      "date": "2026-11-21",
+      "event_type": "Jayanti",
+      "name": "The Mother (Mirra Alfassa)",
+      "tradition": "Integral Yoga",
+      "region": "Pondicherry/Auroville",
+      "birth_date": "1878-11-21",
+      "death_date": "1973-11-17",
+      "description": "Spiritual collaborator of Sri Aurobindo, founder of Auroville.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Mirra_Alfassa.jpg"
+    },
+    {
+      "date": "2026-12-05",
+      "event_type": "Samadhi",
+      "name": "Sri Aurobindo",
+      "tradition": "Integral Yoga",
+      "region": "Bengal/Pondicherry",
+      "birth_date": "1872-12-05",
+      "death_date": "1950-12-05",
+      "description": "Yogi, philosopher, and nationalist from Bengal, founder of Integral Yoga in Pondicherry.",
+      "image_url": "https://upload.wikimedia.org/wikipedia/commons/5/56/Sri_Aurobindo.jpg"
     }
   ],
   "calendar": [

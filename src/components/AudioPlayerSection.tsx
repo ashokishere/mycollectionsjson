@@ -107,9 +107,27 @@ export default function AudioPlayerSection({ onClose }: AudioPlayerSectionProps)
       }
     }
     
+    // Auto-cleanup any Google Drive links or "Chrismas/Christmas Meditation/Mediation" titles
+    const cleanedCustomTracks = customTracks.filter(track => {
+      if (!track || !track.url) return false;
+      const isGoogleLink = track.url.includes("drive.google.com") || track.url.includes("docs.google.com");
+      const titleLower = (track.title || "").toLowerCase();
+      const isChristmasMeditation = 
+        titleLower.includes("chrismas") || 
+        titleLower.includes("christmas") ||
+        titleLower.includes("mediation") ||
+        titleLower.includes("meditation");
+      return !isGoogleLink && !isChristmasMeditation;
+    });
+
+    // If tracks were cleaned up, update local storage
+    if (cleanedCustomTracks.length !== customTracks.length) {
+      localStorage.setItem('custom_audios_db', JSON.stringify(cleanedCustomTracks));
+    }
+
     // Merge predefined with custom ones
     const allTracks = [...INITIAL_TRACKS];
-    customTracks.forEach(customTrack => {
+    cleanedCustomTracks.forEach(customTrack => {
       // Avoid duplicate IDs
       if (!allTracks.some(t => t.id === customTrack.id)) {
         allTracks.push({ ...customTrack, isCustom: true });
@@ -340,6 +358,19 @@ export default function AudioPlayerSection({ onClose }: AudioPlayerSectionProps)
     }
     if (!newSpeaker.trim()) {
       setFormError("Speaker/Author is required.");
+      return;
+    }
+
+    const lowerTitle = newTitle.toLowerCase();
+    const lowerUrl = newUrl.toLowerCase();
+    
+    if (lowerUrl.includes("drive.google.com") || lowerUrl.includes("docs.google.com")) {
+      setFormError("Google Drive and Google Docs links are not supported due to file-size limits and virus warning screens. Please use direct direct audio URLs (e.g., .mp3 or .m4a files hosted on public sites).");
+      return;
+    }
+
+    if (lowerTitle.includes("chrismas") || lowerTitle.includes("christmas") || lowerTitle.includes("mediation") || lowerTitle.includes("meditation")) {
+      setFormError("Christmas Meditation audio tracks hosted on Google Drive are no longer supported. Please add different tracks using direct direct audio links.");
       return;
     }
 

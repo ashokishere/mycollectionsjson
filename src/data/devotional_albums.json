@@ -1158,5 +1158,39 @@
         "icon": "Heart"
       }
     ]
+  },
+  {
+    "id": "cosmic-chant-tamil",
+    "name": "Cosmic Chant Tamil",
+    "description": "Devotional singing of Paramahansa Yogananda's Cosmic Chants by YSS Monastics in Tamil.",
+    "themeColor": "text-purple-400",
+    "accentColor": "purple",
+    "icon": "Music",
+    "tracks": [
+      {
+        "id": "_nc7GgkGJx0",
+        "title": "Who is in My Temple?",
+        "desc": "Cosmic chant sung by YSS Monastics in Tamil.",
+        "icon": "Heart"
+      },
+      {
+        "id": "tRyj3zB4l34",
+        "title": "Polestar of My Life",
+        "desc": "Cosmic chant sung by YSS Monastics in Tamil.",
+        "icon": "Sun"
+      },
+      {
+        "id": "VMde9B24YN0",
+        "title": "Door of My Heart",
+        "desc": "Cosmic chant sung by YSS Monastics in Tamil.",
+        "icon": "Flame"
+      },
+      {
+        "id": "kmRV3yBe6Lo",
+        "title": "Listen, Listen, Listen",
+        "desc": "Cosmic chant sung by YSS Monastics in Tamil.",
+        "icon": "Music"
+      }
+    ]
   }
 ]

@@ -54,7 +54,12 @@ import {
   Unlock,
   Settings,
   AlertCircle,
-  Database
+  Database,
+  Monitor,
+  Tv,
+  Pause,
+  Shuffle,
+  Repeat
 } from 'lucide-react';
 import { initialVideos, type Video } from './data/videos';
 import messagesData from './data/messages.json';
@@ -62,6 +67,7 @@ import favoritesData from './data/favorite_playlists.json';
 import devotionalAlbums from './data/devotional_albums.json';
 import instrumentalAlbums from './data/instrumental_albums.json';
 import calendarData from './data/india_365_day_calendar_2026_with_saints_merged.json';
+import screensaverShorts from './data/screensaver_shorts.json';
 import { cn } from './lib/utils';
 import TranscriptReader from './components/TranscriptReader';
 import AudioPlayerSection from './components/AudioPlayerSection';
@@ -74,6 +80,9 @@ const getProxiedImageUrl = (url?: string): string => {
     let filename = url.substring(url.lastIndexOf('/') + 1);
     if (filename.includes('?')) {
       filename = filename.split('?')[0];
+    }
+    if (filename.startsWith('File:')) {
+      filename = filename.substring(5);
     }
     const resolvedUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}`;
     return `https://wsrv.nl/?url=${encodeURIComponent(resolvedUrl)}&w=400&fit=cover`;
@@ -377,6 +386,15 @@ export default function App() {
   
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
 
+  // Screensaver Mode State
+  const [isScreensaverOpen, setIsScreensaverOpen] = useState(false);
+  const [isActiveScreensaverMode, setIsActiveScreensaverMode] = useState(false);
+  const [screensaverActiveIndex, setScreensaverActiveIndex] = useState(0);
+  const [isScreensaverAutoAdvance, setIsScreensaverAutoAdvance] = useState(true);
+  const [isScreensaverPlaying, setIsScreensaverPlaying] = useState(true);
+  const [showScreensaverControls, setShowScreensaverControls] = useState(true);
+  const screensaverTimerRef = useRef<any>(null);
+
   // Admin Area State
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [adminPasscode, setAdminPasscode] = useState('');
@@ -623,6 +641,45 @@ export default function App() {
     
     triggerPetals();
   };
+
+  // Handle screensaver transitions
+  const handleScreensaverNext = useCallback(() => {
+    setScreensaverActiveIndex(prev => (prev + 1) % screensaverShorts.length);
+  }, []);
+
+  const handleScreensaverPrev = useCallback(() => {
+    setScreensaverActiveIndex(prev => (prev - 1 + screensaverShorts.length) % screensaverShorts.length);
+  }, []);
+
+  const startScreensaverWithIndex = (index: number) => {
+    setScreensaverActiveIndex(index);
+    setIsActiveScreensaverMode(true);
+    setIsScreensaverOpen(false);
+  };
+
+  // Handle auto-hiding controls during active screensaver
+  useEffect(() => {
+    if (!isActiveScreensaverMode) {
+      if (screensaverTimerRef.current) clearTimeout(screensaverTimerRef.current);
+      return;
+    }
+
+    const handleMouseMove = () => {
+      setShowScreensaverControls(true);
+      if (screensaverTimerRef.current) clearTimeout(screensaverTimerRef.current);
+      screensaverTimerRef.current = setTimeout(() => {
+        setShowScreensaverControls(false);
+      }, 3000); // hide after 3 seconds of no mouse movement
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    handleMouseMove(); // Initial show
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (screensaverTimerRef.current) clearTimeout(screensaverTimerRef.current);
+    };
+  }, [isActiveScreensaverMode]);
 
   const addAlbumSequence = (albumId: string) => {
     let album: any = devotionalAlbums.find(a => a.id === albumId);
@@ -1220,7 +1277,7 @@ export default function App() {
   }, [filteredVideos, visibleCount]);
 
   const activeVideo = useMemo(() => {
-    return (videos.find(v => v.id === activeVideoId) || playlist.find(v => v.id === activeVideoId)) || null;
+    return (videos.find(v => v.id === activeVideoId) || playlist.find(v => v.id === activeVideoId) || (screensaverShorts as any[]).find(v => v.id === activeVideoId)) || null;
   }, [videos, playlist, activeVideoId]);
 
   const nonQueuedFilteredCount = useMemo(() => {
@@ -1999,7 +2056,7 @@ export default function App() {
                         Read Transcript
                       </button>
                       <div className="flex gap-1.5">
-                        {activeVideo.tags.slice(0, 3).map((tag, idx) => (
+                        {activeVideo.tags.slice(0, 3).map((tag: string, idx: number) => (
                           <span key={`${tag}-${idx}`} className="text-[10px] text-slate-500 bg-white/5 px-2 py-0.5 rounded-full border border-white/5">
                             {tag}
                           </span>
@@ -2779,7 +2836,7 @@ export default function App() {
               className="flex flex-col gap-3"
             >
               <button
-                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
+                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isFavoritesOpen 
@@ -2792,7 +2849,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
+                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isOceanLoveOpen 
@@ -2805,7 +2862,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsInstrumentalOpen(!isInstrumentalOpen); setIsOceanLoveOpen(false); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
+                onClick={() => { setIsInstrumentalOpen(!isInstrumentalOpen); setIsOceanLoveOpen(false); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isInstrumentalOpen 
@@ -2818,7 +2875,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsVirtualToursOpen(!isVirtualToursOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
+                onClick={() => { setIsVirtualToursOpen(!isVirtualToursOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isVirtualToursOpen 
@@ -2831,7 +2888,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsAffirmationsOpen(!isAffirmationsOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
+                onClick={() => { setIsAffirmationsOpen(!isAffirmationsOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isAffirmationsOpen 
@@ -2844,7 +2901,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWisdomOpen(!isWisdomOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsCalendarOpen(false); }}
+                onClick={() => { setIsWisdomOpen(!isWisdomOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWisdomOpen 
@@ -2857,7 +2914,7 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
+                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWorkspaceOpen 
@@ -2877,7 +2934,20 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsCalendarOpen(!isCalendarOpen); setIsWorkspaceOpen(false); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); }}
+                onClick={() => { setIsScreensaverOpen(!isScreensaverOpen); setIsWorkspaceOpen(false); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
+                className={cn(
+                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl relative",
+                  isScreensaverOpen 
+                    ? "bg-purple-600 text-white border-purple-400 scale-110" 
+                    : "bg-white/10 border-white/20 text-purple-400/80 hover:bg-white/20 hover:text-purple-400"
+                )}
+                title="Ambient Screensavers"
+              >
+                <Monitor className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => { setIsCalendarOpen(!isCalendarOpen); setIsWorkspaceOpen(false); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsScreensaverOpen(false); }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl relative",
                   isCalendarOpen 
@@ -3308,6 +3378,7 @@ export default function App() {
                     else if (album.accentColor === "fuchsia") activeColors = "bg-fuchsia-500/20 text-fuchsia-400 border-fuchsia-500/30";
                     else if (album.accentColor === "amber") activeColors = "bg-amber-500/20 text-amber-400 border-amber-500/30";
                     else if (album.accentColor === "emerald") activeColors = "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+                    else if (album.accentColor === "purple") activeColors = "bg-purple-500/20 text-purple-400 border-purple-500/30";
 
                     return (
                       <button
@@ -4304,6 +4375,298 @@ export default function App() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Screensaver Slide-out Drawer Panel */}
+      <AnimatePresence>
+        {isScreensaverOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/20" onClick={() => setIsScreensaverOpen(false)} />
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              className="fixed right-20 top-1/2 -translate-y-1/2 w-80 max-h-[85vh] backdrop-blur-3xl bg-slate-900/90 border border-white/20 rounded-3xl shadow-2xl z-[60] overflow-hidden flex flex-col"
+            >
+              <div className="p-5 border-b border-white/10 flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-purple-400 flex items-center gap-2">
+                    <Monitor className="w-4 h-4 text-purple-400" /> Screensaver Mode
+                  </h3>
+                  <p className="text-[9px] text-slate-500 uppercase tracking-wider mt-0.5">Spiritual Ambient Loops</p>
+                </div>
+                <button onClick={() => setIsScreensaverOpen(false)}><X className="w-4 h-4 text-slate-500" /></button>
+              </div>
+
+              <div className="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar">
+                {/* Description */}
+                <div className="p-3 rounded-2xl bg-white/5 border border-white/5 space-y-2">
+                  <p className="text-[10px] text-slate-300 leading-relaxed">
+                    Transform your space with these 40 spiritual vertical shorts. Perfect for continuous looping ambient screensavers.
+                  </p>
+                  
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <button
+                      onClick={() => {
+                        // Load all to workspace
+                        setPlaylist(prev => {
+                          const newItems = (screensaverShorts as Video[]).filter(v => !prev.some(p => p.id === v.id));
+                          const updated = [...prev, ...newItems];
+                          localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+                          return updated;
+                        });
+                        triggerPetals();
+                      }}
+                      className="py-2 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-bold text-slate-200 uppercase tracking-wider text-center transition-all cursor-pointer"
+                    >
+                      Add to Queue
+                    </button>
+                    <button
+                      onClick={() => {
+                        // Replace playlist
+                        setPlaylist(screensaverShorts as Video[]);
+                        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(screensaverShorts));
+                        setActiveVideoId(screensaverShorts[0].id);
+                        triggerPetals();
+                        setIsScreensaverOpen(false);
+                      }}
+                      className="py-2 px-2 bg-purple-600/20 hover:bg-purple-600/35 border border-purple-500/30 rounded-xl text-[9px] font-bold text-purple-300 uppercase tracking-wider text-center transition-all cursor-pointer"
+                    >
+                      Play All
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => startScreensaverWithIndex(0)}
+                  className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Play className="w-4 h-4 fill-current animate-pulse-slow" /> Start Ambient Screensaver
+                </button>
+
+                {/* Video List */}
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-500">All 40 Ambient Shorts</p>
+                  <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1 custom-scrollbar">
+                    {(screensaverShorts as Video[]).map((short, idx) => (
+                      <div
+                        key={short.id}
+                        className="group/short flex items-center gap-3 p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 transition-all text-left"
+                      >
+                        {/* Thumbnail */}
+                        <div className="relative w-12 h-16 rounded-lg bg-black overflow-hidden shrink-0">
+                          <img
+                            src={`https://img.youtube.com/vi/${short.id}/mqdefault.jpg`}
+                            alt={short.title}
+                            className="w-full h-full object-cover opacity-80 group-hover/short:opacity-100 transition-opacity"
+                            referrerPolicy="no-referrer"
+                          />
+                          <button
+                            onClick={() => startScreensaverWithIndex(idx)}
+                            className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover/short:opacity-100 transition-opacity cursor-pointer"
+                          >
+                            <Play className="w-4 h-4 text-white fill-current" />
+                          </button>
+                        </div>
+
+                        {/* Title and Action */}
+                        <div className="min-w-0 flex-grow">
+                          <p className="text-[10px] font-bold text-white truncate">{short.title}</p>
+                          <p className="text-[8px] text-slate-500 uppercase font-mono tracking-widest mt-0.5">Short #{idx + 1}</p>
+                        </div>
+
+                        <div className="flex gap-1 shrink-0">
+                          {/* Play in Main Player */}
+                          <button
+                            onClick={() => {
+                              setActiveVideoId(short.id);
+                              triggerPetals();
+                            }}
+                            className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all cursor-pointer"
+                            title="Play in main viewer"
+                          >
+                            <Play className="w-3 h-3 fill-current" />
+                          </button>
+                          
+                          {/* Add to queue */}
+                          <button
+                            onClick={() => {
+                              if (!playlist.some(p => p.id === short.id)) {
+                                setPlaylist(prev => {
+                                  const updated = [...prev, short];
+                                  localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+                                  return updated;
+                                });
+                              }
+                            }}
+                            className="p-1.5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-emerald-400 transition-all cursor-pointer"
+                            title="Add to workspace"
+                          >
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Fullscreen Screensaver Overlay */}
+      <AnimatePresence>
+        {isActiveScreensaverMode && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[9999] bg-slate-950 flex flex-col justify-between p-6 overflow-hidden select-none"
+          >
+            {/* Blurred Background Aura */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              <div 
+                className="absolute -inset-[50%] opacity-30 blur-[150px] transition-all duration-[2000ms] bg-gradient-to-tr from-purple-800 via-indigo-950 to-emerald-900"
+                style={{
+                  transform: `scale(${isScreensaverPlaying ? 1.15 : 1})`,
+                }}
+              />
+            </div>
+
+            {/* Top Bar / Header */}
+            <motion.div 
+              animate={{ opacity: showScreensaverControls ? 1 : 0, y: showScreensaverControls ? 0 : -20 }}
+              transition={{ duration: 0.3 }}
+              className="relative w-full flex items-center justify-between z-10"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center animate-pulse-slow">
+                  <Monitor className="w-4 h-4 text-purple-400" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-200">Spiritual Ambient Screensaver</h4>
+                  <p className="text-[10px] text-purple-400 font-mono tracking-wider">
+                    {screensaverActiveIndex + 1} of {screensaverShorts.length}
+                  </p>
+                </div>
+              </div>
+              
+              <button
+                onClick={() => setIsActiveScreensaverMode(false)}
+                className="p-3 bg-white/5 hover:bg-rose-500/20 border border-white/10 hover:border-rose-500/30 text-slate-400 hover:text-rose-400 rounded-2xl transition-all shadow-xl backdrop-blur-xl cursor-pointer"
+                title="Exit Screensaver"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </motion.div>
+
+            {/* Centered Vertical YouTube Player */}
+            <div className="relative flex-grow flex items-center justify-center z-10 py-6">
+              <div className="relative w-full max-w-[380px] aspect-[9/16] h-[70vh] max-h-[700px] bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 group">
+                <YouTube
+                  videoId={screensaverShorts[screensaverActiveIndex].id}
+                  onEnd={() => {
+                    if (isScreensaverAutoAdvance) {
+                      handleScreensaverNext();
+                    }
+                  }}
+                  onStateChange={(e: any) => {
+                    // 1 = playing, 2 = paused
+                    if (e.data === 1) setIsScreensaverPlaying(true);
+                    else if (e.data === 2) setIsScreensaverPlaying(false);
+                  }}
+                  opts={{
+                    width: '100%',
+                    height: '100%',
+                    playerVars: {
+                      autoplay: 1,
+                      mute: 0,
+                      controls: 1,
+                      modestbranding: 1,
+                      rel: 0,
+                      enablejsapi: 1,
+                    },
+                  }}
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
+            </div>
+
+            {/* Bottom Controls Bar */}
+            <motion.div 
+              animate={{ opacity: showScreensaverControls ? 1 : 0, y: showScreensaverControls ? 0 : 20 }}
+              transition={{ duration: 0.3 }}
+              className="relative w-full max-w-lg mx-auto z-10 flex flex-col items-center gap-3 backdrop-blur-2xl bg-slate-900/80 border border-white/10 p-4 rounded-3xl shadow-2xl"
+            >
+              <div className="text-center">
+                <p className="text-[11px] font-black uppercase text-white tracking-widest">
+                  {screensaverShorts[screensaverActiveIndex].title}
+                </p>
+                <p className="text-[9px] text-slate-500 mt-0.5 uppercase tracking-wider">
+                  {screensaverShorts[screensaverActiveIndex].tags.join(' • ')}
+                </p>
+              </div>
+
+              {/* Navigation and state controls */}
+              <div className="flex items-center gap-6">
+                <button
+                  onClick={() => {
+                    setIsScreensaverAutoAdvance(!isScreensaverAutoAdvance);
+                  }}
+                  className={cn(
+                    "p-2.5 rounded-xl border transition-all text-[8px] font-bold uppercase tracking-widest flex items-center gap-1.5 cursor-pointer",
+                    isScreensaverAutoAdvance 
+                      ? "bg-purple-600/20 border-purple-500/40 text-purple-300" 
+                      : "bg-white/5 border-white/10 text-slate-500"
+                  )}
+                  title={isScreensaverAutoAdvance ? "Auto-advancing enabled" : "Loop current video"}
+                >
+                  <Shuffle className="w-4 h-4" />
+                  <span>Auto Advance</span>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleScreensaverPrev}
+                    className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl transition-all cursor-pointer"
+                    title="Previous Short"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+
+                  <button
+                    onClick={handleScreensaverNext}
+                    className="p-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl transition-all cursor-pointer"
+                    title="Next Short"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    // Add current screensaver short to workspace
+                    const currentShort = screensaverShorts[screensaverActiveIndex];
+                    if (!playlist.some(p => p.id === currentShort.id)) {
+                      setPlaylist(prev => {
+                        const updated = [...prev, currentShort];
+                        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+                        return updated;
+                      });
+                    }
+                  }}
+                  className="p-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 rounded-xl transition-all flex items-center gap-1 text-[8px] tracking-widest uppercase font-bold cursor-pointer"
+                  title="Add current short to workspace"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add to Queue
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
