@@ -121,6 +121,18 @@ const VIRTUAL_TOURS: Video[] = [
 // Static Affirmations data
 const AFFIRMATIONS_TOURS: Video[] = [
   {
+    id: "RrHbvpYGCjs_3m",
+    title: "3-Minute Guided Meditation | Brother Chidananda",
+    url: "https://www.youtube.com/watch?v=RrHbvpYGCjs&t=35m&end=41m",
+    tags: ["Guided Meditation", "3 Min Meditation", "2026 Convocation", "Brother Chidananda"]
+  },
+  {
+    id: "6atoS1XS2GA_10m",
+    title: "10-Minute Guided Meditation | Brother Satyananda",
+    url: "https://www.youtube.com/watch?v=6atoS1XS2GA&t=2400s",
+    tags: ["Guided Meditation", "10 Min Meditation", "2026 Convocation", "Brother Satyananda"]
+  },
+  {
     id: "1hEhGN4PVo4",
     title: "“I Give You My Soul Call” | A Guided Meditation",
     url: "https://www.youtube.com/shorts/1hEhGN4PVo4",
@@ -283,6 +295,42 @@ const getYoutubeId = (urlPath: string) => {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
   return (match && match[2].length === 11) ? match[2] : null;
+};
+
+// Helper to parse string time like 35m, 2100s, 1h20m to seconds
+const parseTimeString = (val: string): number => {
+  if (!val) return 0;
+  if (/^\d+$/.test(val)) return parseInt(val, 10);
+  if (/^\d+s$/i.test(val)) return parseInt(val, 10);
+  let total = 0;
+  const h = val.match(/(\d+)h/i);
+  const m = val.match(/(\d+)m/i);
+  const s = val.match(/(\d+)s/i);
+  if (h) total += parseInt(h[1], 10) * 3600;
+  if (m) total += parseInt(m[1], 10) * 60;
+  if (s) total += parseInt(s[1], 10);
+  if (total > 0) return total;
+  return parseInt(val, 10) || 0;
+};
+
+// Helper to extract start timestamp (e.g. t=2400s, t=35m, start=2100)
+const getStartSecondsFromUrl = (url: string): number => {
+  if (!url) return 0;
+  const match = url.match(/[?&](?:t|start)=([0-9hms]+)/i);
+  if (match && match[1]) {
+    return parseTimeString(match[1]);
+  }
+  return 0;
+};
+
+// Helper to extract end timestamp (e.g. end=2460s, end=41m)
+const getEndSecondsFromUrl = (url: string): number => {
+  if (!url) return 0;
+  const match = url.match(/[?&]end=([0-9hms]+)/i);
+  if (match && match[1]) {
+    return parseTimeString(match[1]);
+  }
+  return 0;
 };
 
 // Unified function to get high-fidelity thumbnails
@@ -1490,16 +1538,25 @@ export default function App() {
   useEffect(() => {
     if (activeVideoId && playerInstance.current && playerInitId) {
       const yid = getYoutubeId(activeVideo?.url || '');
+      const startSecs = getStartSecondsFromUrl(activeVideo?.url || '');
+      const endSecs = getEndSecondsFromUrl(activeVideo?.url || '');
       if (yid) {
         try {
           // Check if the player is already showing this video
           const currentYid = playerInstance.current.getVideoData?.().video_id;
           if (currentYid !== yid) {
-            playerInstance.current.loadVideoById({
+            const loadConfig: any = {
               videoId: yid,
-              startSeconds: 0,
+              startSeconds: startSecs,
               suggestedQuality: 'hd1080'
-            });
+            };
+            if (endSecs > 0) {
+              loadConfig.endSeconds = endSecs;
+            }
+            playerInstance.current.loadVideoById(loadConfig);
+            playerInstance.current.playVideo();
+          } else if (startSecs > 0) {
+            playerInstance.current.seekTo(startSecs, true);
             playerInstance.current.playVideo();
           }
         } catch (e) {
@@ -2012,6 +2069,8 @@ export default function App() {
                     modestbranding: 1,
                     rel: 0,
                     enablejsapi: 1,
+                    start: getStartSecondsFromUrl(activeVideo?.url || ''),
+                    ...(getEndSecondsFromUrl(activeVideo?.url || '') > 0 ? { end: getEndSecondsFromUrl(activeVideo?.url || '') } : {}),
                   },
                 }}
                 className="absolute inset-0 w-full h-full"

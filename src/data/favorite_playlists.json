@@ -1,6 +1,20 @@
 {
   "favorites": [
     {
+      "id": "3min-curation",
+      "name": "3 Minutes",
+      "description": "3-minute guided meditation and spiritual reflection.",
+      "icon": "Timer",
+      "videoIds": [
+        "RrHbvpYGCjs_3m",
+        "6atoS1XS2GA_10m",
+        "FkWBsufZvz8",
+        "-Mxf7alEQjw",
+        "TR4SBHRZUE8",
+        "rl4ULW_OgtQ"
+      ]
+    },
+    {
       "id": "5min-curation",
       "name": "5 Minutes",
       "description": "Quick inspiration for your busy day.",
@@ -14,6 +28,23 @@
         "MJR06v8qakg",
         "xghFntmsTjQ",
         "K2ed6uMPSZc"
+      ]
+    },
+    {
+      "id": "10min-curation",
+      "name": "10 Minutes",
+      "description": "10-minute guided meditation and spiritual practice.",
+      "icon": "Timer",
+      "videoIds": [
+        "6atoS1XS2GA_10m",
+        "6atoS1XS2GA",
+        "FkWBsufZvz8",
+        "-Mxf7alEQjw",
+        "TR4SBHRZUE8",
+        "rl4ULW_OgtQ",
+        "6FNh1Jac9bo",
+        "MJR06v8qakg",
+        "xghFntmsTjQ"
       ]
     },
     {
