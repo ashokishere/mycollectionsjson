@@ -121,6 +121,12 @@ const VIRTUAL_TOURS: Video[] = [
 // Static Affirmations data
 const AFFIRMATIONS_TOURS: Video[] = [
   {
+    id: "0q62SKQqdhs_20m",
+    title: "20-Minute Guided Meditation | Brother Chidananda",
+    url: "https://www.youtube.com/watch?v=0q62SKQqdhs&t=230s&end=25m",
+    tags: ["Guided Meditation", "20 Min Meditation", "2026 Convocation", "Brother Chidananda"]
+  },
+  {
     id: "RrHbvpYGCjs_3m",
     title: "3-Minute Guided Meditation | Brother Chidananda",
     url: "https://www.youtube.com/watch?v=RrHbvpYGCjs&t=35m&end=41m",
