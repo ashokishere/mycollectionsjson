@@ -123,19 +123,19 @@ const AFFIRMATIONS_TOURS: Video[] = [
   {
     id: "0q62SKQqdhs_20m",
     title: "20-Minute Guided Meditation | Brother Chidananda",
-    url: "https://www.youtube.com/watch?v=0q62SKQqdhs&t=230s&end=25m",
+    url: "https://www.youtube.com/watch?v=0q62SKQqdhs&t=230s&end=1500s",
     tags: ["Guided Meditation", "20 Min Meditation", "2026 Convocation", "Brother Chidananda"]
   },
   {
     id: "RrHbvpYGCjs_3m",
     title: "3-Minute Guided Meditation | Brother Chidananda",
-    url: "https://www.youtube.com/watch?v=RrHbvpYGCjs&t=35m&end=41m",
+    url: "https://www.youtube.com/watch?v=RrHbvpYGCjs&t=2100s&end=2460s",
     tags: ["Guided Meditation", "3 Min Meditation", "2026 Convocation", "Brother Chidananda"]
   },
   {
     id: "6atoS1XS2GA_10m",
     title: "12-Minute Guided Meditation | Cultivating Peace",
-    url: "https://www.youtube.com/watch?v=wwTZuwt7-oI",
+    url: "https://www.youtube.com/watch?v=6atoS1XS2GA&t=2400s",
     tags: ["Guided Meditation", "10 Min Meditation", "12 Minutes", "SRF Monastics"]
   },
   {
@@ -746,20 +746,35 @@ export default function App() {
     setTimeout(() => setShowPetals(false), 30000);
   }, []);
 
-  const addFavoritePlaylist = (favoriteId: string) => {
+  const clearWorkspace = useCallback(() => {
+    setPlaylist([]);
+    setActiveVideoId(null);
+    localStorage.removeItem('laughter_bubble_playlist');
+    localStorage.removeItem('zenstream_playlist');
+  }, []);
+
+  const addFavoritePlaylist = (favoriteId: string, mode: 'replace' | 'append' = 'replace') => {
     const favorite = favoritesData.favorites.find(f => f.id === favoriteId);
     if (!favorite) return;
 
     const videosToLink = videos.filter(v => favorite.videoIds.includes(v.id));
-    
-    // Add only if not already in playlist to avoid duplicates if desired, 
-    // but usually "add to playlist" means append.
-    setPlaylist(prev => {
-      const newItems = videosToLink.filter(v => !prev.some(p => p.id === v.id));
-      const updated = [...prev, ...newItems];
-      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
-      return updated;
-    });
+    if (videosToLink.length === 0) return;
+
+    if (mode === 'replace') {
+      setPlaylist(videosToLink);
+      setActiveVideoId(videosToLink[0].id);
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(videosToLink));
+    } else {
+      setPlaylist(prev => {
+        const newItems = videosToLink.filter(v => !prev.some(p => p.id === v.id));
+        const updated = [...prev, ...newItems];
+        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+        return updated;
+      });
+      if (!activeVideoId) {
+        setActiveVideoId(videosToLink[0].id);
+      }
+    }
     
     triggerPetals();
   };
@@ -803,7 +818,7 @@ export default function App() {
     };
   }, [isActiveScreensaverMode]);
 
-  const addAlbumSequence = (albumId: string) => {
+  const addAlbumSequence = (albumId: string, mode: 'replace' | 'append' = 'replace') => {
     let album: any = devotionalAlbums.find(a => a.id === albumId);
     if (!album) {
       album = instrumentalAlbums.find((a: any) => a.id === albumId);
@@ -818,12 +833,23 @@ export default function App() {
       }
     });
 
-    setPlaylist(prev => {
-      const newItems = orderedVideos.filter(v => !prev.some(p => p.id === v.id));
-      const updated = [...prev, ...newItems];
-      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
-      return updated;
-    });
+    if (orderedVideos.length === 0) return;
+
+    if (mode === 'replace') {
+      setPlaylist(orderedVideos);
+      setActiveVideoId(orderedVideos[0].id);
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(orderedVideos));
+    } else {
+      setPlaylist(prev => {
+        const newItems = orderedVideos.filter(v => !prev.some(p => p.id === v.id));
+        const updated = [...prev, ...newItems];
+        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+        return updated;
+      });
+      if (!activeVideoId) {
+        setActiveVideoId(orderedVideos[0].id);
+      }
+    }
     
     triggerPetals();
   };
@@ -868,6 +894,10 @@ export default function App() {
       localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
       return updated;
     });
+
+    if (!activeVideoId || playlist.length === 0 || !playlist.some(v => v.id === activeVideoId)) {
+      setActiveVideoId(found.id);
+    }
 
     triggerPetals();
   };
@@ -1436,63 +1466,91 @@ export default function App() {
   };
 
   const addToPlaylist = (video: Video) => {
-    if (!playlist.find(v => v.id === video.id)) {
-      setPlaylist(prev => {
-        const newList = [...prev, video];
-        // If this is the first video added and nothing is currently active, start playing it
-        if (newList.length === 1 && !activeVideoId) {
-          setActiveVideoId(video.id);
-          triggerPetals();
-        }
-        return newList;
-      });
+    setPlaylist(prev => {
+      if (prev.some(v => v.id === video.id)) return prev;
+      const newList = [...prev, video];
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(newList));
+      return newList;
+    });
+
+    if (!activeVideoId || playlist.length === 0 || !playlist.some(v => v.id === activeVideoId)) {
+      setActiveVideoId(video.id);
     }
+    triggerPetals();
   };
 
   const removeFromPlaylist = (id: string) => {
-    setPlaylist(prev => prev.filter(v => v.id !== id));
-  };
-
-  const addAllAffirmationsToPlaylist = () => {
     setPlaylist(prev => {
-      const updated = [...prev];
-      let addedAny = false;
-      AFFIRMATIONS_TOURS.forEach(video => {
-        if (!updated.some(v => v.id === video.id)) {
-          updated.push(video);
-          addedAny = true;
-        }
-      });
+      const updated = prev.filter(v => v.id !== id);
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
       return updated;
     });
+
+    if (activeVideoId === id) {
+      const remaining = playlist.filter(v => v.id !== id);
+      if (remaining.length > 0) {
+        setActiveVideoId(remaining[0].id);
+      } else {
+        setActiveVideoId(null);
+      }
+    }
   };
 
-  const addAllPilgrimagesToPlaylist = () => {
-    setPlaylist(prev => {
-      const updated = [...prev];
-      let addedAny = false;
-      VIRTUAL_TOURS.forEach(video => {
-        if (!updated.some(v => v.id === video.id)) {
-          updated.push(video);
-          addedAny = true;
-        }
+  const addAllAffirmationsToPlaylist = (mode: 'replace' | 'append' = 'replace') => {
+    if (mode === 'replace') {
+      setPlaylist(AFFIRMATIONS_TOURS);
+      if (AFFIRMATIONS_TOURS.length > 0) setActiveVideoId(AFFIRMATIONS_TOURS[0].id);
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(AFFIRMATIONS_TOURS));
+    } else {
+      setPlaylist(prev => {
+        const newItems = AFFIRMATIONS_TOURS.filter(v => !prev.some(p => p.id === v.id));
+        const updated = [...prev, ...newItems];
+        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+        return updated;
       });
-      return updated;
-    });
+      if (!activeVideoId && AFFIRMATIONS_TOURS.length > 0) {
+        setActiveVideoId(AFFIRMATIONS_TOURS[0].id);
+      }
+    }
+    triggerPetals();
   };
 
-  const addAllWisdomToPlaylist = () => {
-    setPlaylist(prev => {
-      const updated = [...prev];
-      let addedAny = false;
-      WISDOM_TEACHINGS.forEach(video => {
-        if (!updated.some(v => v.id === video.id)) {
-          updated.push(video);
-          addedAny = true;
-        }
+  const addAllPilgrimagesToPlaylist = (mode: 'replace' | 'append' = 'replace') => {
+    if (mode === 'replace') {
+      setPlaylist(VIRTUAL_TOURS);
+      if (VIRTUAL_TOURS.length > 0) setActiveVideoId(VIRTUAL_TOURS[0].id);
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(VIRTUAL_TOURS));
+    } else {
+      setPlaylist(prev => {
+        const newItems = VIRTUAL_TOURS.filter(v => !prev.some(p => p.id === v.id));
+        const updated = [...prev, ...newItems];
+        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+        return updated;
       });
-      return updated;
-    });
+      if (!activeVideoId && VIRTUAL_TOURS.length > 0) {
+        setActiveVideoId(VIRTUAL_TOURS[0].id);
+      }
+    }
+    triggerPetals();
+  };
+
+  const addAllWisdomToPlaylist = (mode: 'replace' | 'append' = 'replace') => {
+    if (mode === 'replace') {
+      setPlaylist(WISDOM_TEACHINGS);
+      if (WISDOM_TEACHINGS.length > 0) setActiveVideoId(WISDOM_TEACHINGS[0].id);
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(WISDOM_TEACHINGS));
+    } else {
+      setPlaylist(prev => {
+        const newItems = WISDOM_TEACHINGS.filter(v => !prev.some(p => p.id === v.id));
+        const updated = [...prev, ...newItems];
+        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+        return updated;
+      });
+      if (!activeVideoId && WISDOM_TEACHINGS.length > 0) {
+        setActiveVideoId(WISDOM_TEACHINGS[0].id);
+      }
+    }
+    triggerPetals();
   };
 
   const movePlaylistItem = (index: number, direction: 'up' | 'down') => {
@@ -2054,21 +2112,36 @@ export default function App() {
                 return (
                   <div key={fav.id} className="relative group/fav">
                     <button
-                      onClick={() => addFavoritePlaylist(fav.id)}
-                      className="p-2 bg-white/5 hover:bg-indigo-600/20 hover:text-indigo-400 border border-white/10 rounded-xl transition-all"
-                      title={`Add ${fav.name} to playlist`}
+                      onClick={() => addFavoritePlaylist(fav.id, 'replace')}
+                      className="p-2 bg-white/5 hover:bg-indigo-600/20 hover:text-indigo-400 border border-white/10 rounded-xl transition-all cursor-pointer"
+                      title={`Play ${fav.name} (Start Fresh)`}
                     >
                       <Icon className="w-3.5 h-3.5" />
                     </button>
                     
                     {/* Hover Details */}
                     <div className="absolute right-0 top-full mt-2 w-64 p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-white/10 shadow-2xl opacity-0 translate-y-2 pointer-events-none group-hover/fav:opacity-100 group-hover/fav:translate-y-0 transition-all z-50">
-                      <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-start justify-between mb-2">
                         <div>
                           <h4 className="text-[10px] font-bold text-white uppercase tracking-wider">{fav.name}</h4>
                           <p className="text-[9px] text-slate-500 mt-0.5">{fav.description}</p>
                         </div>
-                        <Plus className="w-3 h-3 text-theme-accent" />
+                      </div>
+                      <div className="flex gap-2 mb-3">
+                        <button
+                          onClick={() => addFavoritePlaylist(fav.id, 'replace')}
+                          className="flex-1 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all pointer-events-auto cursor-pointer flex items-center justify-center gap-1 shadow-md"
+                        >
+                          <Play className="w-2.5 h-2.5 fill-current" />
+                          Play Fresh
+                        </button>
+                        <button
+                          onClick={() => addFavoritePlaylist(fav.id, 'append')}
+                          className="py-1.5 px-3 bg-white/10 hover:bg-white/20 text-slate-200 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all pointer-events-auto cursor-pointer flex items-center gap-1"
+                        >
+                          <Plus className="w-2.5 h-2.5" />
+                          Queue
+                        </button>
                       </div>
                       <div className="space-y-1.5">
                         {fav.videoIds.map(vidId => {
@@ -2393,11 +2466,7 @@ export default function App() {
           <div className="flex items-center gap-2">
             {playlist.length > 0 && (
               <button 
-                onClick={() => {
-                  setPlaylist([]);
-                  localStorage.removeItem('laughter_bubble_playlist');
-                  localStorage.removeItem('zenstream_playlist');
-                }}
+                onClick={clearWorkspace}
                 className="p-1.5 text-slate-600 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-all"
                 title="Clear Workspace"
               >
@@ -2541,12 +2610,8 @@ export default function App() {
               <span className="text-xs font-mono font-bold text-indigo-400">{playlist.length}</span>
             </div>
             <button 
-              onClick={() => {
-                setPlaylist([]);
-                localStorage.removeItem('laughter_bubble_playlist');
-                localStorage.removeItem('zenstream_playlist');
-              }}
-              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-white/10 text-[10px] text-slate-500 font-bold uppercase tracking-widest hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20 transition-all"
+              onClick={clearWorkspace}
+              className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl border border-white/10 text-[10px] text-slate-500 font-bold uppercase tracking-widest hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20 transition-all cursor-pointer"
             >
               <Trash2 className="w-3.5 h-3.5" />
               Clear Workspace
@@ -2591,13 +2656,8 @@ export default function App() {
             </div>
             <div className="flex items-center gap-2">
               <button 
-                onClick={() => {
-                  setPlaylist([]);
-                  setActiveVideoId(null);
-                  localStorage.removeItem('laughter_bubble_playlist');
-                  localStorage.removeItem('zenstream_playlist');
-                }}
-                className="p-2.5 bg-white/5 border border-white/10 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all"
+                onClick={clearWorkspace}
+                className="p-2.5 bg-white/5 border border-white/10 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-xl transition-all cursor-pointer"
                 title="Clear Workspace"
               >
                 <Trash2 className="w-4 h-4" />
@@ -3125,23 +3185,44 @@ export default function App() {
                 <h3 className="text-xs font-black uppercase tracking-widest text-theme-accent">Curations</h3>
                 <button onClick={() => setIsFavoritesOpen(false)}><X className="w-4 h-4 text-slate-500" /></button>
               </div>
-              <div className="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar">
+              <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
                 {favoritesData.favorites.map((fav) => {
                   const Icon = { Bookmark, Star, Zap, ListVideo, Sparkles, Clock, Timer, Compass }[fav.icon] || Bookmark;
                   return (
-                    <button
+                    <div
                       key={fav.id}
-                      onClick={() => { addFavoritePlaylist(fav.id); setIsFavoritesOpen(false); }}
-                      className="w-full flex items-start gap-4 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-theme-accent/20 hover:border-theme-accent/30 transition-all text-left"
+                      className="w-full flex items-center justify-between gap-3 p-3 rounded-2xl bg-white/5 border border-white/5 hover:bg-theme-accent/10 hover:border-theme-accent/20 transition-all text-left"
                     >
-                      <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
-                        <Icon className="w-5 h-5 text-theme-accent" />
+                      <div 
+                        onClick={() => { addFavoritePlaylist(fav.id, 'replace'); setIsFavoritesOpen(false); }}
+                        className="flex items-start gap-3 min-w-0 flex-grow cursor-pointer group"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0 group-hover:bg-theme-accent/20 transition-colors">
+                          <Icon className="w-5 h-5 text-theme-accent" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate group-hover:text-theme-accent transition-colors">{fav.name}</p>
+                          <p className="text-[9px] text-slate-500 mt-0.5 line-clamp-1">{fav.description}</p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-bold text-white uppercase tracking-wider truncate">{fav.name}</p>
-                        <p className="text-[9px] text-slate-500 mt-0.5 line-clamp-1">{fav.description}</p>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => { addFavoritePlaylist(fav.id, 'replace'); setIsFavoritesOpen(false); }}
+                          className="px-2.5 py-1.5 bg-theme-accent hover:bg-theme-accent/80 text-white rounded-xl text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer shadow-md flex items-center gap-1"
+                          title="Start fresh with this curation"
+                        >
+                          <Play className="w-2.5 h-2.5 fill-current" />
+                          Play
+                        </button>
+                        <button
+                          onClick={() => addFavoritePlaylist(fav.id, 'append')}
+                          className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl text-[9px] font-bold transition-all cursor-pointer border border-white/10"
+                          title="Add curation to workspace queue"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -3171,13 +3252,24 @@ export default function App() {
                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
                   {VIRTUAL_TOURS.length} Tours
                 </span>
-                <button
-                  onClick={addAllPilgrimagesToPlaylist}
-                  className="flex items-center gap-1 text-[9px] font-bold text-amber-500 hover:text-amber-400 transition-colors uppercase tracking-widest bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded-lg border border-amber-500/20 active:scale-[0.98]"
-                >
-                  <PlusCircle className="w-3 h-3" />
-                  Add All to Workspace
-                </button>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => addAllPilgrimagesToPlaylist('replace')}
+                    className="flex items-center gap-1 text-[8.5px] font-bold text-amber-300 hover:text-white transition-colors uppercase tracking-wider bg-amber-500/20 hover:bg-amber-500/30 px-2 py-1 rounded-lg border border-amber-500/30 active:scale-[0.98] cursor-pointer"
+                    title="Play Pilgrimages Fresh"
+                  >
+                    <Play className="w-2.5 h-2.5 fill-current" />
+                    Play Fresh
+                  </button>
+                  <button
+                    onClick={() => addAllPilgrimagesToPlaylist('append')}
+                    className="flex items-center gap-1 text-[8.5px] font-bold text-amber-500 hover:text-amber-400 transition-colors uppercase tracking-wider bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded-lg border border-amber-500/20 active:scale-[0.98] cursor-pointer"
+                    title="Queue All to Workspace"
+                  >
+                    <PlusCircle className="w-2.5 h-2.5" />
+                    + Queue
+                  </button>
+                </div>
               </div>
 
               <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
@@ -3276,13 +3368,24 @@ export default function App() {
                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
                   {AFFIRMATIONS_TOURS.length} Shorts
                 </span>
-                <button
-                  onClick={addAllAffirmationsToPlaylist}
-                  className="flex items-center gap-1 text-[9px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1 rounded-lg border border-emerald-500/20 active:scale-[0.98]"
-                >
-                  <PlusCircle className="w-3 h-3" />
-                  Add All to Workspace
-                </button>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => addAllAffirmationsToPlaylist('replace')}
+                    className="flex items-center gap-1 text-[8.5px] font-bold text-emerald-300 hover:text-white transition-colors uppercase tracking-wider bg-emerald-500/20 hover:bg-emerald-500/30 px-2 py-1 rounded-lg border border-emerald-500/30 active:scale-[0.98] cursor-pointer"
+                    title="Play Affirmations Fresh"
+                  >
+                    <Play className="w-2.5 h-2.5 fill-current" />
+                    Play Fresh
+                  </button>
+                  <button
+                    onClick={() => addAllAffirmationsToPlaylist('append')}
+                    className="flex items-center gap-1 text-[8.5px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-wider bg-emerald-500/10 hover:bg-emerald-500/20 px-2 py-1 rounded-lg border border-emerald-500/20 active:scale-[0.98] cursor-pointer"
+                    title="Queue All to Workspace"
+                  >
+                    <PlusCircle className="w-2.5 h-2.5" />
+                    + Queue
+                  </button>
+                </div>
               </div>
 
               <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
@@ -3385,13 +3488,24 @@ export default function App() {
                 <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
                   {WISDOM_TEACHINGS.length} Teachings
                 </span>
-                <button
-                  onClick={addAllWisdomToPlaylist}
-                  className="flex items-center gap-1 text-[9px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-widest bg-indigo-500/10 hover:bg-indigo-500/20 px-2 py-1 rounded-lg border border-indigo-500/20 active:scale-[0.98]"
-                >
-                  <PlusCircle className="w-3 h-3" />
-                  Add All to Workspace
-                </button>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => addAllWisdomToPlaylist('replace')}
+                    className="flex items-center gap-1 text-[8.5px] font-bold text-indigo-300 hover:text-white transition-colors uppercase tracking-wider bg-indigo-500/20 hover:bg-indigo-500/30 px-2 py-1 rounded-lg border border-indigo-500/30 active:scale-[0.98] cursor-pointer"
+                    title="Play Wisdom Teachings Fresh"
+                  >
+                    <Play className="w-2.5 h-2.5 fill-current" />
+                    Play Fresh
+                  </button>
+                  <button
+                    onClick={() => addAllWisdomToPlaylist('append')}
+                    className="flex items-center gap-1 text-[8.5px] font-bold text-indigo-400 hover:text-indigo-300 transition-colors uppercase tracking-wider bg-indigo-500/10 hover:bg-indigo-500/20 px-2 py-1 rounded-lg border border-indigo-500/20 active:scale-[0.98] cursor-pointer"
+                    title="Queue All to Workspace"
+                  >
+                    <PlusCircle className="w-2.5 h-2.5" />
+                    + Queue
+                  </button>
+                </div>
               </div>
 
               <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
@@ -3610,16 +3724,27 @@ export default function App() {
                             <p className="text-[10px] text-slate-400 leading-relaxed italic mb-3 font-medium">
                               &ldquo;{activeAlbum.description}&rdquo;
                             </p>
-                            <button
-                              onClick={() => { addAlbumSequence(activeAlbum.id); setIsOceanLoveOpen(false); }}
-                              className={cn(
-                                "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2",
-                                bgAccent
-                              )}
-                            >
-                              <ListVideo className="w-4 h-4" />
-                              Queue Full Album ({activeAlbum.tracks?.length || 0} Tracks)
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => { addAlbumSequence(activeAlbum.id, 'replace'); setIsOceanLoveOpen(false); }}
+                                className={cn(
+                                  "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                                  bgAccent
+                                )}
+                                title="Start fresh with this album"
+                              >
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                Play Fresh ({activeAlbum.tracks?.length || 0})
+                              </button>
+                              <button
+                                onClick={() => { addAlbumSequence(activeAlbum.id, 'append'); setIsOceanLoveOpen(false); }}
+                                className="py-2.5 px-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-[10px] font-bold text-white uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1"
+                                title="Queue album to workspace"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                Queue
+                              </button>
+                            </div>
                           </div>
 
                           <div className="space-y-1.5 pb-4">
@@ -3829,16 +3954,27 @@ export default function App() {
                             <p className="text-[10px] text-slate-400 leading-relaxed italic mb-3 font-medium">
                               &ldquo;{activeAlbum.description}&rdquo;
                             </p>
-                            <button
-                              onClick={() => { addAlbumSequence(activeAlbum.id); setIsInstrumentalOpen(false); }}
-                              className={cn(
-                                "w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-2",
-                                bgAccent
-                              )}
-                            >
-                              <ListVideo className="w-4 h-4" />
-                              Queue Full Album ({activeAlbum.tracks?.length || 0} Tracks)
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => { addAlbumSequence(activeAlbum.id, 'replace'); setIsInstrumentalOpen(false); }}
+                                className={cn(
+                                  "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer",
+                                  bgAccent
+                                )}
+                                title="Start fresh with this album"
+                              >
+                                <Play className="w-3.5 h-3.5 fill-current" />
+                                Play Fresh ({activeAlbum.tracks?.length || 0})
+                              </button>
+                              <button
+                                onClick={() => { addAlbumSequence(activeAlbum.id, 'append'); setIsInstrumentalOpen(false); }}
+                                className="py-2.5 px-3 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl text-[10px] font-bold text-white uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1"
+                                title="Queue album to workspace"
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                                Queue
+                              </button>
+                            </div>
                           </div>
 
                           <div className="space-y-1.5 pb-4">
