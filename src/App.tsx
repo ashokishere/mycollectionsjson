@@ -8,7 +8,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import YouTube from 'react-youtube';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -61,16 +61,16 @@ import {
   Shuffle,
   Repeat
 } from 'lucide-react';
-import { initialVideos, type Video } from './data/videos';
+import { initialVideos, loadVideosDatabase, type Video } from './data/videos';
 import messagesData from './data/messages.json';
 import favoritesData from './data/favorite_playlists.json';
 import devotionalAlbums from './data/devotional_albums.json';
 import instrumentalAlbums from './data/instrumental_albums.json';
-import calendarData from './data/india_365_day_calendar_2026_with_saints_merged.json';
 import screensaverShorts from './data/screensaver_shorts.json';
 import { cn } from './lib/utils';
-import TranscriptReader from './components/TranscriptReader';
-import AudioPlayerSection from './components/AudioPlayerSection';
+
+const TranscriptReader = lazy(() => import('./components/TranscriptReader'));
+const AudioPlayerSection = lazy(() => import('./components/AudioPlayerSection'));
 
 const LOTUS_IMAGE_URL = "https://images.unsplash.com/photo-1542631221-396af3702505?q=80&w=600&auto=format&fit=crop";
 
@@ -134,9 +134,9 @@ const AFFIRMATIONS_TOURS: Video[] = [
   },
   {
     id: "6atoS1XS2GA_10m",
-    title: "10-Minute Guided Meditation | Brother Satyananda",
-    url: "https://www.youtube.com/watch?v=6atoS1XS2GA&t=2400s",
-    tags: ["Guided Meditation", "10 Min Meditation", "2026 Convocation", "Brother Satyananda"]
+    title: "12-Minute Guided Meditation | Cultivating Peace",
+    url: "https://www.youtube.com/watch?v=wwTZuwt7-oI",
+    tags: ["Guided Meditation", "10 Min Meditation", "12 Minutes", "SRF Monastics"]
   },
   {
     id: "1hEhGN4PVo4",
@@ -460,6 +460,7 @@ export default function App() {
   const [isStaticMode, setIsStaticMode] = useState(false);
 
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [saintsList, setSaintsList] = useState<any[]>([]);
   const [holyDaySaints, setHolyDaySaints] = useState<any[]>([]);
   const [isHolyDayPopupOpen, setIsHolyDayPopupOpen] = useState(false);
   const [calendarSearchQuery, setCalendarSearchQuery] = useState('');
@@ -470,7 +471,7 @@ export default function App() {
     const currentMonth = dateObj.getMonth() + 1; // 1-indexed
     const currentDay = dateObj.getDate();
 
-    return (calendarData.saints_list || []).filter((saint: any) => {
+    return saintsList.filter((saint: any) => {
       // 1. Check if direct date matches (MM-DD)
       if (saint.date) {
         const parts = saint.date.split('-');
@@ -509,16 +510,83 @@ export default function App() {
 
       return false;
     });
+  }, [saintsList]);
+
+  // Load calendar saints dynamically in background
+  useEffect(() => {
+    import('./data/india_365_day_calendar_2026_with_saints_merged.json').then((mod) => {
+      const saints = mod.default?.saints_list || [];
+      setSaintsList(saints);
+    }).catch(() => {});
   }, []);
 
-  // Check for today's Holy Day Saints on mount
+  // Asynchronously load full videos database in background on mount
   useEffect(() => {
+    loadVideosDatabase().then((fullVideosData) => {
+      const albumTracks: Video[] = [];
+      devotionalAlbums.forEach(album => {
+        if (album.tracks && Array.isArray(album.tracks)) {
+          album.tracks.forEach(track => {
+            albumTracks.push({
+              id: track.id,
+              title: track.title,
+              url: `https://www.youtube.com/watch?v=${track.id}`,
+              tags: ["Devotional Chants", "Spiritual Album", album.name]
+            });
+          });
+        }
+      });
+
+      const instrumentalTracks: Video[] = [];
+      instrumentalAlbums.forEach(album => {
+        if (album.tracks && Array.isArray(album.tracks)) {
+          album.tracks.forEach(track => {
+            instrumentalTracks.push({
+              id: track.id,
+              title: track.title,
+              url: `https://www.youtube.com/watch?v=${track.id}`,
+              tags: ["Instrumental", "Spiritual Album", album.name]
+            });
+          });
+        }
+      });
+
+      const savedVideosStr = localStorage.getItem('custom_videos_db');
+      let baseVideos = fullVideosData;
+      if (savedVideosStr) {
+        try {
+          const parsed = JSON.parse(savedVideosStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            baseVideos = parsed;
+          }
+        } catch (e) {
+          console.error("Failed to parse custom_videos_db from localStorage");
+        }
+      }
+
+      const all = [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks, ...baseVideos];
+      const seen = new Set<string>();
+      const deduplicated = all.filter(v => {
+        if (seen.has(v.id)) return false;
+        seen.add(v.id);
+        return true;
+      });
+
+      setVideos(deduplicated);
+    }).catch(err => {
+      console.error("Failed to load videos database dynamically", err);
+    });
+  }, []);
+
+  // Check for today's Holy Day Saints once saints list is loaded
+  useEffect(() => {
+    if (saintsList.length === 0) return;
     const matches = getSaintsForDate(new Date());
     if (matches.length > 0) {
       setHolyDaySaints(matches);
       setIsHolyDayPopupOpen(true);
     }
-  }, [getSaintsForDate]);
+  }, [saintsList, getSaintsForDate]);
 
   // Handle manual simulated date triggers
   const handleSimulateDate = useCallback((dateString: string) => {
@@ -1842,16 +1910,20 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-grow flex flex-col min-h-0 bg-transparent z-10 p-4 sm:p-8 overflow-y-auto custom-scrollbar">
         {isReaderOpen ? (
-          <TranscriptReader
-            videos={videos}
-            activeVideoId={activeVideoId}
-            setActiveVideoId={setActiveVideoId}
-            onClose={() => setIsReaderOpen(false)}
-          />
+          <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading Transcript Reader...</div>}>
+            <TranscriptReader
+              videos={videos}
+              activeVideoId={activeVideoId}
+              setActiveVideoId={setActiveVideoId}
+              onClose={() => setIsReaderOpen(false)}
+            />
+          </Suspense>
         ) : isAudioOpen ? (
-          <AudioPlayerSection
-            onClose={() => setIsAudioOpen(false)}
-          />
+          <Suspense fallback={<div className="p-8 text-center text-slate-400">Loading Audio Section...</div>}>
+            <AudioPlayerSection
+              onClose={() => setIsAudioOpen(false)}
+            />
+          </Suspense>
         ) : (
           <>
             {/* Top Filter Bar */}
@@ -4158,7 +4230,7 @@ export default function App() {
               {/* Saints Scrollable List */}
               <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
                 {(() => {
-                  const filteredSaints = (calendarData.saints_list || []).filter((s: any) => {
+                  const filteredSaints = (saintsList || []).filter((s: any) => {
                     if (!calendarSearchQuery) return true;
                     const query = calendarSearchQuery.toLowerCase();
                     return (

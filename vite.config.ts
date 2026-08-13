@@ -30,6 +30,8 @@ export default defineConfig(({mode}) => {
               if (id.includes('react') || id.includes('react-dom')) return 'vendor-core';
               return 'vendor-other';
             }
+            if (id.includes('src/data/videos.json')) return 'data-videos';
+            if (id.includes('src/data/india_365_day_calendar')) return 'data-calendar';
           },
         },
       },
