@@ -64,16 +64,22 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
 
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [activeSearchTerm, setActiveSearchTerm] = useState<string>('');
   const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [searchProgress, setSearchProgress] = useState<{ current: number; total: number; count: number }>({ current: 0, total: 0, count: 0 });
   const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
   const [currentMatchIdx, setCurrentMatchIdx] = useState<number>(0);
   const [showSearchPanel, setShowSearchPanel] = useState<boolean>(false);
   const [showThumbnailDrawer, setShowThumbnailDrawer] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const [pageHighlights, setPageHighlights] = useState<{ left: number; top: number; width: number; height: number; str: string }[]>([]);
 
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const pageTextCacheRef = useRef<Map<number, { text: string; items: any[] }>>(new Map());
+  const searchAbortRef = useRef<boolean>(false);
 
   // Touch swipe support for iPad & mobile
   const touchStartXRef = useRef<number | null>(null);
@@ -136,7 +142,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
               setLoadingProgress('Rendering book pages...');
               const loadingTask = pdfjsLib.getDocument({
                 data: new Uint8Array(buf),
-                ...configOptions,
+                cMapUrl: '/pdfjs-assets/cmaps/',
+                cMapPacked: true,
+                standardFontDataUrl: '/pdfjs-assets/standard_fonts/',
+                wasmUrl: '/pdfjs-assets/wasm/',
+                enableXfa: true,
+                disableRange: true,
+                disableStream: true,
               });
               doc = await loadingTask.promise;
             }
@@ -152,7 +164,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             setLoadingProgress('Connecting directly to spiritual book repository...');
             const loadingTask = pdfjsLib.getDocument({
               url: book.pdfUrl,
-              ...configOptions,
+              cMapUrl: '/pdfjs-assets/cmaps/',
+              cMapPacked: true,
+              standardFontDataUrl: '/pdfjs-assets/standard_fonts/',
+              wasmUrl: '/pdfjs-assets/wasm/',
+              enableXfa: true,
+              disableRange: true,
+              disableStream: true,
             });
             doc = await loadingTask.promise;
           } catch (e: any) {
@@ -381,31 +399,142 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     } catch (_) {}
   };
 
-  // Perform Keyword Search across entire PDF document
-  const handlePerformSearch = async (query: string) => {
-    if (!pdfDoc || !query.trim()) {
-      setSearchResults([]);
+  // Compute bounding box highlights on the current page for active search term
+  useEffect(() => {
+    if (!pdfDoc || !activeSearchTerm.trim() || viewMode !== 'canvas') {
+      setPageHighlights([]);
       return;
+    }
+
+    let isCancelled = false;
+
+    async function computePageHighlights() {
+      try {
+        const page = await pdfDoc!.getPage(currentPage);
+        if (isCancelled) return;
+
+        let cached = pageTextCacheRef.current.get(currentPage);
+        let items: any[] = [];
+
+        if (cached) {
+          items = cached.items;
+        } else {
+          const textContent = await page.getTextContent();
+          items = textContent.items;
+          const fullText = items.map((it: any) => it.str || '').join(' ');
+          pageTextCacheRef.current.set(currentPage, { text: fullText, items });
+        }
+
+        const vp = page.getViewport({ scale, rotation });
+        const term = activeSearchTerm.toLowerCase();
+        const boxes: { left: number; top: number; width: number; height: number; str: string }[] = [];
+
+        for (const item of items) {
+          if (item.str && item.str.toLowerCase().includes(term) && item.transform) {
+            const x = item.transform[4];
+            const y = item.transform[5];
+            const itemH = item.height || 10;
+            const itemW = item.width || 40;
+            const p1 = vp.convertToViewportPoint(x, y + itemH);
+            const p2 = vp.convertToViewportPoint(x + itemW, y);
+
+            const left = Math.min(p1[0], p2[0]);
+            const top = Math.min(p1[1], p2[1]);
+            const width = Math.max(10, Math.abs(p2[0] - p1[0]));
+            const height = Math.max(8, Math.abs(p2[1] - p1[1]));
+
+            boxes.push({ left, top, width, height, str: item.str });
+          }
+        }
+
+        if (!isCancelled) {
+          setPageHighlights(boxes);
+        }
+      } catch (err) {
+        console.warn('Error computing highlights:', err);
+      }
+    }
+
+    computePageHighlights();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [pdfDoc, currentPage, scale, rotation, activeSearchTerm, viewMode]);
+
+  // Global Ctrl+F / Cmd+F shortcut to open search
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setShowSearchPanel(true);
+        setTimeout(() => searchInputRef.current?.focus(), 50);
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+  // Streaming Keyword Search across entire PDF document with caching
+  const handlePerformSearch = async (query: string) => {
+    const searchTerm = query.trim();
+    if (!searchTerm) {
+      setSearchResults([]);
+      setActiveSearchTerm('');
+      setPageHighlights([]);
+      return;
+    }
+
+    // Auto-switch to Canvas mode so user gets interactive highlighted text
+    if (viewMode !== 'canvas') {
+      setViewMode('canvas');
     }
 
     setIsSearching(true);
     setShowSearchPanel(true);
+    setActiveSearchTerm(searchTerm);
+    searchAbortRef.current = false;
+
+    // If PDF is not loaded yet, wait slightly
+    if (!pdfDoc) {
+      setIsSearching(false);
+      return;
+    }
+
+    const termLower = searchTerm.toLowerCase();
     const matches: SearchMatch[] = [];
-    const searchTerm = query.trim().toLowerCase();
+    const totalPages = pdfDoc.numPages;
+
+    setSearchProgress({ current: 0, total: totalPages, count: 0 });
 
     try {
-      for (let p = 1; p <= pdfDoc.numPages; p++) {
-        const page = await pdfDoc.getPage(p);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items.map((item: any) => item.str).join(' ');
-        const lowerText = pageText.toLowerCase();
+      for (let p = 1; p <= totalPages; p++) {
+        if (searchAbortRef.current) break;
 
+        let pageText = '';
+        let items: any[] = [];
+
+        // Check if page text is already in memory cache
+        const cached = pageTextCacheRef.current.get(p);
+        if (cached) {
+          pageText = cached.text;
+          items = cached.items;
+        } else {
+          const page = await pdfDoc.getPage(p);
+          const textContent = await page.getTextContent();
+          items = textContent.items;
+          pageText = items.map((item: any) => item.str || '').join(' ');
+          pageTextCacheRef.current.set(p, { text: pageText, items });
+        }
+
+        const lowerText = pageText.toLowerCase();
         let startIndex = 0;
-        let foundIdx = lowerText.indexOf(searchTerm, startIndex);
+        let foundIdx = lowerText.indexOf(termLower, startIndex);
 
         while (foundIdx !== -1) {
-          const snippetStart = Math.max(0, foundIdx - 40);
-          const snippetEnd = Math.min(pageText.length, foundIdx + searchTerm.length + 40);
+          const snippetStart = Math.max(0, foundIdx - 45);
+          const snippetEnd = Math.min(pageText.length, foundIdx + termLower.length + 45);
           let snippet = pageText.slice(snippetStart, snippetEnd).trim();
 
           if (snippetStart > 0) snippet = '...' + snippet;
@@ -417,14 +546,21 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             snippet,
           });
 
-          startIndex = foundIdx + searchTerm.length;
-          foundIdx = lowerText.indexOf(searchTerm, startIndex);
-          
-          // Limit total matches to 150 for responsiveness
-          if (matches.length >= 150) break;
+          startIndex = foundIdx + termLower.length;
+          foundIdx = lowerText.indexOf(termLower, startIndex);
+
+          if (matches.length >= 250) break;
         }
 
-        if (matches.length >= 150) break;
+        // Periodically update state every 10 pages or when matches are found so results stream live
+        if (p % 10 === 0 || p === totalPages || matches.length > 0) {
+          setSearchResults([...matches]);
+          setSearchProgress({ current: p, total: totalPages, count: matches.length });
+          // Non-blocking tick to keep React UI responsive
+          await new Promise(r => setTimeout(r, 0));
+        }
+
+        if (matches.length >= 250) break;
       }
 
       setSearchResults(matches);
@@ -444,6 +580,18 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     const nextIdx = (index + searchResults.length) % searchResults.length;
     setCurrentMatchIdx(nextIdx);
     setCurrentPage(searchResults[nextIdx].pageNum);
+    if (viewMode !== 'canvas') {
+      setViewMode('canvas');
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setActiveSearchTerm('');
+    setSearchResults([]);
+    setPageHighlights([]);
+    searchAbortRef.current = true;
+    setIsSearching(false);
   };
 
   const toggleFullscreen = () => {
@@ -486,22 +634,42 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             <div className="relative w-full">
               <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-amber-400/80" />
               <input
+                ref={searchInputRef}
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') handlePerformSearch(searchQuery);
+                  if (e.key === 'Enter') {
+                    if (e.shiftKey && searchResults.length > 0) {
+                      jumpToMatch(currentMatchIdx - 1);
+                    } else if (searchResults.length > 0 && searchQuery.trim().toLowerCase() === activeSearchTerm.toLowerCase()) {
+                      jumpToMatch(currentMatchIdx + 1);
+                    } else {
+                      handlePerformSearch(searchQuery);
+                    }
+                  }
                 }}
-                placeholder="Search keywords in book (e.g. Kriya, Devotion)..."
-                className="w-full bg-slate-800/80 border border-amber-500/30 rounded-xl py-1.5 pl-9 pr-20 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 transition-all shadow-inner"
+                placeholder="Search words in book (e.g. Kriya, Soul)..."
+                className="w-full bg-slate-800/80 border border-amber-500/30 rounded-xl py-1.5 pl-9 pr-24 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 transition-all shadow-inner"
               />
-              <button
-                onClick={() => handlePerformSearch(searchQuery)}
-                disabled={isSearching || !searchQuery.trim()}
-                className="absolute right-1 top-1 px-2.5 py-1 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-700 text-slate-950 disabled:text-slate-500 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
-              >
-                {isSearching ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Search'}
-              </button>
+              <div className="absolute right-1 top-1 flex items-center gap-1">
+                {searchQuery && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                    title="Clear search"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+                <button
+                  onClick={() => handlePerformSearch(searchQuery)}
+                  disabled={isSearching || !searchQuery.trim()}
+                  className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-700 text-slate-950 disabled:text-slate-500 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                >
+                  {isSearching ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Search'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -786,9 +954,19 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 <div className="flex items-center gap-2 text-xs font-bold text-amber-400 uppercase tracking-wider">
                   <Sparkles className="w-3.5 h-3.5" /> Search Results
                 </div>
-                <button onClick={() => setShowSearchPanel(false)} className="text-slate-400 hover:text-white p-1">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  {searchResults.length > 0 && (
+                    <button 
+                      onClick={handleClearSearch}
+                      className="text-[10px] text-slate-400 hover:text-amber-300 px-2 py-1 bg-white/5 rounded-lg border border-white/10 cursor-pointer"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  <button onClick={() => setShowSearchPanel(false)} className="text-slate-400 hover:text-white p-1 cursor-pointer">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
 
               {/* Mobile Search Input in Drawer */}
@@ -799,7 +977,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') handlePerformSearch(searchQuery);
+                      if (e.key === 'Enter') {
+                        if (searchResults.length > 0 && searchQuery.trim().toLowerCase() === activeSearchTerm.toLowerCase()) {
+                          jumpToMatch(currentMatchIdx + 1);
+                        } else {
+                          handlePerformSearch(searchQuery);
+                        }
+                      }
                     }}
                     placeholder="Search words in book..."
                     className="w-full bg-slate-800 border border-amber-500/30 rounded-xl py-1.5 px-3 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400"
@@ -807,53 +991,95 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                   <button
                     onClick={() => handlePerformSearch(searchQuery)}
                     disabled={isSearching || !searchQuery.trim()}
-                    className="px-3 py-1.5 bg-amber-500 text-slate-950 font-bold rounded-xl text-xs"
+                    className="px-3 py-1.5 bg-amber-500 text-slate-950 font-bold rounded-xl text-xs cursor-pointer"
                   >
-                    Go
+                    {isSearching ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Go'}
                   </button>
                 </div>
               </div>
 
-              <div className="p-3 border-b border-white/5 bg-slate-900/40 text-[10px] text-slate-400">
+              {/* Search Progress & Status */}
+              <div className="p-3 border-b border-white/5 bg-slate-900/40 text-[10px] text-slate-400 space-y-1.5">
                 {isSearching ? (
-                  <div className="flex items-center gap-2 text-amber-400">
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Indexing & searching book pages...
+                  <div>
+                    <div className="flex items-center justify-between text-amber-400 mb-1">
+                      <span className="flex items-center gap-1.5">
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Scanning page {searchProgress.current} of {searchProgress.total}...
+                      </span>
+                      <span className="font-mono font-bold text-amber-300">{searchProgress.count} found</span>
+                    </div>
+                    <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className="bg-amber-400 h-1.5 rounded-full transition-all duration-200"
+                        style={{ width: `${searchProgress.total ? (searchProgress.current / searchProgress.total) * 100 : 0}%` }}
+                      />
+                    </div>
                   </div>
                 ) : searchResults.length > 0 ? (
-                  <span>Found <strong className="text-amber-300">{searchResults.length}</strong> occurrences for &quot;{searchQuery}&quot;</span>
-                ) : searchQuery ? (
-                  <span>No matches found for &quot;{searchQuery}&quot;</span>
+                  <div className="flex items-center justify-between">
+                    <span>Found <strong className="text-amber-300 font-bold">{searchResults.length}</strong> matches for &quot;<span className="text-amber-400">{activeSearchTerm}</span>&quot;</span>
+                    <span className="text-[9px] text-slate-500">Match {currentMatchIdx + 1} of {searchResults.length}</span>
+                  </div>
+                ) : activeSearchTerm ? (
+                  <span>No matches found for &quot;<span className="text-amber-400">{activeSearchTerm}</span>&quot;. Try a different keyword.</span>
                 ) : (
-                  <span>Type a keyword in the search bar to find occurrences across all pages.</span>
+                  <span>Type a keyword above to find exact words and passages across all pages.</span>
                 )}
               </div>
 
+              {/* Search Result Matches with Keyword Highlight */}
               <div className="flex-grow overflow-y-auto p-3 space-y-2 custom-scrollbar">
-                {searchResults.map((match, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => jumpToMatch(idx)}
-                    className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
-                      idx === currentMatchIdx
-                        ? 'bg-amber-500/20 border-amber-400/80 text-white shadow-md'
-                        : 'bg-white/5 hover:bg-white/10 border-white/5 text-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
-                        Page {match.pageNum}
-                      </span>
-                      {idx === currentMatchIdx && (
-                        <span className="text-[8px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-0.5">
-                          Active <ArrowRight className="w-2.5 h-2.5" />
+                {searchResults.map((match, idx) => {
+                  const isCurrent = idx === currentMatchIdx;
+                  // Split snippet to highlight keyword
+                  const term = activeSearchTerm.trim().toLowerCase();
+                  const snippet = match.snippet;
+                  let snippetContent: React.ReactNode = snippet;
+
+                  if (term) {
+                    const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                    const parts = snippet.split(regex);
+                    snippetContent = parts.map((part, pIdx) => 
+                      part.toLowerCase() === term ? (
+                        <mark key={pIdx} className="bg-amber-400/40 text-amber-200 font-bold px-0.5 rounded not-italic">
+                          {part}
+                        </mark>
+                      ) : (
+                        <span key={pIdx}>{part}</span>
+                      )
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={idx}
+                      onClick={() => jumpToMatch(idx)}
+                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                        isCurrent
+                          ? 'bg-amber-500/20 border-amber-400/80 text-white shadow-md ring-1 ring-amber-400/40'
+                          : 'bg-white/5 hover:bg-white/10 border-white/5 text-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${
+                          isCurrent 
+                            ? 'bg-amber-500 text-slate-950 border-amber-400' 
+                            : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                        }`}>
+                          Page {match.pageNum}
                         </span>
-                      )}
+                        {isCurrent && (
+                          <span className="text-[8px] font-bold text-amber-300 uppercase tracking-widest flex items-center gap-0.5">
+                            Active <ArrowRight className="w-2.5 h-2.5" />
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] leading-relaxed text-slate-300 italic font-serif">
+                        &quot;{snippetContent}&quot;
+                      </p>
                     </div>
-                    <p className="text-[10px] leading-relaxed text-slate-300 italic font-sans">
-                      &quot;{match.snippet}&quot;
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
@@ -927,6 +1153,29 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                     </span>
                   )}
                 </div>
+
+                {/* Match Counter Badge on Paper if there are search matches on this page */}
+                {pageHighlights.length > 0 && (
+                  <div className="absolute top-2 right-2 z-10 bg-amber-500 text-slate-950 px-2.5 py-1 rounded-lg font-bold text-[9px] shadow-lg flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    <span>{pageHighlights.length} match{pageHighlights.length > 1 ? 'es' : ''} on this page</span>
+                  </div>
+                )}
+
+                {/* Dynamic Golden Highlight Overlays for Matched Search Words */}
+                {pageHighlights.map((hl, i) => (
+                  <div
+                    key={i}
+                    className="absolute bg-amber-400/40 border-2 border-amber-500 rounded-[2px] pointer-events-none shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse z-10"
+                    style={{
+                      left: `${hl.left}px`,
+                      top: `${hl.top}px`,
+                      width: `${hl.width}px`,
+                      height: `${hl.height}px`,
+                    }}
+                    title={hl.str}
+                  />
+                ))}
 
                 {/* Direct Canvas Element - with exact pixel bounds to guarantee zero truncation */}
                 <canvas 
