@@ -60,6 +60,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
 
   // View modes: 'canvas' (custom search + zoom) vs 'native' (full-featured browser PDF stream)
   const [viewMode, setViewMode] = useState<'canvas' | 'native'>('canvas');
+  const [nativeEngine, setNativeEngine] = useState<'google' | 'direct'>('google');
 
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -79,6 +80,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
   const touchStartYRef = useRef<number | null>(null);
 
   const proxyUrl = `/api/pdf-proxy?url=${encodeURIComponent(book.pdfUrl)}`;
+  const googleViewerUrl = `https://docs.google.com/viewer?embedded=true&url=${encodeURIComponent(book.pdfUrl)}`;
 
   // Auto-Fit scale calculation for mobile phones and iPads
   const calculateOptimalScale = useCallback((viewportWidth: number) => {
@@ -124,60 +126,37 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
         // Strategy 1: High-reliability backend stream proxy
         try {
           setLoadingProgress('Connecting to spiritual book archive...');
-          const loadingTask = pdfjsLib.getDocument({
-            url: proxyUrl,
-            ...configOptions,
-          });
-
-          loadingTask.onProgress = (progressData: { loaded: number; total: number }) => {
-            if (progressData.total > 0) {
-              const pct = Math.round((progressData.loaded / progressData.total) * 100);
-              setLoadingProgress(`Downloading book (${pct}%)...`);
-            } else if (progressData.loaded > 0) {
-              const mb = (progressData.loaded / (1024 * 1024)).toFixed(1);
-              setLoadingProgress(`Streaming book (${mb} MB)...`);
+          const response = await fetch(proxyUrl);
+          const contentType = response.headers.get('content-type') || '';
+          
+          // Verify response is valid PDF stream (not a 404 or HTML fallback from static hosts like GitHub Pages)
+          if (response.ok && !contentType.includes('text/html')) {
+            const buf = await response.arrayBuffer();
+            if (buf.byteLength > 1000) {
+              setLoadingProgress('Rendering book pages...');
+              const loadingTask = pdfjsLib.getDocument({
+                data: new Uint8Array(buf),
+                ...configOptions,
+              });
+              doc = await loadingTask.promise;
             }
-          };
-
-          doc = await loadingTask.promise;
+          }
         } catch (e: any) {
-          console.warn('Strategy 1 (URL proxy) failed, trying buffer fetch:', e);
+          console.warn('Strategy 1 (Proxy fetch) failed, checking direct stream:', e);
           lastErrorMsg = e?.message || 'Proxy stream unavailable';
         }
 
-        // Strategy 2: ArrayBuffer fetch via backend proxy
+        // Strategy 2: Direct PDF URL stream
         if (!doc && !isCancelled) {
           try {
-            setLoadingProgress('Loading complete book into memory...');
-            const response = await fetch(proxyUrl);
-            if (response.ok) {
-              const buf = await response.arrayBuffer();
-              if (buf.byteLength > 1000) {
-                setLoadingProgress('Rendering book pages...');
-                const loadingTask = pdfjsLib.getDocument({
-                  data: new Uint8Array(buf),
-                  ...configOptions,
-                });
-                doc = await loadingTask.promise;
-              }
-            }
-          } catch (e: any) {
-            console.warn('Strategy 2 (Buffer fetch) failed:', e);
-            lastErrorMsg = e?.message || lastErrorMsg;
-          }
-        }
-
-        // Strategy 3: Direct fetch
-        if (!doc && !isCancelled) {
-          try {
-            setLoadingProgress('Trying direct connection...');
+            setLoadingProgress('Connecting directly to spiritual book repository...');
             const loadingTask = pdfjsLib.getDocument({
               url: book.pdfUrl,
               ...configOptions,
             });
             doc = await loadingTask.promise;
           } catch (e: any) {
-            console.warn('Strategy 3 (Direct stream) failed:', e);
+            console.warn('Strategy 2 (Direct stream) failed:', e);
             lastErrorMsg = e?.message || lastErrorMsg;
           }
         }
@@ -185,7 +164,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
         if (isCancelled) return;
 
         if (!doc) {
-          throw new Error(lastErrorMsg || 'Unable to stream PDF book over current connection.');
+          throw new Error(lastErrorMsg || 'Switching to Google Cloud Reader...');
         }
 
         setPdfDoc(doc);
@@ -202,12 +181,12 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
 
         setLoading(false);
       } catch (err: any) {
-        console.error('Failed to load PDF in Canvas Mode:', err);
+        console.warn('Canvas Mode offline, transitioning to Google Cloud Reader:', err);
         if (!isCancelled) {
-          // If Canvas rendering encounters a blocker, automatically switch to Native Browser Mode so reading never stops
-          setError(err.message || 'Canvas stream interrupted');
+          // If Canvas rendering encounters a blocker (e.g. static hosting with CORS restrictions), seamlessly activate Google Cloud Reader
           setLoading(false);
           setViewMode('native');
+          setNativeEngine('google');
         }
       }
     }
@@ -984,11 +963,70 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           {/* View Mode 2: Full-Featured Embedded Browser PDF Viewer */}
           {viewMode === 'native' && (
             <div className="flex-grow h-full w-full bg-slate-900 flex flex-col">
-              <iframe
-                src={proxyUrl}
-                title={book.title}
-                className="w-full h-full border-0 bg-slate-900"
-              />
+              {/* Native Engine Navigation Strip */}
+              <div className="px-3 sm:px-4 py-2 bg-slate-950/80 border-b border-white/10 flex flex-wrap items-center justify-between gap-2 shrink-0 text-xs">
+                <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10">
+                  <button
+                    onClick={() => setNativeEngine('google')}
+                    className={`px-2.5 py-1 rounded-lg font-medium text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                      nativeEngine === 'google'
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Universal Cloud PDF Reader with smooth scrolling and zoom"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    Google Cloud Reader
+                  </button>
+                  <button
+                    onClick={() => setNativeEngine('direct')}
+                    className={`px-2.5 py-1 rounded-lg font-medium text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
+                      nativeEngine === 'direct'
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Direct PDF Frame Reader"
+                  >
+                    <Layers className="w-3 h-3" />
+                    Direct PDF Stream
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href={book.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white font-semibold text-[11px] rounded-lg transition-all flex items-center gap-1 cursor-pointer border border-white/10"
+                    title="Open original document in external browser tab"
+                  >
+                    <ExternalLink className="w-3 h-3 text-amber-400" />
+                    Open in New Tab
+                  </a>
+                  <a
+                    href={book.pdfUrl}
+                    download
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold text-[11px] rounded-lg transition-all flex items-center gap-1 cursor-pointer border border-amber-500/30"
+                    title="Download complete PDF book file"
+                  >
+                    <Download className="w-3 h-3" />
+                    Download
+                  </a>
+                </div>
+              </div>
+
+              {/* Embedded Document Viewport */}
+              <div className="flex-grow w-full h-full relative bg-slate-950">
+                <iframe
+                  key={nativeEngine}
+                  src={nativeEngine === 'google' ? googleViewerUrl : book.pdfUrl}
+                  title={book.title}
+                  className="w-full h-full border-0 bg-slate-900"
+                  allow="fullscreen"
+                />
+              </div>
             </div>
           )}
         </div>
