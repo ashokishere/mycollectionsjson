@@ -778,6 +778,84 @@ app.get("/api/audio-proxy", async (req, res) => {
   }
 });
 
+// PDF Proxy endpoint to safely serve PDFs without iframe X-Frame-Options / CSP frame-ancestors blocking
+app.options("/api/pdf-proxy", (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+  res.status(204).end();
+});
+
+app.get("/api/pdf-proxy", async (req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+
+  const targetUrl = req.query.url as string;
+  if (!targetUrl) {
+    return res.status(400).send("Missing url parameter");
+  }
+
+  try {
+    const forwardHeaders: Record<string, string> = {
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, Gecko) Chrome/120.0.0.0 Safari/537.36",
+      "Accept": "application/pdf,application/octet-stream,*/*"
+    };
+
+    if (req.headers.range) {
+      forwardHeaders["Range"] = req.headers.range;
+    }
+
+    const pdfResponse = await fetch(targetUrl, { headers: forwardHeaders });
+
+    if (!pdfResponse.ok) {
+      return res.status(pdfResponse.status).send(`Failed to fetch PDF: ${pdfResponse.statusText}`);
+    }
+
+    res.status(pdfResponse.status);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Accept-Ranges", "bytes");
+
+    const contentRange = pdfResponse.headers.get("content-range");
+    if (contentRange) {
+      res.setHeader("Content-Range", contentRange);
+    }
+
+    const contentLength = pdfResponse.headers.get("content-length");
+    if (contentLength) {
+      res.setHeader("Content-Length", contentLength);
+    }
+
+    res.removeHeader("X-Frame-Options");
+    res.removeHeader("Content-Security-Policy");
+
+    if (req.method === "HEAD") {
+      return res.end();
+    }
+
+    if (!pdfResponse.body) {
+      return res.end();
+    }
+
+    const stream = Readable.fromWeb(pdfResponse.body as any);
+    stream.pipe(res);
+  } catch (err: any) {
+    console.error("[PdfProxy Error]", err);
+    if (!res.headersSent) {
+      res.status(500).send(`PDF proxy error: ${err.message}`);
+    }
+  }
+});
+
+// Serve PDF.js standard fonts, cmaps, wasm decoders, and image decoders locally with maximum performance
+app.use("/pdfjs-assets/cmaps", express.static(path.join(process.cwd(), "node_modules/pdfjs-dist/cmaps")));
+app.use("/pdfjs-assets/standard_fonts", express.static(path.join(process.cwd(), "node_modules/pdfjs-dist/standard_fonts")));
+app.use("/pdfjs-assets/wasm", express.static(path.join(process.cwd(), "node_modules/pdfjs-dist/wasm")));
+app.use("/pdfjs-assets/image_decoders", express.static(path.join(process.cwd(), "node_modules/pdfjs-dist/image_decoders")));
+
 // ---------------- Vite Middleware / Production Server ----------------
 
 async function startServer() {

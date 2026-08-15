@@ -59,9 +59,14 @@ import {
   Tv,
   Pause,
   Shuffle,
+  Library,
+  ExternalLink,
+  Book,
   Repeat
 } from 'lucide-react';
 import { initialVideos, loadVideosDatabase, type Video } from './data/videos';
+import { SPIRITUAL_BOOKS, type SpiritualBook } from './data/spiritual_books';
+import { PdfViewerModal } from './components/PdfViewerModal';
 import messagesData from './data/messages.json';
 import favoritesData from './data/favorite_playlists.json';
 import devotionalAlbums from './data/devotional_albums.json';
@@ -460,6 +465,9 @@ export default function App() {
   const [isStaticMode, setIsStaticMode] = useState(false);
 
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [isBooksOpen, setIsBooksOpen] = useState(false);
+  const [booksSearchQuery, setBooksSearchQuery] = useState('');
+  const [activePdfBook, setActivePdfBook] = useState<SpiritualBook | null>(null);
   const [saintsList, setSaintsList] = useState<any[]>([]);
   const [holyDaySaints, setHolyDaySaints] = useState<any[]>([]);
   const [isHolyDayPopupOpen, setIsHolyDayPopupOpen] = useState(false);
@@ -3144,9 +3152,9 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsCalendarOpen(!isCalendarOpen); setIsWorkspaceOpen(false); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsScreensaverOpen(false); }}
+                onClick={() => { setIsCalendarOpen(!isCalendarOpen); setIsBooksOpen(false); setIsWorkspaceOpen(false); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsScreensaverOpen(false); }}
                 className={cn(
-                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl relative",
+                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl relative cursor-pointer",
                   isCalendarOpen 
                     ? "bg-theme-accent text-white border-theme-accent scale-110" 
                     : "bg-white/10 border-white/20 text-theme-accent hover:bg-white/20 hover:text-theme-accent"
@@ -3157,6 +3165,19 @@ export default function App() {
                 {holyDaySaints.length > 0 && (
                   <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-theme-accent animate-ping" />
                 )}
+              </button>
+
+              <button
+                onClick={() => { setIsBooksOpen(!isBooksOpen); setIsCalendarOpen(false); setIsWorkspaceOpen(false); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsScreensaverOpen(false); }}
+                className={cn(
+                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl relative cursor-pointer",
+                  isBooksOpen 
+                    ? "bg-amber-500 text-slate-950 border-amber-300 scale-110 shadow-amber-500/30" 
+                    : "bg-white/10 border-white/20 text-amber-400 hover:bg-white/20 hover:text-amber-300"
+                )}
+                title="Spiritual Books Library (PDFs)"
+              >
+                <Library className="w-5 h-5" />
               </button>
             </motion.div>
           )}
@@ -4648,6 +4669,162 @@ export default function App() {
               </div>
             </motion.div>
           </div>
+        )}
+      </AnimatePresence>
+
+      {/* Spiritual Books Library Drawer */}
+      <AnimatePresence>
+        {isBooksOpen && (
+          <>
+            <div className="fixed inset-0 z-[55] bg-black/40 backdrop-blur-sm" onClick={() => setIsBooksOpen(false)} />
+            <motion.div
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 100, opacity: 0 }}
+              className="fixed right-20 top-1/2 -translate-y-1/2 w-80 md:w-96 max-h-[85vh] backdrop-blur-3xl bg-theme-bg/95 border border-theme-border rounded-[32px] shadow-2xl z-[60] overflow-hidden flex flex-col"
+            >
+              <div className="p-5 border-b border-theme-border flex items-center justify-between bg-gradient-to-r from-amber-500/10 via-transparent to-transparent">
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-widest text-amber-400 flex items-center gap-1.5">
+                    <Library className="w-3.5 h-3.5" /> Spiritual Books Library
+                  </h3>
+                  <p className="text-[9px] text-theme-text-muted mt-1">Read Paramahansa Yogananda & Monastic Works</p>
+                </div>
+                <button onClick={() => setIsBooksOpen(false)} className="cursor-pointer">
+                  <X className="w-4 h-4 text-theme-text-muted hover:text-theme-text transition-all" />
+                </button>
+              </div>
+
+              {/* Search input */}
+              <div className="p-4 border-b border-theme-border bg-theme-surface">
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-theme-text-muted opacity-60" />
+                  <input
+                    type="text"
+                    value={booksSearchQuery}
+                    onChange={(e) => setBooksSearchQuery(e.target.value)}
+                    placeholder="Search book title, volume, author..."
+                    className="w-full bg-theme-bg/60 border border-theme-border rounded-xl py-1.5 pl-9 pr-4 text-xs text-theme-text placeholder-theme-text-muted/50 focus:outline-none focus:border-amber-500/50 transition-all"
+                  />
+                  {booksSearchQuery && (
+                    <button 
+                      onClick={() => setBooksSearchQuery('')}
+                      className="absolute right-3 top-2.5 text-theme-text-muted hover:text-theme-text"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Spiritual Books List */}
+              <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                {(() => {
+                  const filteredBooks = SPIRITUAL_BOOKS.filter(book => {
+                    if (!booksSearchQuery) return true;
+                    const q = booksSearchQuery.toLowerCase();
+                    return (
+                      book.title.toLowerCase().includes(q) ||
+                      (book.subtitle && book.subtitle.toLowerCase().includes(q)) ||
+                      book.author.toLowerCase().includes(q) ||
+                      book.description.toLowerCase().includes(q) ||
+                      book.badge.toLowerCase().includes(q)
+                    );
+                  });
+
+                  if (filteredBooks.length === 0) {
+                    return (
+                      <div className="text-center py-10 px-4">
+                        <Search className="w-5 h-5 text-slate-700 mx-auto mb-2" />
+                        <p className="text-[10px] text-theme-text-muted">No spiritual books match your search</p>
+                      </div>
+                    );
+                  }
+
+                  return filteredBooks.map((book) => (
+                    <div
+                      key={book.id}
+                      className="group p-3.5 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-all text-left flex flex-col gap-2.5 relative overflow-hidden"
+                    >
+                      {/* Book Header with Gradient Cover Accent */}
+                      <div className="flex items-start gap-3">
+                        <div className={cn(
+                          "w-12 h-16 rounded-xl bg-gradient-to-br shrink-0 shadow-lg border border-white/20 flex flex-col items-center justify-between p-1.5 text-center relative overflow-hidden",
+                          book.coverGradient
+                        )}>
+                          <div className="absolute inset-0 bg-black/10" />
+                          <span className="text-[7px] font-black uppercase text-amber-200/90 tracking-wider z-10">{book.badge}</span>
+                          <BookOpen className="w-4 h-4 text-white/90 z-10 my-auto" />
+                          <span className="text-[6px] font-bold text-white/70 line-clamp-1 z-10">{book.author.split(' ')[0]}</span>
+                        </div>
+
+                        <div className="min-w-0 flex-grow">
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <span className="text-[8px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
+                              {book.badge}
+                            </span>
+                          </div>
+                          <h4 className="text-xs font-bold text-white group-hover:text-amber-300 transition-colors line-clamp-1">
+                            {book.title}
+                          </h4>
+                          <p className="text-[9px] font-medium text-slate-400 line-clamp-1 mt-0.5">
+                            {book.subtitle || book.author}
+                          </p>
+                          <p className="text-[9px] text-slate-500 line-clamp-2 mt-1 leading-snug">
+                            {book.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex items-center gap-1.5 pt-1 border-t border-white/5">
+                        <button
+                          onClick={() => {
+                            setActivePdfBook(book);
+                            setIsBooksOpen(false);
+                          }}
+                          className="flex-1 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-[9.5px] uppercase tracking-wider transition-all flex items-center justify-center gap-1 cursor-pointer shadow-md"
+                        >
+                          <BookOpen className="w-3 h-3" />
+                          Read PDF
+                        </button>
+                        <a
+                          href={book.pdfUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl text-[9px] font-bold transition-all flex items-center gap-1 border border-white/10 cursor-pointer"
+                          title="Open PDF in new tab"
+                        >
+                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                          Open
+                        </a>
+                        <a
+                          href={book.pdfUrl}
+                          download
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl text-[9px] font-bold transition-all border border-white/10 cursor-pointer"
+                          title="Download PDF"
+                        >
+                          <Download className="w-3 h-3 text-slate-400" />
+                        </a>
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Native Canvas PDF Reader Modal with Keyword Search Engine */}
+      <AnimatePresence>
+        {activePdfBook && (
+          <PdfViewerModal
+            book={activePdfBook}
+            onClose={() => setActivePdfBook(null)}
+          />
         )}
       </AnimatePresence>
 
