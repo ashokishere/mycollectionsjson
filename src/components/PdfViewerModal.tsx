@@ -26,6 +26,7 @@ import {
   ChevronsRight
 } from 'lucide-react';
 import { SpiritualBook } from '../data/spiritual_books';
+import { getBookSearchIndex, searchInBookIndex, BookSearchIndex } from '../utils/searchIndexService';
 
 // Set up local bundled PDF.js worker with fallback to bundled worker
 if (typeof window !== 'undefined') {
@@ -38,8 +39,8 @@ if (typeof window !== 'undefined') {
 
 interface SearchMatch {
   pageNum: number;
-  matchIndex: number;
   snippet: string;
+  matchIndex?: number;
 }
 
 interface PdfViewerModalProps {
@@ -110,6 +111,21 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     setLoading(true);
     setError(null);
     setLoadingProgress('Connecting to spiritual library server...');
+
+    // Eagerly preload static search index for instant offline search (vital for GitHub Pages)
+    getBookSearchIndex(book.id).then(index => {
+      if (!isCancelled && index) {
+        if (index.totalPages > 0) {
+          setNumPages(prev => (prev === 0 ? index.totalPages : prev));
+        }
+        // Warm up text cache
+        index.pages.forEach(p => {
+          if (!pageTextCacheRef.current.has(p.page)) {
+            pageTextCacheRef.current.set(p.page, { text: p.text, items: [] });
+          }
+        });
+      }
+    }).catch(() => {});
 
     async function loadPdf() {
       try {
@@ -476,7 +492,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Streaming Keyword Search across entire PDF document with caching
+  // Streaming Keyword Search across entire PDF document with caching & GitHub Pages offline index support
   const handlePerformSearch = async (query: string) => {
     const searchTerm = query.trim();
     if (!searchTerm) {
@@ -486,87 +502,109 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
       return;
     }
 
-    // Auto-switch to Canvas mode so user gets interactive highlighted text
-    if (viewMode !== 'canvas') {
-      setViewMode('canvas');
-    }
-
     setIsSearching(true);
     setShowSearchPanel(true);
     setActiveSearchTerm(searchTerm);
     searchAbortRef.current = false;
 
-    // If PDF is not loaded yet, wait slightly
-    if (!pdfDoc) {
-      setIsSearching(false);
-      return;
-    }
-
-    const termLower = searchTerm.toLowerCase();
-    const matches: SearchMatch[] = [];
-    const totalPages = pdfDoc.numPages;
-
-    setSearchProgress({ current: 0, total: totalPages, count: 0 });
-
     try {
-      for (let p = 1; p <= totalPages; p++) {
-        if (searchAbortRef.current) break;
+      // Strategy 1: Instant Static Pre-built Search Index (100% works on GitHub Pages, static hosts, offline)
+      const index = await getBookSearchIndex(book.id);
 
-        let pageText = '';
-        let items: any[] = [];
-
-        // Check if page text is already in memory cache
-        const cached = pageTextCacheRef.current.get(p);
-        if (cached) {
-          pageText = cached.text;
-          items = cached.items;
-        } else {
-          const page = await pdfDoc.getPage(p);
-          const textContent = await page.getTextContent();
-          items = textContent.items;
-          pageText = items.map((item: any) => item.str || '').join(' ');
-          pageTextCacheRef.current.set(p, { text: pageText, items });
+      if (index && index.pages && index.pages.length > 0) {
+        if (numPages === 0 && index.totalPages > 0) {
+          setNumPages(index.totalPages);
         }
 
-        const lowerText = pageText.toLowerCase();
-        let startIndex = 0;
-        let foundIdx = lowerText.indexOf(termLower, startIndex);
+        // Cache page texts for instant thumbnail/preview lookups
+        index.pages.forEach(p => {
+          if (!pageTextCacheRef.current.has(p.page)) {
+            pageTextCacheRef.current.set(p.page, { text: p.text, items: [] });
+          }
+        });
 
-        while (foundIdx !== -1) {
-          const snippetStart = Math.max(0, foundIdx - 45);
-          const snippetEnd = Math.min(pageText.length, foundIdx + termLower.length + 45);
-          let snippet = pageText.slice(snippetStart, snippetEnd).trim();
+        setSearchProgress({ current: 0, total: index.totalPages, count: 0 });
 
-          if (snippetStart > 0) snippet = '...' + snippet;
-          if (snippetEnd < pageText.length) snippet = snippet + '...';
+        const matches = searchInBookIndex(index, searchTerm, (curr, total, count) => {
+          setSearchProgress({ current: curr, total, count });
+        });
 
-          matches.push({
-            pageNum: p,
-            matchIndex: matches.length,
-            snippet,
-          });
+        setSearchResults(matches);
+        setSearchProgress({ current: index.totalPages, total: index.totalPages, count: matches.length });
+        setCurrentMatchIdx(0);
 
-          startIndex = foundIdx + termLower.length;
-          foundIdx = lowerText.indexOf(termLower, startIndex);
-
-          if (matches.length >= 250) break;
+        if (matches.length > 0) {
+          setCurrentPage(matches[0].pageNum);
         }
-
-        // Periodically update state every 10 pages or when matches are found so results stream live
-        if (p % 10 === 0 || p === totalPages || matches.length > 0) {
-          setSearchResults([...matches]);
-          setSearchProgress({ current: p, total: totalPages, count: matches.length });
-          // Non-blocking tick to keep React UI responsive
-          await new Promise(r => setTimeout(r, 0));
-        }
-
-        if (matches.length >= 250) break;
+        return;
       }
 
-      setSearchResults(matches);
-      setCurrentMatchIdx(0);
-      if (matches.length > 0) {
-        setCurrentPage(matches[0].pageNum);
+      // Strategy 2: Dynamic PDF.js document scanner fallback
+      if (pdfDoc) {
+        const termLower = searchTerm.toLowerCase();
+        const matches: SearchMatch[] = [];
+        const totalPages = pdfDoc.numPages;
+
+        setSearchProgress({ current: 0, total: totalPages, count: 0 });
+
+        for (let p = 1; p <= totalPages; p++) {
+          if (searchAbortRef.current) break;
+
+          let pageText = '';
+          let items: any[] = [];
+
+          // Check if page text is already in memory cache
+          const cached = pageTextCacheRef.current.get(p);
+          if (cached) {
+            pageText = cached.text;
+            items = cached.items;
+          } else {
+            const page = await pdfDoc.getPage(p);
+            const textContent = await page.getTextContent();
+            items = textContent.items;
+            pageText = items.map((item: any) => item.str || '').join(' ');
+            pageTextCacheRef.current.set(p, { text: pageText, items });
+          }
+
+          const lowerText = pageText.toLowerCase();
+          let startIndex = 0;
+          let foundIdx = lowerText.indexOf(termLower, startIndex);
+
+          while (foundIdx !== -1) {
+            const snippetStart = Math.max(0, foundIdx - 45);
+            const snippetEnd = Math.min(pageText.length, foundIdx + termLower.length + 45);
+            let snippet = pageText.slice(snippetStart, snippetEnd).trim();
+
+            if (snippetStart > 0) snippet = '...' + snippet;
+            if (snippetEnd < pageText.length) snippet = snippet + '...';
+
+            matches.push({
+              pageNum: p,
+              matchIndex: matches.length,
+              snippet,
+            });
+
+            startIndex = foundIdx + termLower.length;
+            foundIdx = lowerText.indexOf(termLower, startIndex);
+
+            if (matches.length >= 300) break;
+          }
+
+          // Periodically update state so results stream live
+          if (p % 10 === 0 || p === totalPages || matches.length > 0) {
+            setSearchResults([...matches]);
+            setSearchProgress({ current: p, total: totalPages, count: matches.length });
+            await new Promise(r => setTimeout(r, 0));
+          }
+
+          if (matches.length >= 300) break;
+        }
+
+        setSearchResults(matches);
+        setCurrentMatchIdx(0);
+        if (matches.length > 0) {
+          setCurrentPage(matches[0].pageNum);
+        }
       }
     } catch (err) {
       console.error('Search error:', err);
@@ -1281,7 +1319,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
         </div>
 
         {/* Footer Page Scrub Bar & Mobile Quick Controller */}
-        {pdfDoc && viewMode === 'canvas' && (
+        {numPages > 0 && (
           <div className="px-3 sm:px-5 py-2 sm:py-2.5 bg-slate-900 border-t border-white/10 flex items-center justify-between gap-3 shrink-0 text-[10px] text-slate-400 z-20">
             <span className="truncate hidden md:inline max-w-xs">
               Reading <strong className="text-white">{book.title}</strong>
@@ -1320,7 +1358,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             </div>
 
             <span className="font-mono text-amber-400 font-bold shrink-0 hidden sm:inline">
-              {currentPage} / {numPages}
+              Page {currentPage} of {numPages}
             </span>
           </div>
         )}
