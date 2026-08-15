@@ -790,8 +790,13 @@ app.options("/api/pdf-proxy", (req, res) => {
 app.get("/api/pdf-proxy", async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type");
-  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
+  res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type, Accept");
+  res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges, Content-Disposition");
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
 
   const targetUrl = req.query.url as string;
   if (!targetUrl) {
@@ -801,14 +806,18 @@ app.get("/api/pdf-proxy", async (req, res) => {
   try {
     const forwardHeaders: Record<string, string> = {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Accept": "application/pdf,application/octet-stream,*/*"
+      "Accept": "application/pdf,application/octet-stream,*/*",
+      "Referer": "https://spiritualbooks.eu/"
     };
 
     if (req.headers.range) {
       forwardHeaders["Range"] = req.headers.range;
     }
 
-    const pdfResponse = await fetch(targetUrl, { headers: forwardHeaders });
+    const pdfResponse = await fetch(targetUrl, { 
+      headers: forwardHeaders,
+      redirect: "follow"
+    });
 
     if (!pdfResponse.ok) {
       return res.status(pdfResponse.status).send(`Failed to fetch PDF: ${pdfResponse.statusText}`);
@@ -851,10 +860,21 @@ app.get("/api/pdf-proxy", async (req, res) => {
 });
 
 // Serve PDF.js standard fonts, cmaps, wasm decoders, and image decoders locally with maximum performance
-app.use("/pdfjs-assets/cmaps", express.static(path.join(process.cwd(), "node_modules/pdfjs-dist/cmaps")));
-app.use("/pdfjs-assets/standard_fonts", express.static(path.join(process.cwd(), "node_modules/pdfjs-dist/standard_fonts")));
-app.use("/pdfjs-assets/wasm", express.static(path.join(process.cwd(), "node_modules/pdfjs-dist/wasm")));
-app.use("/pdfjs-assets/image_decoders", express.static(path.join(process.cwd(), "node_modules/pdfjs-dist/image_decoders")));
+const pdfAssetsDir = fs.existsSync(path.join(process.cwd(), "public/pdfjs-assets"))
+  ? path.join(process.cwd(), "public/pdfjs-assets")
+  : path.join(process.cwd(), "node_modules/pdfjs-dist");
+
+app.use("/pdfjs-assets", express.static(pdfAssetsDir, {
+  maxAge: "30d",
+  setHeaders: (res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  }
+}));
+app.use("/pdfjs-assets/cmaps", express.static(path.join(pdfAssetsDir, "cmaps"), { maxAge: "30d" }));
+app.use("/pdfjs-assets/standard_fonts", express.static(path.join(pdfAssetsDir, "standard_fonts"), { maxAge: "30d" }));
+app.use("/pdfjs-assets/wasm", express.static(path.join(pdfAssetsDir, "wasm"), { maxAge: "30d" }));
+app.use("/pdfjs-assets/image_decoders", express.static(path.join(pdfAssetsDir, "image_decoders"), { maxAge: "30d" }));
 
 // ---------------- Vite Middleware / Production Server ----------------
 

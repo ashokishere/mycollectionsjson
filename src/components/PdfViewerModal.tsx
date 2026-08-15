@@ -27,8 +27,14 @@ import {
 } from 'lucide-react';
 import { SpiritualBook } from '../data/spiritual_books';
 
-// Set up local bundled PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// Set up local bundled PDF.js worker with safe fallbacks
+if (typeof window !== 'undefined') {
+  try {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs-assets/pdf.worker.min.mjs';
+  } catch (_) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+  }
+}
 
 interface SearchMatch {
   pageNum: number;
@@ -111,6 +117,8 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           imageDecodersUrl: `/pdfjs-assets/image_decoders/`,
           enableXfa: true,
           isEvalSupported: true,
+          disableRange: true,
+          disableStream: true,
         };
 
         // Fallback CDN parameters if local static assets are unreachable
@@ -122,40 +130,26 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           imageDecodersUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/image_decoders/`,
           enableXfa: true,
           isEvalSupported: true,
+          disableRange: true,
+          disableStream: true,
         };
 
-        // Strategy 1: URL Stream through backend proxy with Range Request Support
+        // Strategy 1: High-Speed ArrayBuffer fetch via proxy (robust against Range header issues)
         try {
-          setLoadingProgress('Streaming spiritual book pages...');
-          const loadingTask = pdfjsLib.getDocument({
-            url: proxyUrl,
-            ...baseParams,
-          });
-
-          loadingTask.onProgress = (progressData: { loaded: number; total: number }) => {
-            if (progressData.total > 0) {
-              const pct = Math.round((progressData.loaded / progressData.total) * 100);
-              setLoadingProgress(`Downloading book pages (${pct}%)...`);
-            } else if (progressData.loaded > 0) {
-              const mb = (progressData.loaded / (1024 * 1024)).toFixed(1);
-              setLoadingProgress(`Streaming book pages (${mb} MB)...`);
-            }
-          };
-
-          doc = await loadingTask.promise;
-        } catch (e: any) {
-          console.warn('Strategy 1 (URL stream) failed, trying buffer fetch:', e);
-          lastErrorMsg = e.message;
-        }
-
-        // Strategy 2: ArrayBuffer fetch via proxy
-        if (!doc && !isCancelled) {
-          setLoadingProgress('Loading complete book archive...');
-          try {
-            const response = await fetch(proxyUrl);
-            if (response.ok) {
-              const buf = await response.arrayBuffer();
-              if (buf.byteLength > 1000) {
+          setLoadingProgress('Downloading complete book archive...');
+          const response = await fetch(proxyUrl);
+          if (response.ok) {
+            const buf = await response.arrayBuffer();
+            if (buf.byteLength > 1000) {
+              setLoadingProgress('Rendering book pages...');
+              try {
+                const loadingTask = pdfjsLib.getDocument({
+                  data: new Uint8Array(buf),
+                  ...baseParams,
+                });
+                doc = await loadingTask.promise;
+              } catch (localErr: any) {
+                console.warn('Local params failed, trying CDN params:', localErr);
                 const loadingTask = pdfjsLib.getDocument({
                   data: new Uint8Array(buf),
                   ...cdnParams,
@@ -163,7 +157,34 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 doc = await loadingTask.promise;
               }
             }
+          }
+        } catch (e: any) {
+          console.warn('Strategy 1 (Buffer fetch) failed, trying URL stream:', e);
+          lastErrorMsg = e.message;
+        }
+
+        // Strategy 2: URL Stream through backend proxy with Range Request Support
+        if (!doc && !isCancelled) {
+          try {
+            setLoadingProgress('Streaming spiritual book pages...');
+            const loadingTask = pdfjsLib.getDocument({
+              url: proxyUrl,
+              ...baseParams,
+            });
+
+            loadingTask.onProgress = (progressData: { loaded: number; total: number }) => {
+              if (progressData.total > 0) {
+                const pct = Math.round((progressData.loaded / progressData.total) * 100);
+                setLoadingProgress(`Downloading book pages (${pct}%)...`);
+              } else if (progressData.loaded > 0) {
+                const mb = (progressData.loaded / (1024 * 1024)).toFixed(1);
+                setLoadingProgress(`Streaming book pages (${mb} MB)...`);
+              }
+            };
+
+            doc = await loadingTask.promise;
           } catch (e: any) {
+            console.warn('Strategy 2 (URL stream) failed:', e);
             lastErrorMsg = e.message;
           }
         }
@@ -188,7 +209,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           }
         }
 
-        // Strategy 4: Public CORS proxies for GitHub Pages static hosting
+        // Strategy 4: Public CORS proxies for static hosting
         if (!doc && !isCancelled) {
           setLoadingProgress('Connecting via gateway...');
           const fallbackProxies = [
@@ -237,10 +258,12 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
 
         setLoading(false);
       } catch (err: any) {
-        console.error('Failed to load PDF:', err);
+        console.error('Failed to load PDF in Canvas Mode:', err);
         if (!isCancelled) {
-          setError(err.message || 'Failed to render PDF page');
+          // If Canvas rendering encounters a blocker, automatically switch to Native Browser Mode so reading never stops
+          setError(err.message || 'Canvas stream interrupted');
           setLoading(false);
+          setViewMode('native');
         }
       }
     }
