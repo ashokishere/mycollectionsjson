@@ -121,9 +121,9 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           disableStream: false,
         };
 
-        // Strategy 1: URL Stream through backend proxy
+        // Strategy 1: High-reliability backend stream proxy
         try {
-          setLoadingProgress('Connecting to spiritual library server...');
+          setLoadingProgress('Connecting to spiritual book archive...');
           const loadingTask = pdfjsLib.getDocument({
             url: proxyUrl,
             ...configOptions,
@@ -145,10 +145,10 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           lastErrorMsg = e?.message || 'Proxy stream unavailable';
         }
 
-        // Strategy 2: ArrayBuffer fetch via proxy
+        // Strategy 2: ArrayBuffer fetch via backend proxy
         if (!doc && !isCancelled) {
           try {
-            setLoadingProgress('Downloading complete book archive...');
+            setLoadingProgress('Loading complete book into memory...');
             const response = await fetch(proxyUrl);
             if (response.ok) {
               const buf = await response.arrayBuffer();
@@ -162,52 +162,23 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
               }
             }
           } catch (e: any) {
-            console.warn('Strategy 2 (Buffer fetch) failed, trying direct stream:', e);
+            console.warn('Strategy 2 (Buffer fetch) failed:', e);
             lastErrorMsg = e?.message || lastErrorMsg;
           }
         }
 
-        // Strategy 3: Direct CORS fetch
+        // Strategy 3: Direct fetch
         if (!doc && !isCancelled) {
           try {
-            setLoadingProgress('Trying direct book stream...');
+            setLoadingProgress('Trying direct connection...');
             const loadingTask = pdfjsLib.getDocument({
               url: book.pdfUrl,
               ...configOptions,
             });
             doc = await loadingTask.promise;
           } catch (e: any) {
-            console.warn('Strategy 3 (Direct stream) failed, trying gateways:', e);
+            console.warn('Strategy 3 (Direct stream) failed:', e);
             lastErrorMsg = e?.message || lastErrorMsg;
-          }
-        }
-
-        // Strategy 4: Public CORS proxies for static hosting
-        if (!doc && !isCancelled) {
-          setLoadingProgress('Connecting via gateway...');
-          const fallbackProxies = [
-            `https://api.allorigins.win/raw?url=${encodeURIComponent(book.pdfUrl)}`,
-            `https://corsproxy.io/?${encodeURIComponent(book.pdfUrl)}`
-          ];
-
-          for (const proxy of fallbackProxies) {
-            if (doc || isCancelled) break;
-            try {
-              const response = await fetch(proxy);
-              if (response.ok) {
-                const buf = await response.arrayBuffer();
-                if (buf.byteLength > 1000) {
-                  const loadingTask = pdfjsLib.getDocument({
-                    data: new Uint8Array(buf),
-                    ...configOptions,
-                  });
-                  doc = await loadingTask.promise;
-                  break;
-                }
-              }
-            } catch (e: any) {
-              lastErrorMsg = e?.message || lastErrorMsg;
-            }
           }
         }
 
