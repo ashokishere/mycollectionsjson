@@ -62,6 +62,9 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
   // View modes: 'canvas' (custom search + zoom) vs 'native' (full-featured browser PDF stream)
   const [viewMode, setViewMode] = useState<'canvas' | 'native'>('canvas');
   const [nativeEngine, setNativeEngine] = useState<'google' | 'direct'>('google');
+  const [bookIndex, setBookIndex] = useState<BookSearchIndex | null>(null);
+  const [readerFontSize, setReaderFontSize] = useState<number>(18);
+  const [readerTheme, setReaderTheme] = useState<'ivory' | 'white' | 'sepia' | 'dark'>('ivory');
 
   // Search state
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -115,6 +118,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     // Eagerly preload static search index for instant offline search (vital for GitHub Pages)
     getBookSearchIndex(book.id).then(index => {
       if (!isCancelled && index) {
+        setBookIndex(index);
         if (index.totalPages > 0) {
           setNumPages(prev => (prev === 0 ? index.totalPages : prev));
         }
@@ -197,30 +201,23 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
 
         if (isCancelled) return;
 
-        if (!doc) {
-          throw new Error(lastErrorMsg || 'Switching to Google Cloud Reader...');
+        if (doc) {
+          setPdfDoc(doc);
+          setNumPages(doc.numPages);
+          // Auto-scale to fit width on initial load
+          try {
+            const firstPage = await doc.getPage(1);
+            const initialViewport = firstPage.getViewport({ scale: 1.0 });
+            const optimalScale = calculateOptimalScale(initialViewport.width);
+            setScale(optimalScale);
+          } catch (_) {}
         }
-
-        setPdfDoc(doc);
-        setNumPages(doc.numPages);
-        setCurrentPage(1);
-
-        // Auto-scale to fit width on initial load
-        try {
-          const firstPage = await doc.getPage(1);
-          const initialViewport = firstPage.getViewport({ scale: 1.0 });
-          const optimalScale = calculateOptimalScale(initialViewport.width);
-          setScale(optimalScale);
-        } catch (_) {}
 
         setLoading(false);
       } catch (err: any) {
-        console.warn('Canvas Mode offline, transitioning to Google Cloud Reader:', err);
+        console.warn('Direct canvas stream unavailable, active page reader ready:', err);
         if (!isCancelled) {
-          // If Canvas rendering encounters a blocker (e.g. static hosting with CORS restrictions), seamlessly activate Google Cloud Reader
           setLoading(false);
-          setViewMode('native');
-          setNativeEngine('google');
         }
       }
     }
@@ -617,9 +614,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     if (searchResults.length === 0) return;
     const nextIdx = (index + searchResults.length) % searchResults.length;
     setCurrentMatchIdx(nextIdx);
-    setCurrentPage(searchResults[nextIdx].pageNum);
+    const targetPage = searchResults[nextIdx].pageNum;
+    setCurrentPage(targetPage);
     if (viewMode !== 'canvas') {
       setViewMode('canvas');
+    }
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -902,43 +903,85 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
               </div>
             )}
 
-            {/* Responsive Zoom & Fit Controls */}
+            {/* Responsive Zoom & Fit Controls / Typography Theme Controls */}
             <div className="flex items-center gap-1.5">
+              {!pdfDoc && (
+                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10 mr-1">
+                  <button
+                    onClick={() => setReaderFontSize(s => Math.max(13, s - 2))}
+                    className="px-1.5 py-0.5 text-[10px] font-bold text-slate-300 hover:text-white rounded cursor-pointer"
+                    title="Decrease Font Size"
+                  >
+                    A-
+                  </button>
+                  <span className="text-[9px] font-mono text-amber-400 font-bold px-1">{readerFontSize}px</span>
+                  <button
+                    onClick={() => setReaderFontSize(s => Math.min(28, s + 2))}
+                    className="px-1.5 py-0.5 text-[10px] font-bold text-slate-300 hover:text-white rounded cursor-pointer"
+                    title="Increase Font Size"
+                  >
+                    A+
+                  </button>
+                  <div className="w-px h-3 bg-white/20 mx-0.5" />
+                  <button
+                    onClick={() => setReaderTheme('ivory')}
+                    className={`w-3.5 h-3.5 rounded-full bg-[#faf7ee] border cursor-pointer ${readerTheme === 'ivory' ? 'ring-2 ring-amber-400 border-amber-500' : 'border-slate-400'}`}
+                    title="Warm Ivory Paper"
+                  />
+                  <button
+                    onClick={() => setReaderTheme('sepia')}
+                    className={`w-3.5 h-3.5 rounded-full bg-[#f4ecd8] border cursor-pointer ${readerTheme === 'sepia' ? 'ring-2 ring-amber-400 border-amber-500' : 'border-slate-400'}`}
+                    title="Ancient Palm Sepia"
+                  />
+                  <button
+                    onClick={() => setReaderTheme('dark')}
+                    className={`w-3.5 h-3.5 rounded-full bg-slate-900 border cursor-pointer ${readerTheme === 'dark' ? 'ring-2 ring-amber-400 border-amber-500' : 'border-slate-400'}`}
+                    title="Night Mode"
+                  />
+                </div>
+              )}
+
               {/* Fit Width Button */}
-              <button
-                onClick={handleFitWidth}
-                className="px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer text-[10px] font-semibold flex items-center gap-1 border border-white/10"
-                title="Fit Page Width to Screen (Mobile & iPad optimized)"
-              >
-                <Expand className="w-3 h-3 text-amber-400" />
-                <span className="hidden sm:inline">Fit Width</span>
-              </button>
+              {pdfDoc && (
+                <button
+                  onClick={handleFitWidth}
+                  className="px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer text-[10px] font-semibold flex items-center gap-1 border border-white/10"
+                  title="Fit Page Width to Screen (Mobile & iPad optimized)"
+                >
+                  <Expand className="w-3 h-3 text-amber-400" />
+                  <span className="hidden sm:inline">Fit Width</span>
+                </button>
+              )}
 
-              <button
-                onClick={() => setScale(s => Math.max(0.4, Number((s - 0.15).toFixed(2))))}
-                className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer"
-                title="Zoom Out"
-              >
-                <ZoomOut className="w-3.5 h-3.5" />
-              </button>
-              <span className="text-[10px] font-mono text-slate-300 min-w-[38px] text-center font-bold">
-                {Math.round(scale * 100)}%
-              </span>
-              <button
-                onClick={() => setScale(s => Math.min(3.0, Number((s + 0.15).toFixed(2))))}
-                className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer"
-                title="Zoom In"
-              >
-                <ZoomIn className="w-3.5 h-3.5" />
-              </button>
+              {pdfDoc && (
+                <>
+                  <button
+                    onClick={() => setScale(s => Math.max(0.4, Number((s - 0.15).toFixed(2))))}
+                    className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer"
+                    title="Zoom Out"
+                  >
+                    <ZoomOut className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-[10px] font-mono text-slate-300 min-w-[38px] text-center font-bold">
+                    {Math.round(scale * 100)}%
+                  </span>
+                  <button
+                    onClick={() => setScale(s => Math.min(3.0, Number((s + 0.15).toFixed(2))))}
+                    className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer"
+                    title="Zoom In"
+                  >
+                    <ZoomIn className="w-3.5 h-3.5" />
+                  </button>
 
-              <button
-                onClick={() => setRotation(r => (r + 90) % 360)}
-                className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer ml-0.5"
-                title="Rotate 90°"
-              >
-                <RotateCw className="w-3.5 h-3.5" />
-              </button>
+                  <button
+                    onClick={() => setRotation(r => (r + 90) % 360)}
+                    className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer ml-0.5"
+                    title="Rotate 90°"
+                  >
+                    <RotateCw className="w-3.5 h-3.5" />
+                  </button>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -1173,54 +1216,174 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 </div>
               )}
 
-              {/* Full Untruncated Canvas Paper Container */}
-              <div 
-                className={`relative shadow-2xl rounded-sm sm:rounded-md bg-white border border-slate-300/80 transition-all ${loading || error ? 'hidden' : 'block'} mb-16`}
-                style={{
-                  width: `${pageDimensions.width}px`,
-                  minHeight: `${pageDimensions.height}px`,
-                  maxWidth: 'none',
-                }}
-              >
-                {/* Floating Page Badge on Paper */}
-                <div className="absolute top-2 left-2 z-10 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-[9px] font-bold text-amber-300 pointer-events-none flex items-center gap-1.5 shadow-md">
-                  <span>Page {currentPage} of {numPages}</span>
-                  {currentPage <= 2 && (
-                    <span className="text-[8px] font-normal text-slate-300 border-l border-white/20 pl-1.5">
-                      Introductory Page
-                    </span>
-                  )}
-                </div>
-
-                {/* Match Counter Badge on Paper if there are search matches on this page */}
-                {pageHighlights.length > 0 && (
-                  <div className="absolute top-2 right-2 z-10 bg-amber-500 text-slate-950 px-2.5 py-1 rounded-lg font-bold text-[9px] shadow-lg flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    <span>{pageHighlights.length} match{pageHighlights.length > 1 ? 'es' : ''} on this page</span>
+              {/* Canvas Paper View (When Scanned PDF Engine is loaded) */}
+              {pdfDoc && (
+                <div 
+                  className={`relative shadow-2xl rounded-sm sm:rounded-md bg-white border border-slate-300/80 transition-all ${loading || error ? 'hidden' : 'block'} mb-16`}
+                  style={{
+                    width: `${pageDimensions.width}px`,
+                    minHeight: `${pageDimensions.height}px`,
+                    maxWidth: 'none',
+                  }}
+                >
+                  {/* Floating Page Badge on Paper */}
+                  <div className="absolute top-2 left-2 z-10 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-[9px] font-bold text-amber-300 pointer-events-none flex items-center gap-1.5 shadow-md">
+                    <span>Page {currentPage} of {numPages}</span>
+                    {currentPage <= 2 && (
+                      <span className="text-[8px] font-normal text-slate-300 border-l border-white/20 pl-1.5">
+                        Introductory Page
+                      </span>
+                    )}
                   </div>
-                )}
 
-                {/* Dynamic Golden Highlight Overlays for Matched Search Words */}
-                {pageHighlights.map((hl, i) => (
-                  <div
-                    key={i}
-                    className="absolute bg-amber-400/40 border-2 border-amber-500 rounded-[2px] pointer-events-none shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse z-10"
-                    style={{
-                      left: `${hl.left}px`,
-                      top: `${hl.top}px`,
-                      width: `${hl.width}px`,
-                      height: `${hl.height}px`,
-                    }}
-                    title={hl.str}
+                  {/* Match Counter Badge on Paper if there are search matches on this page */}
+                  {pageHighlights.length > 0 && (
+                    <div className="absolute top-2 right-2 z-10 bg-amber-500 text-slate-950 px-2.5 py-1 rounded-lg font-bold text-[9px] shadow-lg flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      <span>{pageHighlights.length} match{pageHighlights.length > 1 ? 'es' : ''} on this page</span>
+                    </div>
+                  )}
+
+                  {/* Dynamic Golden Highlight Overlays for Matched Search Words */}
+                  {pageHighlights.map((hl, i) => (
+                    <div
+                      key={i}
+                      className="absolute bg-amber-400/40 border-2 border-amber-500 rounded-[2px] pointer-events-none shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse z-10"
+                      style={{
+                        left: `${hl.left}px`,
+                        top: `${hl.top}px`,
+                        width: `${hl.width}px`,
+                        height: `${hl.height}px`,
+                      }}
+                      title={hl.str}
+                    />
+                  ))}
+
+                  {/* Direct Canvas Element */}
+                  <canvas 
+                    ref={canvasRef} 
+                    className="block bg-white"
                   />
-                ))}
+                </div>
+              )}
 
-                {/* Direct Canvas Element - with exact pixel bounds to guarantee zero truncation */}
-                <canvas 
-                  ref={canvasRef} 
-                  className="block bg-white"
-                />
-              </div>
+              {/* Interactive Book Page Paper View (Active Page & Offline Static Reader) */}
+              {!pdfDoc && !loading && (
+                <div 
+                  className={`w-full max-w-3xl rounded-2xl border shadow-2xl p-5 sm:p-10 md:p-12 my-2 sm:my-4 transition-all mb-16 select-text ${
+                    readerTheme === 'ivory'
+                      ? 'bg-[#faf7ee] text-[#2c2824] border-[#e6dcce]'
+                      : readerTheme === 'sepia'
+                      ? 'bg-[#f4ecd8] text-[#3e2e1d] border-[#ded0b1]'
+                      : readerTheme === 'dark'
+                      ? 'bg-slate-900 text-slate-100 border-slate-800'
+                      : 'bg-white text-slate-900 border-slate-200'
+                  }`}
+                  style={{ fontSize: `${readerFontSize}px` }}
+                >
+                  {/* Paper Header */}
+                  <div className="border-b border-black/10 dark:border-white/10 pb-3.5 mb-6 flex flex-wrap items-center justify-between gap-2 text-xs font-sans">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <span className="font-bold tracking-wider uppercase text-[11px] text-slate-600 dark:text-slate-300">
+                        {book.title}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2.5">
+                      {activeSearchTerm && (
+                        <span className="bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2.5 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 border border-amber-500/30">
+                          <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                          <span>
+                            {(
+                              (bookIndex?.pages.find(p => p.page === currentPage)?.text || pageTextCacheRef.current.get(currentPage)?.text || '')
+                                .toLowerCase()
+                                .match(new RegExp(activeSearchTerm.trim().toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []
+                            ).length} match(es) on this page
+                          </span>
+                        </span>
+                      )}
+                      <span className="font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[11px]">
+                        Page {currentPage} of {numPages}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Page Text Paragraphs with Golden Highlights */}
+                  {(() => {
+                    const pageData = bookIndex?.pages.find(p => p.page === currentPage) || 
+                      (pageTextCacheRef.current.get(currentPage)?.text ? { page: currentPage, text: pageTextCacheRef.current.get(currentPage)!.text } : null);
+                    const pageText = pageData?.text || '';
+                    const paras = pageText.split(/\n\s*\n|\n/).map(p => p.trim()).filter(Boolean);
+
+                    if (paras.length === 0) {
+                      return (
+                        <div className="text-center py-16 text-slate-400 font-serif italic space-y-3">
+                          <BookOpen className="w-8 h-8 text-amber-500/40 mx-auto" />
+                          <p>Introductory or Illustrated Section • Page {currentPage}</p>
+                          <div className="pt-2 flex justify-center gap-2">
+                            <button
+                              onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
+                              className="px-4 py-2 bg-amber-500 text-slate-950 font-sans font-bold text-xs rounded-xl cursor-pointer hover:bg-amber-400"
+                            >
+                              Go to Next Page &rarr;
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="font-serif leading-[1.85] space-y-4">
+                        {paras.map((paragraph, pIdx) => {
+                          if (!activeSearchTerm.trim()) {
+                            return <p key={pIdx} className="text-justify indent-6">{paragraph}</p>;
+                          }
+                          const term = activeSearchTerm.trim().toLowerCase();
+                          const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                          const parts = paragraph.split(regex);
+                          return (
+                            <p key={pIdx} className="text-justify indent-6">
+                              {parts.map((part, i) =>
+                                part.toLowerCase() === term ? (
+                                  <mark
+                                    key={i}
+                                    className="bg-amber-300/80 dark:bg-amber-400/40 text-amber-950 dark:text-amber-100 font-bold px-1 py-0.5 rounded shadow-[0_0_8px_rgba(245,158,11,0.5)] border-b-2 border-amber-600 not-italic inline-block mx-0.5"
+                                  >
+                                    {part}
+                                  </mark>
+                                ) : (
+                                  <span key={i}>{part}</span>
+                                )
+                              )}
+                            </p>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Paper Footer Navigation */}
+                  <div className="border-t border-black/10 dark:border-white/10 pt-4 mt-8 flex items-center justify-between text-xs text-slate-500 font-sans">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage <= 1}
+                      className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer flex items-center gap-1 font-semibold transition-all"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" /> Previous
+                    </button>
+                    <span className="font-mono font-bold tracking-widest text-[11px]">
+                      — Page {currentPage} of {numPages} —
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
+                      disabled={currentPage >= numPages}
+                      className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer flex items-center gap-1 font-semibold transition-all"
+                    >
+                      Next <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Floating Mobile/Tablet Next & Previous Quick Tap Zones */}
               {!loading && !error && (

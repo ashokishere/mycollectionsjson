@@ -66,7 +66,6 @@ import {
 } from 'lucide-react';
 import { initialVideos, loadVideosDatabase, type Video } from './data/videos';
 import { SPIRITUAL_BOOKS, type SpiritualBook } from './data/spiritual_books';
-import { PdfViewerModal } from './components/PdfViewerModal';
 import messagesData from './data/messages.json';
 import favoritesData from './data/favorite_playlists.json';
 import devotionalAlbums from './data/devotional_albums.json';
@@ -76,6 +75,7 @@ import { cn } from './lib/utils';
 
 const TranscriptReader = lazy(() => import('./components/TranscriptReader'));
 const AudioPlayerSection = lazy(() => import('./components/AudioPlayerSection'));
+const PdfViewerModal = lazy(() => import('./components/PdfViewerModal').then(m => ({ default: m.PdfViewerModal })));
 
 const LOTUS_IMAGE_URL = "https://images.unsplash.com/photo-1542631221-396af3702505?q=80&w=600&auto=format&fit=crop";
 
@@ -708,23 +708,20 @@ export default function App() {
 
   const petalConfigs = useMemo(() => {
     if (!showPetals) return [];
-    // We target around 35 petals - which creates a beautiful, lush overlay without killing mobile GPUs
-    const count = 35;
+    // Lightweight count (14 petals) for fluid 60fps on mobile & iPad WebKit
+    const count = 14;
     const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1024;
     const screenHeight = typeof window !== 'undefined' ? window.innerHeight : 768;
     return Array.from({ length: count }).map((_, i) => {
       const isJasmine = i % 2 === 0;
       const startX = Math.random() * screenWidth;
-      const duration = 12 + Math.random() * 18;
-      const swayAmount = 100 + Math.random() * 220;
-      const size = isJasmine ? (12 + Math.random() * 10) : (18 + Math.random() * 15);
+      const duration = 5 + Math.random() * 3;
+      const swayAmount = 40 + Math.random() * 80;
+      const size = isJasmine ? (10 + Math.random() * 8) : (14 + Math.random() * 10);
       const zIndex = i % 10;
-      const blur = zIndex < 3 ? 'blur(1px)' : zIndex > 7 ? 'blur(0.5px)' : 'none';
-      const delay = Math.random() * 8;
-      const initialY = screenHeight + 150;
-      const initialRotateX = Math.random() * 360;
-      const initialRotateY = Math.random() * 360;
-      const initialRotateZ = Math.random() * 360;
+      const delay = Math.random() * 2;
+      const initialY = screenHeight + 80;
+      const initialRotate = Math.random() * 360;
       
       return {
         id: i,
@@ -734,12 +731,9 @@ export default function App() {
         swayAmount,
         size,
         zIndex,
-        blur,
         delay,
         initialY,
-        initialRotateX,
-        initialRotateY,
-        initialRotateZ,
+        initialRotate,
       };
     });
   }, [showPetals]);
@@ -751,7 +745,7 @@ export default function App() {
 
   const triggerPetals = useCallback(() => {
     setShowPetals(true);
-    setTimeout(() => setShowPetals(false), 30000);
+    setTimeout(() => setShowPetals(false), 7000);
   }, []);
 
   const clearWorkspace = useCallback(() => {
@@ -915,14 +909,6 @@ export default function App() {
     setActiveMessage(messagesData.messages[randomIndex]);
     triggerPetals();
   }, [triggerPetals]);
-
-  useEffect(() => {
-    // Initial popup on load
-    const timer = setTimeout(() => {
-      triggerSurprise();
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, [triggerSurprise]);
 
   const REMOTE_URL = '/Database.xlsx';
 
@@ -1139,10 +1125,13 @@ export default function App() {
     document.body.removeChild(link);
   };
 
-  // Fetch real-time live videos list from Express server
+  // Fetch real-time live videos list from Express server with fast abort timeout
   const fetchLiveVideos = async () => {
     try {
-      const res = await fetch(`/api/videos?t=${Date.now()}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch(`/api/videos?t=${Date.now()}`, { signal: controller.signal });
+      clearTimeout(timeoutId);
       const contentType = res.headers.get('content-type');
       if (res.ok && contentType && contentType.includes('application/json')) {
         const data = await res.json();
@@ -1155,7 +1144,7 @@ export default function App() {
         setIsStaticMode(true);
       }
     } catch (err) {
-      console.error("Express server offline, switching to Static Mode (localStorage backup):", err);
+      // Graceful fallback to static data
       setIsStaticMode(true);
     }
 
@@ -1318,8 +1307,7 @@ export default function App() {
     setTimeout(() => {
       setIsSyncing(false);
       setLastSynced(new Date().toLocaleTimeString());
-      triggerPetals();
-    }, 800);
+    }, 400);
   };
 
   const parseRawData = () => {
@@ -2334,6 +2322,8 @@ export default function App() {
                     <img 
                       src={getVideoThumbnail(video)} 
                       alt={video.title}
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -4214,44 +4204,38 @@ export default function App() {
                   initial={{ 
                     y: petal.initialY, 
                     x: petal.startX, 
-                    rotateX: petal.initialRotateX,
-                    rotateY: petal.initialRotateY,
-                    rotateZ: petal.initialRotateZ,
-                    scale: 0.6,
+                    rotate: petal.initialRotate,
+                    scale: 0.7,
                     opacity: 0,
                     zIndex: petal.zIndex
                   }}
                   animate={{ 
-                    y: -250, 
+                    y: -180, 
                     x: [
                       petal.startX, 
                       petal.startX + petal.swayAmount, 
-                      petal.startX - petal.swayAmount * 0.6, 
-                      petal.startX + petal.swayAmount * 0.4,
-                      petal.startX - petal.swayAmount * 0.2
+                      petal.startX - petal.swayAmount * 0.5, 
+                      petal.startX + petal.swayAmount * 0.2
                     ],
-                    rotateX: [0, 180, 360, 540, 720],
-                    rotateY: [0, 90, 180, 270, 360],
-                    rotateZ: [0, 45, -45, 90, 0],
-                    opacity: [0, 1, 1, 0.8, 0],
-                    scale: [0.6, 1.1, 1.0, 0.9, 0.6]
+                    rotate: petal.initialRotate + 360,
+                    opacity: [0, 0.9, 0.9, 0.6, 0],
+                    scale: [0.7, 1.0, 0.9, 0.7]
                   }}
                   transition={{ 
                     duration: petal.duration, 
-                    ease: "linear",
+                    ease: "easeOut",
                     delay: petal.delay,
                     x: {
                       duration: petal.duration,
                       ease: "easeInOut",
-                      times: [0, 0.25, 0.5, 0.75, 1]
+                      times: [0, 0.33, 0.66, 1]
                     }
                   }}
-                  className="absolute left-0 top-0"
-                  style={{ filter: petal.blur }}
+                  className="absolute left-0 top-0 will-change-transform"
                 >
                   <div 
                     className={cn(
-                      "shadow-md bg-gradient-to-br backdrop-blur-[0.5px]", 
+                      "shadow-sm bg-gradient-to-br", 
                       colorGradient
                     )}
                     style={{ 
@@ -4265,16 +4249,10 @@ export default function App() {
                             ? "50% 50% 10% 80% / 80% 80% 20% 20%"
                             : "100% 0% 100% 0% / 50% 50% 50% 50%"),
                       boxShadow: petal.isJasmine 
-                        ? '0 2px 8px rgba(0,0,0,0.03)' 
-                        : 'inset -2px -2px 6px rgba(0,0,0,0.1), 0 4px 10px rgba(0,0,0,0.05)',
+                        ? '0 2px 6px rgba(0,0,0,0.03)' 
+                        : '0 2px 6px rgba(0,0,0,0.05)',
                     }}
-                  >
-                    {/* Interior Details */}
-                    <div className={cn(
-                      "absolute inset-0 opacity-30 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] via-transparent to-transparent pointer-events-none",
-                      petal.isJasmine ? "from-yellow-400/20" : "from-white/30"
-                    )} />
-                  </div>
+                  />
                 </motion.div>
               );
             })}
@@ -4821,10 +4799,16 @@ export default function App() {
       {/* Native Canvas PDF Reader Modal with Keyword Search Engine */}
       <AnimatePresence>
         {activePdfBook && (
-          <PdfViewerModal
-            book={activePdfBook}
-            onClose={() => setActivePdfBook(null)}
-          />
+          <Suspense fallback={
+            <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-md flex items-center justify-center text-amber-300 text-sm font-bold">
+              Loading Spiritual Book Reader...
+            </div>
+          }>
+            <PdfViewerModal
+              book={activePdfBook}
+              onClose={() => setActivePdfBook(null)}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
