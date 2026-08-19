@@ -498,10 +498,10 @@ export default function AudioPlayerSection({ onClose }: AudioPlayerSectionProps)
       </div>
 
       {/* Content Area */}
-      <div className="flex-grow flex flex-col lg:flex-row gap-6 min-h-0 overflow-y-auto lg:overflow-hidden pb-8">
+      <div className="flex-grow flex flex-col md:flex-row gap-6 min-h-0 overflow-y-auto md:overflow-hidden pb-8">
         
         {/* Left Side: Audio List & Add Form */}
-        <div className="w-full lg:w-[400px] flex flex-col shrink-0 min-h-[400px] lg:h-full overflow-y-auto lg:overflow-hidden space-y-4">
+        <div className="w-full md:w-[360px] lg:w-[400px] flex flex-col shrink-0 min-h-[360px] md:h-full overflow-y-auto md:overflow-hidden space-y-4">
           
           {/* Add Custom Audio Form */}
           <AnimatePresence>
@@ -713,7 +713,7 @@ export default function AudioPlayerSection({ onClose }: AudioPlayerSectionProps)
                     {track.isCustom && (
                       <button
                         onClick={(e) => handleDeleteTrack(track.id, e)}
-                        className="opacity-0 group-hover:opacity-100 p-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-lg transition-all ml-1 shrink-0"
+                        className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-1.5 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-lg transition-all ml-1 shrink-0"
                         title="Delete custom track"
                       >
                         <Trash2 className="w-3 h-3" />

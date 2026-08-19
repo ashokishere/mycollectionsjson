@@ -1711,7 +1711,7 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen font-sans flex flex-col md:flex-row overflow-hidden text-theme-text">
+    <div className="h-screen h-[100dvh] w-full font-sans flex flex-col md:flex-row overflow-hidden text-theme-text">
       {/* Background Atmosphere */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-theme-bg">
         <div className="absolute top-[-10%] left-[-5%] w-[400px] h-[400px] bg-theme-accent/20 rounded-full blur-[120px] opacity-50" />
@@ -1720,7 +1720,7 @@ export default function App() {
 
       {/* Sidebar/Navigation (Mobile: Bottom, Desktop: Left) */}
       <aside className={cn(
-        "w-full md:w-80 flex-shrink-0 h-auto md:h-screen backdrop-blur-2xl bg-theme-surface border-r border-theme-border z-20 flex flex-col p-6 transition-all duration-300",
+        "w-full md:w-80 flex-shrink-0 h-auto md:h-full backdrop-blur-2xl bg-theme-surface border-r border-theme-border z-20 flex flex-col p-6 transition-all duration-300 overflow-y-auto custom-scrollbar",
         (isReaderOpen || isAudioOpen) && "hidden md:hidden pointer-events-none"
       )}>
         <div className="flex flex-col gap-6 mb-10 shrink-0">
@@ -2227,7 +2227,7 @@ export default function App() {
         </div>
 
         {/* Info & Browse Section */}
-        <div className="flex-grow overflow-y-auto scrollbar-hide pr-2">
+        <div className="flex-grow pr-2">
           <AnimatePresence mode="wait">
             {activeVideo && (
               <motion.div 
@@ -2542,7 +2542,7 @@ export default function App() {
                         <span className="text-[8px] text-slate-600 font-mono uppercase">YTID: {video.id}</span>
                       </div>
                     </div>
-                    <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="flex-shrink-0 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
                       <button
                         disabled={index === 0}
                         onClick={(e) => {
@@ -2625,7 +2625,7 @@ export default function App() {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl h-16 backdrop-blur-2xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl z-40 flex items-center px-4 gap-4"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-2xl h-16 backdrop-blur-2xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl z-40 flex items-center px-4 gap-4"
           >
             <div className="flex -space-x-4 overflow-hidden px-2">
               {playlist.slice(0, 3).map((v, i) => (
