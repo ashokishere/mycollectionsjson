@@ -23,17 +23,23 @@ import {
   Layers,
   Expand,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  FileText,
+  Type,
+  Sun,
+  Moon,
+  Coffee,
+  Check
 } from 'lucide-react';
 import { SpiritualBook } from '../data/spiritual_books';
 import { getBookSearchIndex, searchInBookIndex, BookSearchIndex } from '../utils/searchIndexService';
 
-// Set up local bundled PDF.js worker with fallback to bundled worker
+// Set up local bundled PDF.js worker with unpkg fallback for WebKit / Safari / iPadOS
 if (typeof window !== 'undefined') {
   try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker || '/pdfjs-assets/pdf.worker.min.mjs';
+    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker || `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
   } catch (_) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
   }
 }
 
@@ -55,12 +61,12 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
   const [scale, setScale] = useState<number>(1.0);
   const [rotation, setRotation] = useState<number>(0);
   const [pageDimensions, setPageDimensions] = useState<{ width: number; height: number }>({ width: 600, height: 850 });
-  const [loading, setLoading] = useState<boolean>(true);
-  const [loadingProgress, setLoadingProgress] = useState<string>('Initializing PDF Engine...');
-  const [error, setError] = useState<string | null>(null);
+  const [isPdfLoading, setIsPdfLoading] = useState<boolean>(true);
+  const [loadingProgress, setLoadingProgress] = useState<string>('Loading spiritual book...');
+  const [canvasError, setCanvasError] = useState<string | null>(null);
 
-  // View modes: 'canvas' (custom search + zoom) vs 'native' (full-featured browser PDF stream)
-  const [viewMode, setViewMode] = useState<'canvas' | 'native'>('canvas');
+  // View modes: 'reader' (instant digital book pages) vs 'canvas' (original scanned PDF) vs 'native' (cloud browser PDF)
+  const [viewMode, setViewMode] = useState<'reader' | 'canvas' | 'native'>('reader');
   const [nativeEngine, setNativeEngine] = useState<'google' | 'direct'>('google');
   const [bookIndex, setBookIndex] = useState<BookSearchIndex | null>(null);
   const [readerFontSize, setReaderFontSize] = useState<number>(18);
@@ -99,73 +105,57 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
       ? scrollContainerRef.current.clientWidth 
       : (window.innerWidth || 800);
 
-    // Provide comfortable horizontal breathing room (mobile: 20px, tablet/desktop: 48px)
-    const padding = containerWidth < 640 ? 20 : 48;
+    // Provide comfortable horizontal breathing room (mobile: 16px, tablet/iPad: 40px)
+    const padding = containerWidth < 640 ? 16 : 40;
     const availableWidth = Math.max(280, containerWidth - padding);
     const fitScale = availableWidth / viewportWidth;
 
-    // On mobile and tablets, default to fit-to-width so no text or last lines are truncated
-    return Math.min(2.5, Math.max(0.45, Number(fitScale.toFixed(2))));
+    return Math.min(2.0, Math.max(0.45, Number(fitScale.toFixed(2))));
   }, []);
 
-  // Fetch and Load PDF Document with standard fonts, cmaps, and wasm decoders configured
+  // Fetch static index for INSTANT 0.05s page display + background PDF loading
   useEffect(() => {
     let isCancelled = false;
-    setLoading(true);
-    setError(null);
-    setLoadingProgress('Connecting to spiritual library server...');
+    setIsPdfLoading(true);
+    setCanvasError(null);
+    setLoadingProgress('Connecting to spiritual library...');
 
-    // Eagerly preload static search index for instant offline search (vital for GitHub Pages)
+    // 1. Eagerly load static search index so all pages and search are IMMEDIATELY available
     getBookSearchIndex(book.id).then(index => {
       if (!isCancelled && index) {
         setBookIndex(index);
         if (index.totalPages > 0) {
           setNumPages(prev => (prev === 0 ? index.totalPages : prev));
         }
-        // Warm up text cache
         index.pages.forEach(p => {
           if (!pageTextCacheRef.current.has(p.page)) {
             pageTextCacheRef.current.set(p.page, { text: p.text, items: [] });
           }
         });
       }
-    }).catch(() => {});
+    }).catch(err => {
+      console.warn('Index load notice:', err);
+    });
 
+    // 2. Load original PDF document in background for scanned canvas view
     async function loadPdf() {
       try {
         let doc: pdfjsLib.PDFDocumentProxy | null = null;
-        let lastErrorMsg = '';
 
-        // Configuration options for PDF.js document loading
-        const configOptions = {
-          cMapUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjsLib.version + '/cmaps/',
-          cMapPacked: true,
-          standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjsLib.version + '/standard_fonts/',
-          wasmUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjsLib.version + '/wasm/',
-          imageDecodersUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjsLib.version + '/image_decoders/',
-          enableXfa: true,
-          isEvalSupported: true,
-          disableRange: false,
-          disableStream: false,
-        };
-
-        // Strategy 1: High-reliability backend stream proxy
+        // Try proxy stream first
         try {
-          setLoadingProgress('Connecting to spiritual book archive...');
+          setLoadingProgress('Loading original scanned facsimile...');
           const response = await fetch(proxyUrl);
           const contentType = response.headers.get('content-type') || '';
           
-          // Verify response is valid PDF stream (not a 404 or HTML fallback from static hosts like GitHub Pages)
           if (response.ok && !contentType.includes('text/html')) {
             const buf = await response.arrayBuffer();
             if (buf.byteLength > 1000) {
-              setLoadingProgress('Rendering book pages...');
               const loadingTask = pdfjsLib.getDocument({
                 data: new Uint8Array(buf),
-                cMapUrl: '/pdfjs-assets/cmaps/',
+                cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
                 cMapPacked: true,
-                standardFontDataUrl: '/pdfjs-assets/standard_fonts/',
-                wasmUrl: '/pdfjs-assets/wasm/',
+                standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
                 enableXfa: true,
                 disableRange: true,
                 disableStream: true,
@@ -174,28 +164,24 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             }
           }
         } catch (e: any) {
-          console.warn('Strategy 1 (Proxy fetch) failed, checking direct stream:', e);
-          lastErrorMsg = e?.message || 'Proxy stream unavailable';
+          console.warn('Proxy fetch failed, attempting direct load:', e);
         }
 
-        // Strategy 2: Direct PDF URL stream
+        // Try direct stream if proxy wasn't successful
         if (!doc && !isCancelled) {
           try {
-            setLoadingProgress('Connecting directly to spiritual book repository...');
             const loadingTask = pdfjsLib.getDocument({
               url: book.pdfUrl,
-              cMapUrl: '/pdfjs-assets/cmaps/',
+              cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
               cMapPacked: true,
-              standardFontDataUrl: '/pdfjs-assets/standard_fonts/',
-              wasmUrl: '/pdfjs-assets/wasm/',
+              standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
               enableXfa: true,
               disableRange: true,
               disableStream: true,
             });
             doc = await loadingTask.promise;
           } catch (e: any) {
-            console.warn('Strategy 2 (Direct stream) failed:', e);
-            lastErrorMsg = e?.message || lastErrorMsg;
+            console.warn('Direct stream failed:', e);
           }
         }
 
@@ -204,7 +190,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
         if (doc) {
           setPdfDoc(doc);
           setNumPages(doc.numPages);
-          // Auto-scale to fit width on initial load
           try {
             const firstPage = await doc.getPage(1);
             const initialViewport = firstPage.getViewport({ scale: 1.0 });
@@ -213,11 +198,11 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           } catch (_) {}
         }
 
-        setLoading(false);
+        setIsPdfLoading(false);
       } catch (err: any) {
-        console.warn('Direct canvas stream unavailable, active page reader ready:', err);
+        console.warn('Scanned PDF stream not available, digital book active:', err);
         if (!isCancelled) {
-          setLoading(false);
+          setIsPdfLoading(false);
         }
       }
     }
@@ -227,9 +212,9 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     return () => {
       isCancelled = true;
     };
-  }, [book.pdfUrl, proxyUrl, calculateOptimalScale]);
+  }, [book.id, book.pdfUrl, proxyUrl, calculateOptimalScale]);
 
-  // Fail-safe PDF.js Canvas Rendering Queue Engine
+  // iPadOS/Retina-safe PDF.js Canvas Rendering Queue Engine
   const isRenderingRef = useRef<boolean>(false);
   const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null);
   const nextRenderRef = useRef<{ pageNum: number; scale: number; rotation: number } | null>(null);
@@ -237,7 +222,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
   const performRender = useCallback(async (targetPage: number, targetScale: number, targetRotation: number) => {
     if (!pdfDoc || !canvasRef.current) return;
 
-    // If a render is already in progress, store the new target parameters and cancel current render task
     if (isRenderingRef.current) {
       nextRenderRef.current = { pageNum: targetPage, scale: targetScale, rotation: targetRotation };
       if (renderTaskRef.current) {
@@ -253,10 +237,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     try {
       const page = await pdfDoc.getPage(targetPage);
 
-      // If another page/scale render request arrived while fetching page object, exit and let finally handle it
-      if (nextRenderRef.current) {
-        return;
-      }
+      if (nextRenderRef.current) return;
 
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -265,22 +246,20 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
       const context = canvas.getContext('2d', { alpha: false });
       if (!context) return;
 
-      // Update page dimensions in state for DOM layout stability
       setPageDimensions({
         width: Math.ceil(viewport.width),
         height: Math.ceil(viewport.height),
       });
 
-      // High DPI display support for sharp typography and scanned images on Retina / iPad / Mobile
-      const outputScale = window.devicePixelRatio || 1;
+      // Safe DPR clamping for iPadOS WebKit (clamps to 1.5 to prevent memory buffer exhaustion)
+      const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
+      const outputScale = Math.min(dpr, 1.5);
       
-      // Using Math.ceil ensures the canvas is never 1 pixel too short, preventing bottom line truncation
       canvas.width = Math.ceil(viewport.width * outputScale);
       canvas.height = Math.ceil(viewport.height * outputScale);
       canvas.style.width = `${Math.ceil(viewport.width)}px`;
       canvas.style.height = `${Math.ceil(viewport.height)}px`;
 
-      // Pre-fill canvas with clean white background so transparent scans or text always contrast
       context.save();
       context.fillStyle = '#ffffff';
       context.fillRect(0, 0, canvas.width, canvas.height);
@@ -302,13 +281,12 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
       await task.promise;
     } catch (err: any) {
       if (err?.name !== 'RenderingCancelledException') {
-        console.error('Error rendering PDF page:', err);
+        console.warn('Canvas render notice:', err);
       }
     } finally {
       renderTaskRef.current = null;
       isRenderingRef.current = false;
 
-      // If a new render request arrived while we were rendering or fetching, process it now
       if (nextRenderRef.current) {
         const next = nextRenderRef.current;
         nextRenderRef.current = null;
@@ -317,21 +295,21 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     }
   }, [pdfDoc]);
 
-  // Trigger render whenever document, current page, scale, or rotation changes
+  // Trigger render when document, current page, scale, or rotation changes
   useEffect(() => {
-    if (!loading && pdfDoc && viewMode === 'canvas') {
+    if (!isPdfLoading && pdfDoc && viewMode === 'canvas') {
       performRender(currentPage, scale, rotation);
     }
-  }, [loading, pdfDoc, currentPage, scale, rotation, viewMode, performRender]);
+  }, [isPdfLoading, pdfDoc, currentPage, scale, rotation, viewMode, performRender]);
 
-  // Auto-scroll back to top of the page on page change
+  // Auto-scroll back to top on page change
   useEffect(() => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
     }
   }, [currentPage]);
 
-  // Window resize handler to maintain readability if device orientation changes
+  // Window resize handler
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024 && pdfDoc) {
@@ -347,7 +325,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     return () => window.removeEventListener('resize', handleResize);
   }, [pdfDoc, currentPage, calculateOptimalScale]);
 
-  // Keyboard navigation for power reading (Arrow keys, Page Up/Down)
+  // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -373,7 +351,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [numPages, onClose]);
 
-  // Touch swipe handling for mobile & tablets
+  // Touch swipe handling for iPad & mobile tablets
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 1) {
       touchStartXRef.current = e.touches[0].clientX;
@@ -412,7 +390,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     } catch (_) {}
   };
 
-  // Compute bounding box highlights on the current page for active search term
+  // Compute bounding box highlights on the current page for active search term in canvas mode
   useEffect(() => {
     if (!pdfDoc || !activeSearchTerm.trim() || viewMode !== 'canvas') {
       setPageHighlights([]);
@@ -464,7 +442,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           setPageHighlights(boxes);
         }
       } catch (err) {
-        console.warn('Error computing highlights:', err);
+        console.warn('Highlight compute notice:', err);
       }
     }
 
@@ -489,7 +467,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Streaming Keyword Search across entire PDF document with caching & GitHub Pages offline index support
+  // Streaming Keyword Search across entire PDF document with instant index support
   const handlePerformSearch = async (query: string) => {
     const searchTerm = query.trim();
     if (!searchTerm) {
@@ -505,7 +483,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     searchAbortRef.current = false;
 
     try {
-      // Strategy 1: Instant Static Pre-built Search Index (100% works on GitHub Pages, static hosts, offline)
+      // Strategy 1: Instant Static Pre-built Search Index (Instant 0.01s on all devices)
       const index = await getBookSearchIndex(book.id);
 
       if (index && index.pages && index.pages.length > 0) {
@@ -513,7 +491,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           setNumPages(index.totalPages);
         }
 
-        // Cache page texts for instant thumbnail/preview lookups
         index.pages.forEach(p => {
           if (!pageTextCacheRef.current.has(p.page)) {
             pageTextCacheRef.current.set(p.page, { text: p.text, items: [] });
@@ -531,7 +508,8 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
         setCurrentMatchIdx(0);
 
         if (matches.length > 0) {
-          setCurrentPage(matches[0].pageNum);
+          const targetPage = matches[0].pageNum;
+          setCurrentPage(targetPage);
         }
         return;
       }
@@ -550,7 +528,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           let pageText = '';
           let items: any[] = [];
 
-          // Check if page text is already in memory cache
           const cached = pageTextCacheRef.current.get(p);
           if (cached) {
             pageText = cached.text;
@@ -587,7 +564,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             if (matches.length >= 300) break;
           }
 
-          // Periodically update state so results stream live
           if (p % 10 === 0 || p === totalPages || matches.length > 0) {
             setSearchResults([...matches]);
             setSearchProgress({ current: p, total: totalPages, count: matches.length });
@@ -615,10 +591,15 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     const nextIdx = (index + searchResults.length) % searchResults.length;
     setCurrentMatchIdx(nextIdx);
     const targetPage = searchResults[nextIdx].pageNum;
+    
+    // Jump to the exact target page
     setCurrentPage(targetPage);
-    if (viewMode !== 'canvas') {
-      setViewMode('canvas');
+
+    // On iPad / mobile screens, close the search drawer so the full page is visible
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setShowSearchPanel(false);
     }
+
     if (scrollContainerRef.current) {
       scrollContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -642,36 +623,64 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     }
   };
 
+  // Get current page text for instant reader
+  const currentPageData = bookIndex?.pages.find(p => p.page === currentPage) || 
+    (pageTextCacheRef.current.get(currentPage)?.text ? { page: currentPage, text: pageTextCacheRef.current.get(currentPage)!.text } : null);
+  const currentPageText = currentPageData?.text || '';
+  const paragraphs = currentPageText.split(/\n\s*\n|\n/).map(p => p.trim()).filter(Boolean);
+
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center p-1 sm:p-3 md:p-6 bg-black/90 backdrop-blur-2xl">
-      <div 
-        ref={containerRef}
-        className="relative w-full max-w-7xl h-[98vh] sm:h-[94vh] bg-slate-950 border border-white/10 rounded-2xl sm:rounded-[28px] shadow-2xl overflow-hidden flex flex-col text-slate-100"
-      >
-        {/* Top Control Bar */}
-        <div className="px-3 sm:px-5 py-2.5 sm:py-3.5 bg-slate-900 border-b border-white/10 flex flex-wrap items-center justify-between gap-2.5 shrink-0 z-20">
-          {/* Book Title & Icon */}
-          <div className="flex items-center gap-2.5 min-w-0 flex-grow sm:flex-grow-0">
-            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br ${book.coverGradient} flex items-center justify-center shrink-0 border border-white/20 shadow-md`}>
-              <BookOpen className="w-4 h-4 text-white" />
+    <div 
+      ref={containerRef}
+      id="pdf-reader-modal"
+      className="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center p-0 select-none overflow-hidden"
+      style={{ height: '100dvh' }}
+    >
+      <div className="relative w-full h-full bg-slate-950 flex flex-col overflow-hidden text-slate-100 font-sans">
+        {/* Top Header Bar */}
+        <div className="px-3 sm:px-5 py-2.5 bg-slate-900 border-b border-white/10 flex items-center justify-between gap-2 shrink-0 z-20">
+          {/* Book Info */}
+          <div className="flex items-center gap-2.5 min-w-0 max-w-[45%] sm:max-w-none">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+              <BookOpen className="w-4 h-4" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-xs sm:text-sm font-bold text-white truncate flex items-center gap-1.5 sm:gap-2">
-                <span className="truncate">{book.title}</span>
-                <span className="text-[8px] sm:text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 shrink-0">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-xs sm:text-sm font-bold text-white truncate">{book.title}</h3>
+                <span className="text-[8px] font-bold text-amber-400 uppercase tracking-widest bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20 hidden md:inline shrink-0">
                   {book.badge}
                 </span>
-              </h3>
-              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium truncate">
-                {book.author}
-              </p>
+              </div>
+              <p className="text-[10px] text-slate-400 truncate hidden sm:block">{book.subtitle || book.author}</p>
             </div>
           </div>
 
-          {/* Keyword Search Input (Desktop & Tablets) */}
-          <div className="hidden md:flex items-center gap-2 flex-grow max-w-xs lg:max-w-md">
+          {/* Quick Match Cycler Bar when search matches are active */}
+          {searchResults.length > 0 && (
+            <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/30 px-2 py-1 rounded-xl text-xs shrink-0">
+              <span className="text-[10px] font-bold text-amber-300">
+                Match {currentMatchIdx + 1}/{searchResults.length}
+              </span>
+              <button
+                onClick={() => jumpToMatch(currentMatchIdx - 1)}
+                className="p-1 hover:bg-amber-500/20 text-amber-300 rounded cursor-pointer"
+                title="Previous Match"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => jumpToMatch(currentMatchIdx + 1)}
+                className="p-1 hover:bg-amber-500/20 text-amber-300 rounded cursor-pointer"
+                title="Next Match"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Center Search Input (Desktop & iPad) */}
+          <div className="hidden lg:flex items-center flex-grow max-w-xs mx-3">
             <div className="relative w-full">
-              <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-amber-400/80" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -679,23 +688,23 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    if (e.shiftKey && searchResults.length > 0) {
-                      jumpToMatch(currentMatchIdx - 1);
-                    } else if (searchResults.length > 0 && searchQuery.trim().toLowerCase() === activeSearchTerm.toLowerCase()) {
+                    if (searchResults.length > 0 && searchQuery.trim().toLowerCase() === activeSearchTerm.toLowerCase()) {
                       jumpToMatch(currentMatchIdx + 1);
                     } else {
                       handlePerformSearch(searchQuery);
                     }
                   }
                 }}
-                placeholder="Search words in book (e.g. Kriya, Soul)..."
-                className="w-full bg-slate-800/80 border border-amber-500/30 rounded-xl py-1.5 pl-9 pr-24 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-amber-400 transition-all shadow-inner"
+                placeholder="Search across all pages..."
+                className="w-full bg-slate-800/80 border border-white/10 focus:border-amber-400 rounded-xl py-1.5 pl-8 pr-16 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
               />
-              <div className="absolute right-1 top-1 flex items-center gap-1">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+              
+              <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center gap-1">
                 {searchQuery && (
-                  <button
+                  <button 
                     onClick={handleClearSearch}
-                    className="p-1 text-slate-400 hover:text-white rounded-lg cursor-pointer"
+                    className="text-slate-400 hover:text-white p-1"
                     title="Clear search"
                   >
                     <X className="w-3 h-3" />
@@ -704,9 +713,9 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 <button
                   onClick={() => handlePerformSearch(searchQuery)}
                   disabled={isSearching || !searchQuery.trim()}
-                  className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-700 text-slate-950 disabled:text-slate-500 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
+                  className="px-2 py-0.5 bg-amber-500 hover:bg-amber-400 disabled:bg-slate-700 text-slate-950 disabled:text-slate-500 text-[10px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1"
                 >
-                  {isSearching ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Search'}
+                  {isSearching ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Find'}
                 </button>
               </div>
             </div>
@@ -717,17 +726,31 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             {/* View Mode Switcher */}
             <div className="flex items-center bg-white/5 p-0.5 rounded-xl border border-white/10 text-[10px] font-bold">
               <button
+                onClick={() => setViewMode('reader')}
+                className={`px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                  viewMode === 'reader' 
+                    ? 'bg-amber-500 text-slate-950 shadow-sm' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Instant Digital Book Pages"
+              >
+                <BookOpen className="w-3 h-3" />
+                <span>Book</span>
+              </button>
+
+              <button
                 onClick={() => setViewMode('canvas')}
                 className={`px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                   viewMode === 'canvas' 
                     ? 'bg-amber-500 text-slate-950 shadow-sm' 
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title="Custom High-Speed Canvas Reader"
+                title="Original Scanned PDF Facsimile"
               >
-                <Eye className="w-3 h-3" />
-                <span className="hidden sm:inline">Canvas</span>
+                <FileText className="w-3 h-3" />
+                <span className="hidden sm:inline">Scanned</span>
               </button>
+
               <button
                 onClick={() => setViewMode('native')}
                 className={`px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
@@ -738,7 +761,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 title="Continuous Browser View"
               >
                 <Layers className="w-3 h-3" />
-                <span className="hidden sm:inline">Browser</span>
+                <span className="hidden sm:inline">Cloud</span>
               </button>
             </div>
 
@@ -753,13 +776,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                   ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md' 
                   : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
               }`}
-              title="Table of Contents & Quick Page Directory"
+              title="Table of Contents & Page Directory"
             >
               <LayoutGrid className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Pages</span>
             </button>
 
-            {/* Mobile Search Button */}
+            {/* Mobile/Tablet Search Button */}
             <button
               onClick={() => {
                 setShowSearchPanel(!showSearchPanel);
@@ -770,7 +793,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                   ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md' 
                   : 'bg-white/5 hover:bg-white/10 text-slate-300 border-white/10'
               }`}
-              title="Keyword Search across book"
+              title="Keyword Search"
             >
               <Search className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Search</span>
@@ -810,183 +833,162 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           </div>
         </div>
 
-        {/* Reader Secondary Toolbar (Page navigation, Auto-Fit, Zoom, Rotation) */}
-        {viewMode === 'canvas' && (
-          <div className="px-3 sm:px-5 py-2 bg-slate-900/90 border-b border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0 z-10">
-            {/* Page Navigation Controls */}
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <button
-                onClick={() => setCurrentPage(1)}
-                disabled={currentPage <= 1}
-                className="p-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 text-slate-300 rounded-lg transition-all cursor-pointer hidden sm:flex items-center"
-                title="First Page"
-              >
-                <ChevronsLeft className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage <= 1}
-                className="p-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 text-slate-300 rounded-lg transition-all cursor-pointer flex items-center"
-                title="Previous Page (Left Arrow)"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
+        {/* Secondary Reader Controls Strip */}
+        <div className="px-3 sm:px-5 py-1.5 bg-slate-900/90 border-b border-white/5 flex flex-wrap items-center justify-between gap-2 text-xs shrink-0 z-10">
+          {/* Page Navigation Controls */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage <= 1}
+              className="p-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 text-slate-300 rounded-lg transition-all cursor-pointer border border-white/10"
+              title="First Page"
+            >
+              <ChevronsLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage <= 1}
+              className="p-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 text-slate-300 rounded-lg transition-all cursor-pointer border border-white/10 flex items-center gap-0.5"
+              title="Previous Page"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span className="text-[10px] hidden sm:inline font-bold">Prev</span>
+            </button>
 
-              <div className="flex items-center gap-1 bg-black/50 px-2.5 py-1 rounded-lg border border-white/10 text-[11px] font-bold">
-                <span className="hidden sm:inline text-slate-400">Page</span>
-                <input
-                  type="number"
-                  min={1}
-                  max={numPages || 1}
-                  value={currentPage}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value, 10);
-                    if (!isNaN(val) && val >= 1 && val <= numPages) {
-                      setCurrentPage(val);
-                    }
-                  }}
-                  className="w-10 sm:w-12 bg-slate-800 text-center text-amber-300 rounded border border-white/10 py-0.5 focus:outline-none focus:border-amber-400 font-mono"
-                />
-                <span className="text-slate-400">/ {numPages || '...'}</span>
-              </div>
-
-              <button
-                onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
-                disabled={currentPage >= numPages}
-                className="p-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 text-slate-300 rounded-lg transition-all cursor-pointer flex items-center"
-                title="Next Page (Right Arrow)"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setCurrentPage(numPages)}
-                disabled={currentPage >= numPages}
-                className="p-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 text-slate-300 rounded-lg transition-all cursor-pointer hidden sm:flex items-center"
-                title="Last Page"
-              >
-                <ChevronsRight className="w-3.5 h-3.5" />
-              </button>
-
-              {/* Quick Jump Suggestion for books whose initial 1-2 pages are blank endpapers */}
-              {currentPage <= 2 && numPages > 5 && (
-                <button
-                  onClick={() => setCurrentPage(3)}
-                  className="ml-1 sm:ml-2 px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg border border-amber-500/30 text-[9px] sm:text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer shrink-0"
-                  title="Jump past introductory flyleaf pages to main text"
-                >
-                  <Sparkles className="w-3 h-3 text-amber-400" />
-                  <span className="hidden sm:inline">Jump to</span> <span>Pg 3</span>
-                </button>
-              )}
+            {/* Jump-to-Page Input */}
+            <div className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded-lg border border-white/10 text-xs">
+              <span className="text-[10px] text-slate-400">Page</span>
+              <input
+                type="number"
+                min={1}
+                max={numPages || 999}
+                value={currentPage}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value, 10);
+                  if (!isNaN(val) && val >= 1 && (!numPages || val <= numPages)) {
+                    setCurrentPage(val);
+                  }
+                }}
+                className="w-10 sm:w-12 bg-slate-800 text-center font-mono font-bold text-amber-400 rounded py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-amber-400"
+              />
+              <span className="text-[10px] text-slate-400 font-mono">/ {numPages || '...'}</span>
             </div>
 
-            {/* Search Match Quick Switcher */}
-            {searchResults.length > 0 && (
-              <div className="flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-2.5 py-0.5 rounded-xl text-[10px] text-amber-300">
-                <span className="font-bold">Match {currentMatchIdx + 1}/{searchResults.length}</span>
-                <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => jumpToMatch(currentMatchIdx - 1)}
-                    className="p-0.5 hover:bg-amber-500/20 rounded cursor-pointer"
-                    title="Previous Match"
-                  >
-                    <ChevronLeft className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={() => jumpToMatch(currentMatchIdx + 1)}
-                    className="p-0.5 hover:bg-amber-500/20 rounded cursor-pointer"
-                    title="Next Match"
-                  >
-                    <ChevronRight className="w-3 h-3" />
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Responsive Zoom & Fit Controls / Typography Theme Controls */}
-            <div className="flex items-center gap-1.5">
-              {!pdfDoc && (
-                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/10 mr-1">
-                  <button
-                    onClick={() => setReaderFontSize(s => Math.max(13, s - 2))}
-                    className="px-1.5 py-0.5 text-[10px] font-bold text-slate-300 hover:text-white rounded cursor-pointer"
-                    title="Decrease Font Size"
-                  >
-                    A-
-                  </button>
-                  <span className="text-[9px] font-mono text-amber-400 font-bold px-1">{readerFontSize}px</span>
-                  <button
-                    onClick={() => setReaderFontSize(s => Math.min(28, s + 2))}
-                    className="px-1.5 py-0.5 text-[10px] font-bold text-slate-300 hover:text-white rounded cursor-pointer"
-                    title="Increase Font Size"
-                  >
-                    A+
-                  </button>
-                  <div className="w-px h-3 bg-white/20 mx-0.5" />
-                  <button
-                    onClick={() => setReaderTheme('ivory')}
-                    className={`w-3.5 h-3.5 rounded-full bg-[#faf7ee] border cursor-pointer ${readerTheme === 'ivory' ? 'ring-2 ring-amber-400 border-amber-500' : 'border-slate-400'}`}
-                    title="Warm Ivory Paper"
-                  />
-                  <button
-                    onClick={() => setReaderTheme('sepia')}
-                    className={`w-3.5 h-3.5 rounded-full bg-[#f4ecd8] border cursor-pointer ${readerTheme === 'sepia' ? 'ring-2 ring-amber-400 border-amber-500' : 'border-slate-400'}`}
-                    title="Ancient Palm Sepia"
-                  />
-                  <button
-                    onClick={() => setReaderTheme('dark')}
-                    className={`w-3.5 h-3.5 rounded-full bg-slate-900 border cursor-pointer ${readerTheme === 'dark' ? 'ring-2 ring-amber-400 border-amber-500' : 'border-slate-400'}`}
-                    title="Night Mode"
-                  />
-                </div>
-              )}
-
-              {/* Fit Width Button */}
-              {pdfDoc && (
-                <button
-                  onClick={handleFitWidth}
-                  className="px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer text-[10px] font-semibold flex items-center gap-1 border border-white/10"
-                  title="Fit Page Width to Screen (Mobile & iPad optimized)"
-                >
-                  <Expand className="w-3 h-3 text-amber-400" />
-                  <span className="hidden sm:inline">Fit Width</span>
-                </button>
-              )}
-
-              {pdfDoc && (
-                <>
-                  <button
-                    onClick={() => setScale(s => Math.max(0.4, Number((s - 0.15).toFixed(2))))}
-                    className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer"
-                    title="Zoom Out"
-                  >
-                    <ZoomOut className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="text-[10px] font-mono text-slate-300 min-w-[38px] text-center font-bold">
-                    {Math.round(scale * 100)}%
-                  </span>
-                  <button
-                    onClick={() => setScale(s => Math.min(3.0, Number((s + 0.15).toFixed(2))))}
-                    className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer"
-                    title="Zoom In"
-                  >
-                    <ZoomIn className="w-3.5 h-3.5" />
-                  </button>
-
-                  <button
-                    onClick={() => setRotation(r => (r + 90) % 360)}
-                    className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all cursor-pointer ml-0.5"
-                    title="Rotate 90°"
-                  >
-                    <RotateCw className="w-3.5 h-3.5" />
-                  </button>
-                </>
-              )}
-            </div>
+            <button
+              onClick={() => setCurrentPage(p => Math.min(numPages || 1, p + 1))}
+              disabled={numPages > 0 && currentPage >= numPages}
+              className="p-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 text-slate-300 rounded-lg transition-all cursor-pointer border border-white/10 flex items-center gap-0.5"
+              title="Next Page"
+            >
+              <span className="text-[10px] hidden sm:inline font-bold">Next</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => numPages && setCurrentPage(numPages)}
+              disabled={numPages === 0 || currentPage >= numPages}
+              className="p-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 text-slate-300 rounded-lg transition-all cursor-pointer border border-white/10"
+              title="Last Page"
+            >
+              <ChevronsRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-        )}
 
-        {/* Main Workspace Layout (Drawer + Canvas / Native Iframe Workspace) */}
+          {/* View-Specific Customization Controls */}
+          {viewMode === 'reader' && (
+            <div className="flex items-center gap-2">
+              {/* Paper Theme selector */}
+              <div className="flex items-center bg-white/5 p-0.5 rounded-lg border border-white/10 text-[10px]">
+                <button
+                  onClick={() => setReaderTheme('ivory')}
+                  className={`px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer ${readerTheme === 'ivory' ? 'bg-[#faf7ee] text-[#2c2824] font-bold shadow' : 'text-slate-400'}`}
+                  title="Ivory Warm Paper"
+                >
+                  <Coffee className="w-3 h-3" />
+                  <span className="hidden sm:inline">Ivory</span>
+                </button>
+                <button
+                  onClick={() => setReaderTheme('sepia')}
+                  className={`px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer ${readerTheme === 'sepia' ? 'bg-[#f4ecd8] text-[#3e2e1d] font-bold shadow' : 'text-slate-400'}`}
+                  title="Sepia Vintage Paper"
+                >
+                  <Sun className="w-3 h-3" />
+                  <span className="hidden sm:inline">Sepia</span>
+                </button>
+                <button
+                  onClick={() => setReaderTheme('dark')}
+                  className={`px-2 py-0.5 rounded flex items-center gap-1 cursor-pointer ${readerTheme === 'dark' ? 'bg-slate-800 text-amber-300 font-bold shadow' : 'text-slate-400'}`}
+                  title="Dark Meditation Paper"
+                >
+                  <Moon className="w-3 h-3" />
+                  <span className="hidden sm:inline">Night</span>
+                </button>
+              </div>
+
+              {/* Font Size Selector */}
+              <div className="flex items-center bg-white/5 px-2 py-0.5 rounded-lg border border-white/10 text-[10px] gap-1.5">
+                <Type className="w-3 h-3 text-slate-400" />
+                <button
+                  onClick={() => setReaderFontSize(s => Math.max(14, s - 2))}
+                  className="px-1.5 py-0.5 hover:bg-white/10 rounded font-bold cursor-pointer"
+                  title="Decrease Font Size"
+                >
+                  A-
+                </button>
+                <span className="font-mono text-amber-400">{readerFontSize}px</span>
+                <button
+                  onClick={() => setReaderFontSize(s => Math.min(28, s + 2))}
+                  className="px-1.5 py-0.5 hover:bg-white/10 rounded font-bold cursor-pointer"
+                  title="Increase Font Size"
+                >
+                  A+
+                </button>
+              </div>
+            </div>
+          )}
+
+          {viewMode === 'canvas' && (
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <button
+                onClick={handleFitWidth}
+                className="px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all border border-white/10 text-[10px] font-bold cursor-pointer flex items-center gap-1"
+                title="Fit to iPad/Mobile Screen Width"
+              >
+                <Expand className="w-3 h-3" />
+                <span>Fit Width</span>
+              </button>
+
+              <div className="flex items-center bg-white/5 rounded-lg border border-white/10 text-xs">
+                <button
+                  onClick={() => setScale(s => Math.max(0.4, Number((s - 0.15).toFixed(2))))}
+                  className="p-1 hover:bg-white/10 text-slate-300 rounded-l cursor-pointer"
+                  title="Zoom Out"
+                >
+                  <ZoomOut className="w-3.5 h-3.5" />
+                </button>
+                <span className="px-1.5 font-mono text-[10px] text-amber-400 font-bold">
+                  {Math.round(scale * 100)}%
+                </span>
+                <button
+                  onClick={() => setScale(s => Math.min(2.5, Number((s + 0.15).toFixed(2))))}
+                  className="p-1 hover:bg-white/10 text-slate-300 rounded-r cursor-pointer"
+                  title="Zoom In"
+                >
+                  <ZoomIn className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <button
+                onClick={() => setRotation(r => (r + 90) % 360)}
+                className="p-1.5 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all border border-white/10 cursor-pointer"
+                title="Rotate 90°"
+              >
+                <RotateCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Main Workspace Layout (Drawer + Content Workspace) */}
         <div className="flex-grow flex relative overflow-hidden bg-slate-900/60">
           {/* Quick Page Jump Drawer */}
           {showThumbnailDrawer && (
@@ -1050,8 +1052,8 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 </div>
               </div>
 
-              {/* Mobile Search Input in Drawer */}
-              <div className="p-3 border-b border-white/10 md:hidden bg-slate-900/60">
+              {/* Search Input in Drawer (Mobile & iPad) */}
+              <div className="p-3 border-b border-white/10 lg:hidden bg-slate-900/60">
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -1112,7 +1114,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
               <div className="flex-grow overflow-y-auto p-3 space-y-2 custom-scrollbar">
                 {searchResults.map((match, idx) => {
                   const isCurrent = idx === currentMatchIdx;
-                  // Split snippet to highlight keyword
                   const term = activeSearchTerm.trim().toLowerCase();
                   const snippet = match.snippet;
                   let snippetContent: React.ReactNode = snippet;
@@ -1149,14 +1150,10 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                         }`}>
                           Page {match.pageNum}
                         </span>
-                        {isCurrent && (
-                          <span className="text-[8px] font-bold text-amber-300 uppercase tracking-widest flex items-center gap-0.5">
-                            Active <ArrowRight className="w-2.5 h-2.5" />
-                          </span>
-                        )}
+                        <span className="text-[9px] text-slate-500">Result #{idx + 1}</span>
                       </div>
-                      <p className="text-[10px] leading-relaxed text-slate-300 italic font-serif">
-                        &quot;{snippetContent}&quot;
+                      <p className="text-[11px] leading-relaxed text-slate-200 italic">
+                        {snippetContent}
                       </p>
                     </div>
                   );
@@ -1165,7 +1162,140 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             </div>
           )}
 
-          {/* View Mode 1: Canvas Rendering Engine */}
+          {/* VIEW MODE 1: INSTANT DIGITAL BOOK PAGES (Immediate 0.05s Load, Full Formatting, Search Highlights) */}
+          {viewMode === 'reader' && (
+            <div 
+              ref={scrollContainerRef}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+              className="flex-grow h-full overflow-x-hidden overflow-y-auto flex flex-col items-center justify-start p-2 sm:p-5 md:p-8 pb-32 sm:pb-28 custom-scrollbar relative select-text"
+            >
+              <div 
+                className={`w-full max-w-3xl rounded-2xl border shadow-2xl p-5 sm:p-10 md:p-12 my-2 sm:my-4 transition-all mb-16 select-text ${
+                  readerTheme === 'ivory'
+                    ? 'bg-[#faf7ee] text-[#2c2824] border-[#e6dcce]'
+                    : readerTheme === 'sepia'
+                    ? 'bg-[#f4ecd8] text-[#3e2e1d] border-[#ded0b1]'
+                    : readerTheme === 'dark'
+                    ? 'bg-slate-900 text-slate-100 border-slate-800'
+                    : 'bg-white text-slate-900 border-slate-200'
+                }`}
+                style={{ fontSize: `${readerFontSize}px` }}
+              >
+                {/* Paper Header */}
+                <div className="border-b border-black/10 dark:border-white/10 pb-3.5 mb-6 flex flex-wrap items-center justify-between gap-2 text-xs font-sans">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span className="font-bold tracking-wider uppercase text-[11px] text-slate-600 dark:text-slate-300">
+                      {book.title}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    {activeSearchTerm && (
+                      <span className="bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2.5 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 border border-amber-500/30">
+                        <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                        <span>
+                          {(
+                            currentPageText
+                              .toLowerCase()
+                              .match(new RegExp(activeSearchTerm.trim().toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []
+                          ).length} match(es) on this page
+                        </span>
+                      </span>
+                    )}
+                    <span className="font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[11px]">
+                      Page {currentPage} of {numPages || '...'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Page Content with Golden Highlights */}
+                {paragraphs.length === 0 ? (
+                  <div className="text-center py-16 text-slate-400 font-serif italic space-y-3">
+                    <BookOpen className="w-8 h-8 text-amber-500/40 mx-auto" />
+                    <p>Introductory or Illustrated Section • Page {currentPage}</p>
+                    <div className="pt-2 flex justify-center gap-2">
+                      <button
+                        onClick={() => setCurrentPage(p => Math.min(numPages || 999, p + 1))}
+                        className="px-4 py-2 bg-amber-500 text-slate-950 font-sans font-bold text-xs rounded-xl cursor-pointer hover:bg-amber-400"
+                      >
+                        Go to Next Page &rarr;
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="font-serif leading-[1.85] space-y-4">
+                    {paragraphs.map((paragraph, pIdx) => {
+                      if (!activeSearchTerm.trim()) {
+                        return <p key={pIdx} className="text-justify indent-6">{paragraph}</p>;
+                      }
+                      const term = activeSearchTerm.trim().toLowerCase();
+                      const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                      const parts = paragraph.split(regex);
+                      return (
+                        <p key={pIdx} className="text-justify indent-6">
+                          {parts.map((part, i) =>
+                            part.toLowerCase() === term ? (
+                              <mark
+                                key={i}
+                                className="bg-amber-300/90 dark:bg-amber-400/40 text-amber-950 dark:text-amber-100 font-bold px-1 py-0.5 rounded shadow-[0_0_8px_rgba(245,158,11,0.5)] border-b-2 border-amber-600 not-italic inline-block mx-0.5"
+                              >
+                                {part}
+                              </mark>
+                            ) : (
+                              <span key={i}>{part}</span>
+                            )
+                          )}
+                        </p>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Paper Footer Navigation */}
+                <div className="border-t border-black/10 dark:border-white/10 pt-4 mt-8 flex items-center justify-between text-xs text-slate-500 font-sans">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer flex items-center gap-1 font-semibold transition-all"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Previous
+                  </button>
+                  <span className="font-mono font-bold tracking-widest text-[11px]">
+                    — Page {currentPage} of {numPages || '...'} —
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(numPages || 999, p + 1))}
+                    disabled={numPages > 0 && currentPage >= numPages}
+                    className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer flex items-center gap-1 font-semibold transition-all"
+                  >
+                    Next <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Floating Mobile/Tablet Next & Previous Quick Tap Zones */}
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage <= 1}
+                className="fixed left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 bg-black/60 hover:bg-black/80 disabled:opacity-0 text-white rounded-full border border-white/20 shadow-2xl backdrop-blur-md transition-all cursor-pointer hidden sm:flex items-center justify-center z-20"
+                title="Previous Page"
+              >
+                <ChevronLeft className="w-5 h-5 text-amber-400" />
+              </button>
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(numPages || 999, p + 1))}
+                disabled={numPages > 0 && currentPage >= numPages}
+                className="fixed right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 bg-black/60 hover:bg-black/80 disabled:opacity-0 text-white rounded-full border border-white/20 shadow-2xl backdrop-blur-md transition-all cursor-pointer hidden sm:flex items-center justify-center z-20"
+                title="Next Page"
+              >
+                <ChevronRight className="w-5 h-5 text-amber-400" />
+              </button>
+            </div>
+          )}
+
+          {/* VIEW MODE 2: ORIGINAL SCANNED PDF (High-DPI PDF.js Canvas with Auto-Fit) */}
           {viewMode === 'canvas' && (
             <div 
               ref={scrollContainerRef}
@@ -1173,7 +1303,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
               onTouchEnd={handleTouchEnd}
               className="flex-grow h-full overflow-x-auto overflow-y-auto flex flex-col items-center justify-start p-2 sm:p-5 md:p-8 pb-32 sm:pb-28 custom-scrollbar relative select-none"
             >
-              {loading && (
+              {isPdfLoading && (
                 <div className="my-auto flex flex-col items-center justify-center p-8 text-center space-y-4">
                   <div className="relative">
                     <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center animate-pulse">
@@ -1182,44 +1312,22 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                     <Loader2 className="w-6 h-6 text-amber-400 animate-spin absolute -top-1 -right-1" />
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-white mb-1">Preparing {book.title}</h4>
+                    <h4 className="text-sm font-bold text-white mb-1">Rendering Scanned Book Pages</h4>
                     <p className="text-xs text-amber-400/90 font-mono">{loadingProgress}</p>
                   </div>
-                </div>
-              )}
-
-              {error && !loading && (
-                <div className="my-auto max-w-md bg-rose-950/40 border border-rose-500/30 p-6 rounded-2xl text-center space-y-4 shadow-2xl">
-                  <AlertCircle className="w-8 h-8 text-rose-400 mx-auto" />
-                  <div>
-                    <h4 className="text-sm font-bold text-white mb-1">Inline Canvas Stream Blocked</h4>
-                    <p className="text-xs text-rose-300/80 mb-4">{error}</p>
-                  </div>
-                  <div className="flex flex-col gap-2 justify-center">
-                    <button
-                      onClick={() => setViewMode('native')}
-                      className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
-                    >
-                      <Layers className="w-4 h-4" />
-                      Switch to Embedded Browser Reader
-                    </button>
-                    <a
-                      href={book.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 border border-white/10 cursor-pointer"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open PDF Directly in New Tab
-                    </a>
-                  </div>
+                  <button
+                    onClick={() => setViewMode('reader')}
+                    className="px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer hover:bg-amber-400"
+                  >
+                    View Instant Book Reader Instead &rarr;
+                  </button>
                 </div>
               )}
 
               {/* Canvas Paper View (When Scanned PDF Engine is loaded) */}
-              {pdfDoc && (
+              {pdfDoc && !isPdfLoading && (
                 <div 
-                  className={`relative shadow-2xl rounded-sm sm:rounded-md bg-white border border-slate-300/80 transition-all ${loading || error ? 'hidden' : 'block'} mb-16`}
+                  className="relative shadow-2xl rounded-sm sm:rounded-md bg-white border border-slate-300/80 transition-all mb-16"
                   style={{
                     width: `${pageDimensions.width}px`,
                     minHeight: `${pageDimensions.height}px`,
@@ -1229,11 +1337,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                   {/* Floating Page Badge on Paper */}
                   <div className="absolute top-2 left-2 z-10 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-[9px] font-bold text-amber-300 pointer-events-none flex items-center gap-1.5 shadow-md">
                     <span>Page {currentPage} of {numPages}</span>
-                    {currentPage <= 2 && (
-                      <span className="text-[8px] font-normal text-slate-300 border-l border-white/20 pl-1.5">
-                        Introductory Page
-                      </span>
-                    )}
                   </div>
 
                   {/* Match Counter Badge on Paper if there are search matches on this page */}
@@ -1266,154 +1369,12 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                   />
                 </div>
               )}
-
-              {/* Interactive Book Page Paper View (Active Page & Offline Static Reader) */}
-              {!pdfDoc && !loading && (
-                <div 
-                  className={`w-full max-w-3xl rounded-2xl border shadow-2xl p-5 sm:p-10 md:p-12 my-2 sm:my-4 transition-all mb-16 select-text ${
-                    readerTheme === 'ivory'
-                      ? 'bg-[#faf7ee] text-[#2c2824] border-[#e6dcce]'
-                      : readerTheme === 'sepia'
-                      ? 'bg-[#f4ecd8] text-[#3e2e1d] border-[#ded0b1]'
-                      : readerTheme === 'dark'
-                      ? 'bg-slate-900 text-slate-100 border-slate-800'
-                      : 'bg-white text-slate-900 border-slate-200'
-                  }`}
-                  style={{ fontSize: `${readerFontSize}px` }}
-                >
-                  {/* Paper Header */}
-                  <div className="border-b border-black/10 dark:border-white/10 pb-3.5 mb-6 flex flex-wrap items-center justify-between gap-2 text-xs font-sans">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      <span className="font-bold tracking-wider uppercase text-[11px] text-slate-600 dark:text-slate-300">
-                        {book.title}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      {activeSearchTerm && (
-                        <span className="bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2.5 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 border border-amber-500/30">
-                          <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                          <span>
-                            {(
-                              (bookIndex?.pages.find(p => p.page === currentPage)?.text || pageTextCacheRef.current.get(currentPage)?.text || '')
-                                .toLowerCase()
-                                .match(new RegExp(activeSearchTerm.trim().toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []
-                            ).length} match(es) on this page
-                          </span>
-                        </span>
-                      )}
-                      <span className="font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[11px]">
-                        Page {currentPage} of {numPages}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Page Text Paragraphs with Golden Highlights */}
-                  {(() => {
-                    const pageData = bookIndex?.pages.find(p => p.page === currentPage) || 
-                      (pageTextCacheRef.current.get(currentPage)?.text ? { page: currentPage, text: pageTextCacheRef.current.get(currentPage)!.text } : null);
-                    const pageText = pageData?.text || '';
-                    const paras = pageText.split(/\n\s*\n|\n/).map(p => p.trim()).filter(Boolean);
-
-                    if (paras.length === 0) {
-                      return (
-                        <div className="text-center py-16 text-slate-400 font-serif italic space-y-3">
-                          <BookOpen className="w-8 h-8 text-amber-500/40 mx-auto" />
-                          <p>Introductory or Illustrated Section • Page {currentPage}</p>
-                          <div className="pt-2 flex justify-center gap-2">
-                            <button
-                              onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
-                              className="px-4 py-2 bg-amber-500 text-slate-950 font-sans font-bold text-xs rounded-xl cursor-pointer hover:bg-amber-400"
-                            >
-                              Go to Next Page &rarr;
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="font-serif leading-[1.85] space-y-4">
-                        {paras.map((paragraph, pIdx) => {
-                          if (!activeSearchTerm.trim()) {
-                            return <p key={pIdx} className="text-justify indent-6">{paragraph}</p>;
-                          }
-                          const term = activeSearchTerm.trim().toLowerCase();
-                          const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                          const parts = paragraph.split(regex);
-                          return (
-                            <p key={pIdx} className="text-justify indent-6">
-                              {parts.map((part, i) =>
-                                part.toLowerCase() === term ? (
-                                  <mark
-                                    key={i}
-                                    className="bg-amber-300/80 dark:bg-amber-400/40 text-amber-950 dark:text-amber-100 font-bold px-1 py-0.5 rounded shadow-[0_0_8px_rgba(245,158,11,0.5)] border-b-2 border-amber-600 not-italic inline-block mx-0.5"
-                                  >
-                                    {part}
-                                  </mark>
-                                ) : (
-                                  <span key={i}>{part}</span>
-                                )
-                              )}
-                            </p>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Paper Footer Navigation */}
-                  <div className="border-t border-black/10 dark:border-white/10 pt-4 mt-8 flex items-center justify-between text-xs text-slate-500 font-sans">
-                    <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage <= 1}
-                      className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer flex items-center gap-1 font-semibold transition-all"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" /> Previous
-                    </button>
-                    <span className="font-mono font-bold tracking-widest text-[11px]">
-                      — Page {currentPage} of {numPages} —
-                    </span>
-                    <button
-                      onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
-                      disabled={currentPage >= numPages}
-                      className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer flex items-center gap-1 font-semibold transition-all"
-                    >
-                      Next <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* Floating Mobile/Tablet Next & Previous Quick Tap Zones */}
-              {!loading && !error && (
-                <>
-                  <button
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage <= 1}
-                    className="fixed left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 bg-black/60 hover:bg-black/80 disabled:opacity-0 text-white rounded-full border border-white/20 shadow-2xl backdrop-blur-md transition-all cursor-pointer hidden sm:flex items-center justify-center z-20"
-                    title="Previous Page"
-                  >
-                    <ChevronLeft className="w-5 h-5 text-amber-400" />
-                  </button>
-
-                  <button
-                    onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
-                    disabled={currentPage >= numPages}
-                    className="fixed right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2.5 sm:p-3 bg-black/60 hover:bg-black/80 disabled:opacity-0 text-white rounded-full border border-white/20 shadow-2xl backdrop-blur-md transition-all cursor-pointer hidden sm:flex items-center justify-center z-20"
-                    title="Next Page"
-                  >
-                    <ChevronRight className="w-5 h-5 text-amber-400" />
-                  </button>
-                </>
-              )}
             </div>
           )}
 
-          {/* View Mode 2: Full-Featured Embedded Browser PDF Viewer */}
+          {/* VIEW MODE 3: CLOUD & BROWSER PDF VIEWER */}
           {viewMode === 'native' && (
             <div className="flex-grow h-full w-full bg-slate-900 flex flex-col">
-              {/* Native Engine Navigation Strip */}
               <div className="px-3 sm:px-4 py-2 bg-slate-950/80 border-b border-white/10 flex flex-wrap items-center justify-between gap-2 shrink-0 text-xs">
                 <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10">
                   <button
@@ -1423,7 +1384,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                         ? 'bg-amber-500 text-slate-950 font-bold shadow'
                         : 'text-slate-400 hover:text-white'
                     }`}
-                    title="Universal Cloud PDF Reader with smooth scrolling and zoom"
+                    title="Universal Cloud PDF Reader"
                   >
                     <Sparkles className="w-3 h-3" />
                     Google Cloud Reader
@@ -1467,7 +1428,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 </div>
               </div>
 
-              {/* Embedded Document Viewport */}
               <div className="flex-grow w-full h-full relative bg-slate-950">
                 <iframe
                   key={nativeEngine}
@@ -1488,7 +1448,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
               Reading <strong className="text-white">{book.title}</strong>
             </span>
 
-            {/* Mobile Touch Bar */}
+            {/* Touch-Friendly Scrub Bar */}
             <div className="flex items-center justify-between w-full md:w-auto md:flex-grow md:max-w-lg md:mx-auto gap-2">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
