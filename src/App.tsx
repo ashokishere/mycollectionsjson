@@ -5087,7 +5087,7 @@ export default function App() {
                     if (!playlist.some(p => p.id === currentShort.id)) {
                       setPlaylist(prev => {
                         const updated = [...prev, currentShort];
-                        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+                        safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
                         return updated;
                       });
                     }
