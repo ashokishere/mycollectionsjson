@@ -20,6 +20,7 @@ export default defineConfig(({mode}) => {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
     build: {
+      target: ['es2020', 'safari14', 'ios14', 'chrome87', 'firefox78'],
       rollupOptions: {
         output: {
           manualChunks(id) {

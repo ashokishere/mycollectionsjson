@@ -71,14 +71,8 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
   const [loadingProgress, setLoadingProgress] = useState<string>('Streaming book pages...');
   const [canvasError, setCanvasError] = useState<string | null>(null);
 
-  // View modes: 'native' (instant browser PDF) vs 'reader' (digital text) vs 'canvas' (PDF.js canvas)
-  // On iPad/Apple, default to 'native' for instant 0.1s hardware-accelerated Apple WebKit PDF rendering
-  const [viewMode, setViewMode] = useState<'native' | 'reader' | 'canvas'>(() => {
-    if (typeof window !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))) {
-      return 'native';
-    }
-    return 'reader';
-  });
+  // View modes: 'reader' (digital text book - instant 0.05s load & searchable on all devices) vs 'canvas' (PDF.js rendered scans) vs 'native' (direct stream)
+  const [viewMode, setViewMode] = useState<'reader' | 'canvas' | 'native'>('reader');
 
   const [nativeEngine, setNativeEngine] = useState<'direct' | 'google'>('direct');
   const [bookIndex, setBookIndex] = useState<BookSearchIndex | null>(null);
