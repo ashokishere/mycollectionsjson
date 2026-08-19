@@ -839,12 +839,12 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
   const currentSelection = videos.find(v => v.id === selectedVideoId);
 
   return (
-    <div ref={containerRef} className="flex flex-col md:flex-row fixed inset-0 w-screen h-screen h-[100dvh] backdrop-blur-3xl bg-theme-bg/98 overflow-hidden z-50 animate-in fade-in duration-200">
+    <div ref={containerRef} className="flex flex-col lg:flex-row fixed inset-0 w-screen h-screen backdrop-blur-3xl bg-theme-bg/98 overflow-hidden z-50 animate-in fade-in duration-200">
       
       {/* Side Selector column */}
       <div className={cn(
-        "w-full md:w-80 flex flex-col border-r border-theme-border h-full shrink-0 bg-transparent p-5",
-        mobileView === 'list' ? 'flex animate-in slide-in-from-left duration-200' : 'hidden md:flex'
+        "w-full lg:w-80 flex flex-col border-r border-theme-border h-full shrink-0 bg-transparent p-5",
+        mobileView === 'list' ? 'flex animate-in slide-in-from-left duration-200' : 'hidden lg:flex'
       )}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2 text-theme-accent">
@@ -986,7 +986,7 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
       {/* Main Reading View */}
       <div className={cn(
         "flex-grow h-full flex flex-col bg-theme-bg/10 relative",
-        mobileView === 'reading' ? 'flex animate-in slide-in-from-right duration-200' : 'hidden md:flex'
+        mobileView === 'reading' ? 'flex animate-in slide-in-from-right duration-200' : 'hidden lg:flex'
       )}>
         
         {/* Top toolbar */}
@@ -995,7 +995,7 @@ export default function TranscriptReader({ videos, activeVideoId, setActiveVideo
             {/* Mobile Navigation Back to Selector List */}
             <button 
               onClick={() => setMobileView('list')}
-              className="md:hidden p-2 border border-theme-border hover:bg-theme-surface text-theme-text rounded-xl transition-all flex items-center justify-center bg-theme-surface/50 shrink-0"
+              className="lg:hidden p-2 border border-theme-border hover:bg-theme-surface text-theme-text rounded-xl transition-all flex items-center justify-center bg-theme-surface/50 shrink-0"
               title="Back to Readings List"
             >
               <ArrowLeft className="w-4 h-4 text-theme-accent" />

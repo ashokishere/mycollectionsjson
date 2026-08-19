@@ -71,7 +71,7 @@ import favoritesData from './data/favorite_playlists.json';
 import devotionalAlbums from './data/devotional_albums.json';
 import instrumentalAlbums from './data/instrumental_albums.json';
 import screensaverShorts from './data/screensaver_shorts.json';
-import { cn, safeStorage } from './lib/utils';
+import { cn } from './lib/utils';
 
 const TranscriptReader = lazy(() => import('./components/TranscriptReader'));
 const AudioPlayerSection = lazy(() => import('./components/AudioPlayerSection'));
@@ -394,7 +394,7 @@ export default function App() {
       }
     });
 
-    const savedVideosStr = safeStorage.getItem('custom_videos_db');
+    const savedVideosStr = localStorage.getItem('custom_videos_db');
     let baseVideos = initialVideos;
     if (savedVideosStr) {
       try {
@@ -433,7 +433,7 @@ export default function App() {
   const [lastSynced, setLastSynced] = useState<string | null>(null);
   const [showPetals, setShowPetals] = useState(false);
   const [activeMessage, setActiveMessage] = useState<string | null>(null);
-  const [currentTheme, setCurrentTheme] = useState<string>(() => safeStorage.getItem('app_theme') || 'default');
+  const [currentTheme, setCurrentTheme] = useState<string>(() => localStorage.getItem('app_theme') || 'default');
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const [isOceanLoveOpen, setIsOceanLoveOpen] = useState(false);
   const [activeAlbumId, setActiveAlbumId] = useState<string>("ocean-of-love");
@@ -559,7 +559,7 @@ export default function App() {
         }
       });
 
-      const savedVideosStr = safeStorage.getItem('custom_videos_db');
+      const savedVideosStr = localStorage.getItem('custom_videos_db');
       let baseVideos = fullVideosData;
       if (savedVideosStr) {
         try {
@@ -568,7 +568,7 @@ export default function App() {
             baseVideos = parsed;
           }
         } catch (e) {
-          console.error("Failed to parse custom_videos_db from safeStorage");
+          console.error("Failed to parse custom_videos_db from localStorage");
         }
       }
 
@@ -740,7 +740,7 @@ export default function App() {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', currentTheme);
-    safeStorage.setItem('app_theme', currentTheme);
+    localStorage.setItem('app_theme', currentTheme);
   }, [currentTheme]);
 
   const triggerPetals = useCallback(() => {
@@ -751,8 +751,8 @@ export default function App() {
   const clearWorkspace = useCallback(() => {
     setPlaylist([]);
     setActiveVideoId(null);
-    safeStorage.removeItem('laughter_bubble_playlist');
-    safeStorage.removeItem('zenstream_playlist');
+    localStorage.removeItem('laughter_bubble_playlist');
+    localStorage.removeItem('zenstream_playlist');
   }, []);
 
   const addFavoritePlaylist = (favoriteId: string, mode: 'replace' | 'append' = 'replace') => {
@@ -765,12 +765,12 @@ export default function App() {
     if (mode === 'replace') {
       setPlaylist(videosToLink);
       setActiveVideoId(videosToLink[0].id);
-      safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(videosToLink));
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(videosToLink));
     } else {
       setPlaylist(prev => {
         const newItems = videosToLink.filter(v => !prev.some(p => p.id === v.id));
         const updated = [...prev, ...newItems];
-        safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
         return updated;
       });
       if (!activeVideoId) {
@@ -840,12 +840,12 @@ export default function App() {
     if (mode === 'replace') {
       setPlaylist(orderedVideos);
       setActiveVideoId(orderedVideos[0].id);
-      safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(orderedVideos));
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(orderedVideos));
     } else {
       setPlaylist(prev => {
         const newItems = orderedVideos.filter(v => !prev.some(p => p.id === v.id));
         const updated = [...prev, ...newItems];
-        safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
         return updated;
       });
       if (!activeVideoId) {
@@ -893,7 +893,7 @@ export default function App() {
     setPlaylist(prev => {
       if (prev.some(p => p.id === videoId)) return prev;
       const updated = [...prev, found];
-      safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
       return updated;
     });
 
@@ -915,9 +915,9 @@ export default function App() {
   const playerRef = useRef<HTMLDivElement>(null);
   const playerInstance = useRef<any>(null);
 
-  // Load playlist from safeStorage & admin auth state
+  // Load playlist from local storage & admin auth state
   useEffect(() => {
-    const saved = safeStorage.getItem('laughter_bubble_playlist') || safeStorage.getItem('zenstream_playlist');
+    const saved = localStorage.getItem('laughter_bubble_playlist') || localStorage.getItem('zenstream_playlist');
     if (saved) {
       try {
         setPlaylist(JSON.parse(saved));
@@ -926,7 +926,7 @@ export default function App() {
       }
     }
 
-    if (safeStorage.getItem('admin_auth_token') === 'true') {
+    if (localStorage.getItem('admin_auth_token') === 'true') {
       setIsAdminAuthenticated(true);
     }
     
@@ -937,7 +937,7 @@ export default function App() {
 
   // Helper to update active database state and local backups
   const applyNewCustomVideos = (customVideos: Video[]) => {
-    safeStorage.setItem('custom_videos_db', JSON.stringify(customVideos));
+    localStorage.setItem('custom_videos_db', JSON.stringify(customVideos));
 
     const albumTracks: Video[] = [];
     devotionalAlbums.forEach(album => {
@@ -1149,7 +1149,7 @@ export default function App() {
     }
 
     // Static mode fallback
-    const saved = safeStorage.getItem('custom_videos_db');
+    const saved = localStorage.getItem('custom_videos_db');
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -1172,7 +1172,7 @@ export default function App() {
     if (isStaticMode || trimmedPasscode === 'sadhana' || trimmedPasscode === 'yogananda2026') {
       if (trimmedPasscode === 'sadhana' || trimmedPasscode === 'yogananda2026') {
         setIsAdminAuthenticated(true);
-        safeStorage.setItem('admin_auth_token', 'true');
+        localStorage.setItem('admin_auth_token', 'true');
         setAdminPasscode('');
         return;
       }
@@ -1188,7 +1188,7 @@ export default function App() {
       const data = await res.json();
       if (res.ok && data.success) {
         setIsAdminAuthenticated(true);
-        safeStorage.setItem('admin_auth_token', 'true');
+        localStorage.setItem('admin_auth_token', 'true');
         setAdminPasscode('');
       } else {
         setAdminError(data.message || 'Invalid Admin Passcode');
@@ -1196,7 +1196,7 @@ export default function App() {
     } catch (err) {
       if (trimmedPasscode === 'sadhana' || trimmedPasscode === 'yogananda2026') {
         setIsAdminAuthenticated(true);
-        safeStorage.setItem('admin_auth_token', 'true');
+        localStorage.setItem('admin_auth_token', 'true');
         setAdminPasscode('');
         setIsStaticMode(true);
       } else {
@@ -1333,9 +1333,9 @@ export default function App() {
     setIsDataPanelOpen(false);
   };
 
-  // Save playlist to safeStorage
+  // Save playlist to local storage
   useEffect(() => {
-    safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(playlist));
+    localStorage.setItem('laughter_bubble_playlist', JSON.stringify(playlist));
   }, [playlist]);
 
   // Derived data
@@ -1465,7 +1465,7 @@ export default function App() {
     setPlaylist(prev => {
       if (prev.some(v => v.id === video.id)) return prev;
       const newList = [...prev, video];
-      safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(newList));
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(newList));
       return newList;
     });
 
@@ -1478,7 +1478,7 @@ export default function App() {
   const removeFromPlaylist = (id: string) => {
     setPlaylist(prev => {
       const updated = prev.filter(v => v.id !== id);
-      safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
       return updated;
     });
 
@@ -1496,12 +1496,12 @@ export default function App() {
     if (mode === 'replace') {
       setPlaylist(AFFIRMATIONS_TOURS);
       if (AFFIRMATIONS_TOURS.length > 0) setActiveVideoId(AFFIRMATIONS_TOURS[0].id);
-      safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(AFFIRMATIONS_TOURS));
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(AFFIRMATIONS_TOURS));
     } else {
       setPlaylist(prev => {
         const newItems = AFFIRMATIONS_TOURS.filter(v => !prev.some(p => p.id === v.id));
         const updated = [...prev, ...newItems];
-        safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
         return updated;
       });
       if (!activeVideoId && AFFIRMATIONS_TOURS.length > 0) {
@@ -1515,12 +1515,12 @@ export default function App() {
     if (mode === 'replace') {
       setPlaylist(VIRTUAL_TOURS);
       if (VIRTUAL_TOURS.length > 0) setActiveVideoId(VIRTUAL_TOURS[0].id);
-      safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(VIRTUAL_TOURS));
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(VIRTUAL_TOURS));
     } else {
       setPlaylist(prev => {
         const newItems = VIRTUAL_TOURS.filter(v => !prev.some(p => p.id === v.id));
         const updated = [...prev, ...newItems];
-        safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
         return updated;
       });
       if (!activeVideoId && VIRTUAL_TOURS.length > 0) {
@@ -1534,12 +1534,12 @@ export default function App() {
     if (mode === 'replace') {
       setPlaylist(WISDOM_TEACHINGS);
       if (WISDOM_TEACHINGS.length > 0) setActiveVideoId(WISDOM_TEACHINGS[0].id);
-      safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(WISDOM_TEACHINGS));
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(WISDOM_TEACHINGS));
     } else {
       setPlaylist(prev => {
         const newItems = WISDOM_TEACHINGS.filter(v => !prev.some(p => p.id === v.id));
         const updated = [...prev, ...newItems];
-        safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
         return updated;
       });
       if (!activeVideoId && WISDOM_TEACHINGS.length > 0) {
@@ -1559,7 +1559,7 @@ export default function App() {
       updated[index] = updated[targetIndex];
       updated[targetIndex] = temp;
       
-      safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
       return updated;
     });
   };
@@ -1594,7 +1594,7 @@ export default function App() {
       const updated = [...prev];
       const [movedItem] = updated.splice(draggedIndex, 1);
       updated.splice(index, 0, movedItem);
-      safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+      localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
       return updated;
     });
     setDraggedIndex(null);
@@ -1711,7 +1711,7 @@ export default function App() {
 
 
   return (
-    <div className="h-screen h-[100dvh] w-full font-sans flex flex-col md:flex-row overflow-hidden text-theme-text">
+    <div className="min-h-screen font-sans flex flex-col md:flex-row overflow-hidden text-theme-text">
       {/* Background Atmosphere */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-theme-bg">
         <div className="absolute top-[-10%] left-[-5%] w-[400px] h-[400px] bg-theme-accent/20 rounded-full blur-[120px] opacity-50" />
@@ -1720,7 +1720,7 @@ export default function App() {
 
       {/* Sidebar/Navigation (Mobile: Bottom, Desktop: Left) */}
       <aside className={cn(
-        "w-full md:w-80 flex-shrink-0 h-auto md:h-full backdrop-blur-2xl bg-theme-surface border-r border-theme-border z-20 flex flex-col p-6 transition-all duration-300 overflow-y-auto custom-scrollbar",
+        "w-full md:w-80 flex-shrink-0 h-auto md:h-screen backdrop-blur-2xl bg-theme-surface border-r border-theme-border z-20 flex flex-col p-6 transition-all duration-300",
         (isReaderOpen || isAudioOpen) && "hidden md:hidden pointer-events-none"
       )}>
         <div className="flex flex-col gap-6 mb-10 shrink-0">
@@ -2227,7 +2227,7 @@ export default function App() {
         </div>
 
         {/* Info & Browse Section */}
-        <div className="flex-grow pr-2">
+        <div className="flex-grow overflow-y-auto scrollbar-hide pr-2">
           <AnimatePresence mode="wait">
             {activeVideo && (
               <motion.div 
@@ -2542,7 +2542,7 @@ export default function App() {
                         <span className="text-[8px] text-slate-600 font-mono uppercase">YTID: {video.id}</span>
                       </div>
                     </div>
-                    <div className="flex-shrink-0 flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="flex-shrink-0 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                       <button
                         disabled={index === 0}
                         onClick={(e) => {
@@ -2625,7 +2625,7 @@ export default function App() {
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-2xl h-16 backdrop-blur-2xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl z-40 flex items-center px-4 gap-4"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-2xl h-16 backdrop-blur-2xl bg-white/10 border border-white/20 rounded-2xl shadow-2xl z-40 flex items-center px-4 gap-4"
           >
             <div className="flex -space-x-4 overflow-hidden px-2">
               {playlist.slice(0, 3).map((v, i) => (
@@ -5087,7 +5087,7 @@ export default function App() {
                     if (!playlist.some(p => p.id === currentShort.id)) {
                       setPlaylist(prev => {
                         const updated = [...prev, currentShort];
-                        safeStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+                        localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
                         return updated;
                       });
                     }

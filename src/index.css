@@ -162,14 +162,3 @@
 .theme-toggle-btn-label-white {
   color: #b45309 !important;
 }
-
-/* Momentum scrolling and touch resilience for iOS & iPadOS WebKit */
-.custom-scrollbar,
-main,
-aside,
-div[class*="overflow-y-auto"],
-div[class*="overflow-x-auto"] {
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y pinch-zoom;
-}
-
