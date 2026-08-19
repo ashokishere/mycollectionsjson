@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { 
@@ -29,12 +29,13 @@ import {
   Sun,
   Moon,
   Coffee,
-  Check
+  Check,
+  Compass
 } from 'lucide-react';
 import { SpiritualBook } from '../data/spiritual_books';
 import { getBookSearchIndex, searchInBookIndex, BookSearchIndex } from '../utils/searchIndexService';
 
-// Set up local bundled PDF.js worker with unpkg fallback for WebKit / Safari / iPadOS
+// Set up local bundled PDF.js worker with fallback to unpkg
 if (typeof window !== 'undefined') {
   try {
     pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker || `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
@@ -55,6 +56,11 @@ interface PdfViewerModalProps {
 }
 
 export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose }) => {
+  const isAppleDevice = useMemo(() => {
+    if (typeof navigator === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }, []);
+
   const [pdfDoc, setPdfDoc] = useState<pdfjsLib.PDFDocumentProxy | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [numPages, setNumPages] = useState<number>(0);
@@ -62,12 +68,19 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
   const [rotation, setRotation] = useState<number>(0);
   const [pageDimensions, setPageDimensions] = useState<{ width: number; height: number }>({ width: 600, height: 850 });
   const [isPdfLoading, setIsPdfLoading] = useState<boolean>(true);
-  const [loadingProgress, setLoadingProgress] = useState<string>('Loading spiritual book...');
+  const [loadingProgress, setLoadingProgress] = useState<string>('Streaming book pages...');
   const [canvasError, setCanvasError] = useState<string | null>(null);
 
-  // View modes: 'reader' (instant digital book pages) vs 'canvas' (original scanned PDF) vs 'native' (cloud browser PDF)
-  const [viewMode, setViewMode] = useState<'reader' | 'canvas' | 'native'>('reader');
-  const [nativeEngine, setNativeEngine] = useState<'google' | 'direct'>('google');
+  // View modes: 'native' (instant browser PDF) vs 'reader' (digital text) vs 'canvas' (PDF.js canvas)
+  // On iPad/Apple, default to 'native' for instant 0.1s hardware-accelerated Apple WebKit PDF rendering
+  const [viewMode, setViewMode] = useState<'native' | 'reader' | 'canvas'>(() => {
+    if (typeof window !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))) {
+      return 'native';
+    }
+    return 'reader';
+  });
+
+  const [nativeEngine, setNativeEngine] = useState<'direct' | 'google'>('direct');
   const [bookIndex, setBookIndex] = useState<BookSearchIndex | null>(null);
   const [readerFontSize, setReaderFontSize] = useState<number>(18);
   const [readerTheme, setReaderTheme] = useState<'ivory' | 'white' | 'sepia' | 'dark'>('ivory');
@@ -105,7 +118,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
       ? scrollContainerRef.current.clientWidth 
       : (window.innerWidth || 800);
 
-    // Provide comfortable horizontal breathing room (mobile: 16px, tablet/iPad: 40px)
     const padding = containerWidth < 640 ? 16 : 40;
     const availableWidth = Math.max(280, containerWidth - padding);
     const fitScale = availableWidth / viewportWidth;
@@ -113,14 +125,13 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     return Math.min(2.0, Math.max(0.45, Number(fitScale.toFixed(2))));
   }, []);
 
-  // Fetch static index for INSTANT 0.05s page display + background PDF loading
+  // Fetch static index + Stream PDF in background
   useEffect(() => {
     let isCancelled = false;
     setIsPdfLoading(true);
     setCanvasError(null);
-    setLoadingProgress('Connecting to spiritual library...');
 
-    // 1. Eagerly load static search index so all pages and search are IMMEDIATELY available
+    // 1. Eagerly load pre-built index for instant text & search
     getBookSearchIndex(book.id).then(index => {
       if (!isCancelled && index) {
         setBookIndex(index);
@@ -137,53 +148,23 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
       console.warn('Index load notice:', err);
     });
 
-    // 2. Load original PDF document in background for scanned canvas view
+    // 2. High-speed progressive range streaming using PDF.js
     async function loadPdf() {
       try {
-        let doc: pdfjsLib.PDFDocumentProxy | null = null;
+        setLoadingProgress('Streaming page 1...');
+        const loadingTask = pdfjsLib.getDocument({
+          url: proxyUrl,
+          cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+          cMapPacked: true,
+          standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
+          enableXfa: true,
+          disableAutoFetch: true, // Only fetch pages on demand for instant speed
+          disableStream: false,
+          disableRange: false,
+          rangeChunkSize: 65536,
+        });
 
-        // Try proxy stream first
-        try {
-          setLoadingProgress('Loading original scanned facsimile...');
-          const response = await fetch(proxyUrl);
-          const contentType = response.headers.get('content-type') || '';
-          
-          if (response.ok && !contentType.includes('text/html')) {
-            const buf = await response.arrayBuffer();
-            if (buf.byteLength > 1000) {
-              const loadingTask = pdfjsLib.getDocument({
-                data: new Uint8Array(buf),
-                cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
-                cMapPacked: true,
-                standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
-                enableXfa: true,
-                disableRange: true,
-                disableStream: true,
-              });
-              doc = await loadingTask.promise;
-            }
-          }
-        } catch (e: any) {
-          console.warn('Proxy fetch failed, attempting direct load:', e);
-        }
-
-        // Try direct stream if proxy wasn't successful
-        if (!doc && !isCancelled) {
-          try {
-            const loadingTask = pdfjsLib.getDocument({
-              url: book.pdfUrl,
-              cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
-              cMapPacked: true,
-              standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
-              enableXfa: true,
-              disableRange: true,
-              disableStream: true,
-            });
-            doc = await loadingTask.promise;
-          } catch (e: any) {
-            console.warn('Direct stream failed:', e);
-          }
-        }
+        const doc = await loadingTask.promise;
 
         if (isCancelled) return;
 
@@ -200,8 +181,25 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
 
         setIsPdfLoading(false);
       } catch (err: any) {
-        console.warn('Scanned PDF stream not available, digital book active:', err);
+        console.warn('PDF stream loading fallback:', err);
+        // Direct stream fallback
         if (!isCancelled) {
+          try {
+            const directTask = pdfjsLib.getDocument({
+              url: book.pdfUrl,
+              cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+              cMapPacked: true,
+              standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`,
+              disableAutoFetch: true,
+            });
+            const directDoc = await directTask.promise;
+            if (!isCancelled && directDoc) {
+              setPdfDoc(directDoc);
+              setNumPages(directDoc.numPages);
+            }
+          } catch (e2) {
+            console.warn('Direct PDF.js fallback:', e2);
+          }
           setIsPdfLoading(false);
         }
       }
@@ -251,7 +249,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
         height: Math.ceil(viewport.height),
       });
 
-      // Safe DPR clamping for iPadOS WebKit (clamps to 1.5 to prevent memory buffer exhaustion)
       const dpr = typeof window !== 'undefined' ? (window.devicePixelRatio || 1) : 1;
       const outputScale = Math.min(dpr, 1.5);
       
@@ -295,7 +292,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     }
   }, [pdfDoc]);
 
-  // Trigger render when document, current page, scale, or rotation changes
+  // Trigger render when in canvas mode
   useEffect(() => {
     if (!isPdfLoading && pdfDoc && viewMode === 'canvas') {
       performRender(currentPage, scale, rotation);
@@ -332,7 +329,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
 
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
         e.preventDefault();
-        setCurrentPage(p => Math.min(numPages || 1, p + 1));
+        setCurrentPage(p => Math.min(numPages || 999, p + 1));
       } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
         e.preventDefault();
         setCurrentPage(p => Math.max(1, p - 1));
@@ -364,13 +361,10 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
     const deltaY = e.changedTouches[0].clientY - touchStartYRef.current;
 
-    // Horizontal swipe threshold (> 50px horizontal, and horizontal movement > vertical movement)
     if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) * 1.3) {
       if (deltaX < 0) {
-        // Swiped left -> Next page
-        setCurrentPage(p => Math.min(numPages || 1, p + 1));
+        setCurrentPage(p => Math.min(numPages || 999, p + 1));
       } else {
-        // Swiped right -> Previous page
         setCurrentPage(p => Math.max(1, p - 1));
       }
     }
@@ -467,7 +461,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
 
-  // Streaming Keyword Search across entire PDF document with instant index support
+  // Streaming Keyword Search across entire PDF document
   const handlePerformSearch = async (query: string) => {
     const searchTerm = query.trim();
     if (!searchTerm) {
@@ -483,7 +477,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     searchAbortRef.current = false;
 
     try {
-      // Strategy 1: Instant Static Pre-built Search Index (Instant 0.01s on all devices)
+      // 1. Instant Static Index Search
       const index = await getBookSearchIndex(book.id);
 
       if (index && index.pages && index.pages.length > 0) {
@@ -514,7 +508,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
         return;
       }
 
-      // Strategy 2: Dynamic PDF.js document scanner fallback
+      // 2. Dynamic PDF.js scanner fallback
       if (pdfDoc) {
         const termLower = searchTerm.toLowerCase();
         const matches: SearchMatch[] = [];
@@ -592,10 +586,8 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     setCurrentMatchIdx(nextIdx);
     const targetPage = searchResults[nextIdx].pageNum;
     
-    // Jump to the exact target page
     setCurrentPage(targetPage);
 
-    // On iPad / mobile screens, close the search drawer so the full page is visible
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       setShowSearchPanel(false);
     }
@@ -623,7 +615,14 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     }
   };
 
-  // Get current page text for instant reader
+  // Find first page with text for cover jump
+  const firstTextPage = useMemo(() => {
+    if (!bookIndex?.pages) return 1;
+    const found = bookIndex.pages.find(p => p.text && p.text.trim().length > 40);
+    return found ? found.page : 1;
+  }, [bookIndex]);
+
+  // Current page text for instant reader
   const currentPageData = bookIndex?.pages.find(p => p.page === currentPage) || 
     (pageTextCacheRef.current.get(currentPage)?.text ? { page: currentPage, text: pageTextCacheRef.current.get(currentPage)!.text } : null);
   const currentPageText = currentPageData?.text || '';
@@ -726,16 +725,29 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             {/* View Mode Switcher */}
             <div className="flex items-center bg-white/5 p-0.5 rounded-xl border border-white/10 text-[10px] font-bold">
               <button
+                onClick={() => setViewMode('native')}
+                className={`px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                  viewMode === 'native' 
+                    ? 'bg-amber-500 text-slate-950 shadow-sm' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Instant iPad & Cloud PDF Viewer"
+              >
+                <Layers className="w-3 h-3" />
+                <span>PDF Stream</span>
+              </button>
+
+              <button
                 onClick={() => setViewMode('reader')}
                 className={`px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                   viewMode === 'reader' 
                     ? 'bg-amber-500 text-slate-950 shadow-sm' 
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title="Instant Digital Book Pages"
+                title="Instant Text Reader with Highlights"
               >
                 <BookOpen className="w-3 h-3" />
-                <span>Book</span>
+                <span>Text Book</span>
               </button>
 
               <button
@@ -745,23 +757,10 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                     ? 'bg-amber-500 text-slate-950 shadow-sm' 
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title="Original Scanned PDF Facsimile"
+                title="Scanned Facsimile"
               >
                 <FileText className="w-3 h-3" />
                 <span className="hidden sm:inline">Scanned</span>
-              </button>
-
-              <button
-                onClick={() => setViewMode('native')}
-                className={`px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
-                  viewMode === 'native' 
-                    ? 'bg-amber-500 text-slate-950 shadow-sm' 
-                    : 'text-slate-400 hover:text-white'
-                }`}
-                title="Continuous Browser View"
-              >
-                <Layers className="w-3 h-3" />
-                <span className="hidden sm:inline">Cloud</span>
               </button>
             </div>
 
@@ -875,7 +874,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             </div>
 
             <button
-              onClick={() => setCurrentPage(p => Math.min(numPages || 1, p + 1))}
+              onClick={() => setCurrentPage(p => Math.min(numPages || 999, p + 1))}
               disabled={numPages > 0 && currentPage >= numPages}
               className="p-1.5 bg-white/5 hover:bg-white/10 disabled:opacity-30 text-slate-300 rounded-lg transition-all cursor-pointer border border-white/10 flex items-center gap-0.5"
               title="Next Page"
@@ -896,7 +895,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
           {/* View-Specific Customization Controls */}
           {viewMode === 'reader' && (
             <div className="flex items-center gap-2">
-              {/* Paper Theme selector */}
               <div className="flex items-center bg-white/5 p-0.5 rounded-lg border border-white/10 text-[10px]">
                 <button
                   onClick={() => setReaderTheme('ivory')}
@@ -924,7 +922,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 </button>
               </div>
 
-              {/* Font Size Selector */}
               <div className="flex items-center bg-white/5 px-2 py-0.5 rounded-lg border border-white/10 text-[10px] gap-1.5">
                 <Type className="w-3 h-3 text-slate-400" />
                 <button
@@ -951,7 +948,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
               <button
                 onClick={handleFitWidth}
                 className="px-2 py-1 bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg transition-all border border-white/10 text-[10px] font-bold cursor-pointer flex items-center gap-1"
-                title="Fit to iPad/Mobile Screen Width"
+                title="Fit to Screen Width"
               >
                 <Expand className="w-3 h-3" />
                 <span>Fit Width</span>
@@ -986,9 +983,28 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
               </button>
             </div>
           )}
+
+          {viewMode === 'native' && (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-white/5 p-0.5 rounded-lg border border-white/10 text-[10px]">
+                <button
+                  onClick={() => setNativeEngine('direct')}
+                  className={`px-2 py-0.5 rounded cursor-pointer font-bold ${nativeEngine === 'direct' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}
+                >
+                  Direct iPad Engine
+                </button>
+                <button
+                  onClick={() => setNativeEngine('google')}
+                  className={`px-2 py-0.5 rounded cursor-pointer font-bold ${nativeEngine === 'google' ? 'bg-amber-500 text-slate-950' : 'text-slate-400'}`}
+                >
+                  Cloud Viewer
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Main Workspace Layout (Drawer + Content Workspace) */}
+        {/* Main Workspace Layout */}
         <div className="flex-grow flex relative overflow-hidden bg-slate-900/60">
           {/* Quick Page Jump Drawer */}
           {showThumbnailDrawer && (
@@ -1022,8 +1038,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                   >
                     <span className="text-[11px] font-mono">Page {pNum}</span>
                     {pNum === 1 && <span className="text-[8px] opacity-75">Cover</span>}
-                    {pNum === 2 && <span className="text-[8px] opacity-75">Frontispiece</span>}
-                    {pNum === 3 && <span className="text-[8px] opacity-75">Title Page</span>}
+                    {pNum === firstTextPage && firstTextPage > 1 && <span className="text-[8px] opacity-75">Chapter 1</span>}
                   </button>
                 ))}
               </div>
@@ -1052,7 +1067,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 </div>
               </div>
 
-              {/* Search Input in Drawer (Mobile & iPad) */}
+              {/* Search Input in Drawer */}
               <div className="p-3 border-b border-white/10 lg:hidden bg-slate-900/60">
                 <div className="flex gap-2">
                   <input
@@ -1162,7 +1177,47 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             </div>
           )}
 
-          {/* VIEW MODE 1: INSTANT DIGITAL BOOK PAGES (Immediate 0.05s Load, Full Formatting, Search Highlights) */}
+          {/* VIEW MODE 1: HARDWARE ACCELERATED DIRECT NATIVE STREAM (Instant 0.1s on iPad & Mobile) */}
+          {viewMode === 'native' && (
+            <div className="flex-grow h-full w-full bg-slate-950 flex flex-col relative">
+              <div className="flex-grow w-full h-full relative bg-slate-950">
+                <iframe
+                  key={`${nativeEngine}-${currentPage}`}
+                  src={nativeEngine === 'google' ? googleViewerUrl : `${proxyUrl}#page=${currentPage}`}
+                  title={book.title}
+                  className="w-full h-full border-0 bg-slate-900"
+                  allow="fullscreen"
+                />
+              </div>
+
+              {/* Quick Bar at bottom of stream */}
+              <div className="p-2 bg-slate-900/90 border-t border-white/10 flex items-center justify-between text-xs px-4">
+                <span className="text-[11px] text-slate-400">
+                  Native Apple / Cloud PDF Engine • <strong className="text-amber-300">{book.title}</strong>
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setViewMode('reader')}
+                    className="px-2.5 py-1 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 rounded-lg font-bold text-[10px] flex items-center gap-1 border border-amber-500/30 cursor-pointer"
+                  >
+                    <BookOpen className="w-3 h-3" />
+                    Switch to Text Reader
+                  </button>
+                  <a
+                    href={book.pdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold text-[10px] flex items-center gap-1 border border-white/10 cursor-pointer"
+                  >
+                    <ExternalLink className="w-3 h-3 text-amber-400" />
+                    Full Tab
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW MODE 2: DIGITAL TEXT BOOK READER (Instant 0.05s Load, Typography, Search Highlighting) */}
           {viewMode === 'reader' && (
             <div 
               ref={scrollContainerRef}
@@ -1209,17 +1264,45 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                   </div>
                 </div>
 
-                {/* Page Content with Golden Highlights */}
+                {/* Page Content */}
                 {paragraphs.length === 0 ? (
-                  <div className="text-center py-16 text-slate-400 font-serif italic space-y-3">
-                    <BookOpen className="w-8 h-8 text-amber-500/40 mx-auto" />
-                    <p>Introductory or Illustrated Section • Page {currentPage}</p>
-                    <div className="pt-2 flex justify-center gap-2">
+                  <div className="text-center py-12 px-4 space-y-5">
+                    <div className="w-16 h-16 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-500 mx-auto">
+                      <BookOpen className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-1">{book.title}</h4>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 font-sans max-w-md mx-auto">
+                        {currentPage === 1 
+                          ? 'This is the book cover or visual facsimile page. You can jump directly to Chapter 1 or view the original high-resolution scanned facsimile.' 
+                          : `Page ${currentPage} is an illustration or visual plate.`}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                      {firstTextPage > 1 && currentPage < firstTextPage && (
+                        <button
+                          onClick={() => setCurrentPage(firstTextPage)}
+                          className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                        >
+                          <Compass className="w-4 h-4" />
+                          Jump to Chapter 1 (Page {firstTextPage}) &rarr;
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => setViewMode('native')}
+                        className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Layers className="w-4 h-4 text-amber-400" />
+                        View Scanned Cover &amp; Original PDF
+                      </button>
+
                       <button
                         onClick={() => setCurrentPage(p => Math.min(numPages || 999, p + 1))}
-                        className="px-4 py-2 bg-amber-500 text-slate-950 font-sans font-bold text-xs rounded-xl cursor-pointer hover:bg-amber-400"
+                        className="px-4 py-2.5 bg-black/5 dark:bg-white/5 hover:bg-black/10 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-all cursor-pointer flex items-center gap-1"
                       >
-                        Go to Next Page &rarr;
+                        Next Page ({currentPage + 1}) &rarr;
                       </button>
                     </div>
                   </div>
@@ -1295,7 +1378,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             </div>
           )}
 
-          {/* VIEW MODE 2: ORIGINAL SCANNED PDF (High-DPI PDF.js Canvas with Auto-Fit) */}
+          {/* VIEW MODE 3: ORIGINAL SCANNED PDF CANVASES */}
           {viewMode === 'canvas' && (
             <div 
               ref={scrollContainerRef}
@@ -1316,15 +1399,15 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                     <p className="text-xs text-amber-400/90 font-mono">{loadingProgress}</p>
                   </div>
                   <button
-                    onClick={() => setViewMode('reader')}
+                    onClick={() => setViewMode('native')}
                     className="px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow cursor-pointer hover:bg-amber-400"
                   >
-                    View Instant Book Reader Instead &rarr;
+                    View Instant Native Stream Instead &rarr;
                   </button>
                 </div>
               )}
 
-              {/* Canvas Paper View (When Scanned PDF Engine is loaded) */}
+              {/* Canvas Paper View */}
               {pdfDoc && !isPdfLoading && (
                 <div 
                   className="relative shadow-2xl rounded-sm sm:rounded-md bg-white border border-slate-300/80 transition-all mb-16"
@@ -1334,12 +1417,10 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                     maxWidth: 'none',
                   }}
                 >
-                  {/* Floating Page Badge on Paper */}
                   <div className="absolute top-2 left-2 z-10 bg-black/80 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 text-[9px] font-bold text-amber-300 pointer-events-none flex items-center gap-1.5 shadow-md">
                     <span>Page {currentPage} of {numPages}</span>
                   </div>
 
-                  {/* Match Counter Badge on Paper if there are search matches on this page */}
                   {pageHighlights.length > 0 && (
                     <div className="absolute top-2 right-2 z-10 bg-amber-500 text-slate-950 px-2.5 py-1 rounded-lg font-bold text-[9px] shadow-lg flex items-center gap-1">
                       <Sparkles className="w-3 h-3" />
@@ -1347,7 +1428,6 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                     </div>
                   )}
 
-                  {/* Dynamic Golden Highlight Overlays for Matched Search Words */}
                   {pageHighlights.map((hl, i) => (
                     <div
                       key={i}
@@ -1362,81 +1442,12 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                     />
                   ))}
 
-                  {/* Direct Canvas Element */}
                   <canvas 
                     ref={canvasRef} 
                     className="block bg-white"
                   />
                 </div>
               )}
-            </div>
-          )}
-
-          {/* VIEW MODE 3: CLOUD & BROWSER PDF VIEWER */}
-          {viewMode === 'native' && (
-            <div className="flex-grow h-full w-full bg-slate-900 flex flex-col">
-              <div className="px-3 sm:px-4 py-2 bg-slate-950/80 border-b border-white/10 flex flex-wrap items-center justify-between gap-2 shrink-0 text-xs">
-                <div className="flex items-center gap-1.5 bg-white/5 p-1 rounded-xl border border-white/10">
-                  <button
-                    onClick={() => setNativeEngine('google')}
-                    className={`px-2.5 py-1 rounded-lg font-medium text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
-                      nativeEngine === 'google'
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                    title="Universal Cloud PDF Reader"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    Google Cloud Reader
-                  </button>
-                  <button
-                    onClick={() => setNativeEngine('direct')}
-                    className={`px-2.5 py-1 rounded-lg font-medium text-[11px] transition-all cursor-pointer flex items-center gap-1.5 ${
-                      nativeEngine === 'direct'
-                        ? 'bg-amber-500 text-slate-950 font-bold shadow'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                    title="Direct PDF Frame Reader"
-                  >
-                    <Layers className="w-3 h-3" />
-                    Direct PDF Stream
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <a
-                    href={book.pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white font-semibold text-[11px] rounded-lg transition-all flex items-center gap-1 cursor-pointer border border-white/10"
-                    title="Open original document in external browser tab"
-                  >
-                    <ExternalLink className="w-3 h-3 text-amber-400" />
-                    Open in New Tab
-                  </a>
-                  <a
-                    href={book.pdfUrl}
-                    download
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="px-2.5 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 font-semibold text-[11px] rounded-lg transition-all flex items-center gap-1 cursor-pointer border border-amber-500/30"
-                    title="Download complete PDF book file"
-                  >
-                    <Download className="w-3 h-3" />
-                    Download
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex-grow w-full h-full relative bg-slate-950">
-                <iframe
-                  key={nativeEngine}
-                  src={nativeEngine === 'google' ? googleViewerUrl : book.pdfUrl}
-                  title={book.title}
-                  className="w-full h-full border-0 bg-slate-900"
-                  allow="fullscreen"
-                />
-              </div>
             </div>
           )}
         </div>
