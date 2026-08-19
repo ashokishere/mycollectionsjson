@@ -778,11 +778,29 @@ app.get("/api/audio-proxy", async (req, res) => {
   }
 });
 
-// PDF Proxy endpoint to safely serve PDFs without iframe X-Frame-Options / CSP frame-ancestors blocking
+// PDF Proxy endpoint with persistent disk caching and high-speed streaming
+const pdfCacheDir = path.join(process.cwd(), "uploads/pdf-cache");
+if (!fs.existsSync(pdfCacheDir)) {
+  fs.mkdirSync(pdfCacheDir, { recursive: true });
+}
+
+function getSafePdfCachePath(targetUrl: string): string {
+  // Generate clean filename from URL basename or sanitized hash
+  try {
+    const parsed = new URL(targetUrl);
+    const basename = path.basename(parsed.pathname) || "document.pdf";
+    const safeName = basename.replace(/[^a-zA-Z0-9._-]/g, "_");
+    return path.join(pdfCacheDir, safeName);
+  } catch {
+    const hash = Buffer.from(targetUrl).toString("base64url").slice(0, 32);
+    return path.join(pdfCacheDir, `${hash}.pdf`);
+  }
+}
+
 app.options("/api/pdf-proxy", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type");
+  res.setHeader("Access-Control-Allow-Headers", "Range, Content-Type, Accept");
   res.setHeader("Access-Control-Expose-Headers", "Content-Range, Content-Length, Accept-Ranges");
   res.status(204).end();
 });
@@ -803,16 +821,26 @@ app.get("/api/pdf-proxy", async (req, res) => {
     return res.status(400).send("Missing url parameter");
   }
 
+  const cachedFilePath = getSafePdfCachePath(targetUrl);
+
+  // If already cached on disk, send file immediately with full range & streaming support
+  if (fs.existsSync(cachedFilePath)) {
+    const stats = fs.statSync(cachedFilePath);
+    if (stats.size > 1000) {
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", "inline");
+      res.removeHeader("X-Frame-Options");
+      res.removeHeader("Content-Security-Policy");
+      return res.sendFile(cachedFilePath);
+    }
+  }
+
   try {
     const forwardHeaders: Record<string, string> = {
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, Gecko) Chrome/120.0.0.0 Safari/537.36",
       "Accept": "application/pdf,application/octet-stream,*/*",
       "Referer": "https://spiritualbooks.eu/"
     };
-
-    if (req.headers.range) {
-      forwardHeaders["Range"] = req.headers.range;
-    }
 
     const pdfResponse = await fetch(targetUrl, { 
       headers: forwardHeaders,
@@ -823,21 +851,21 @@ app.get("/api/pdf-proxy", async (req, res) => {
       return res.status(pdfResponse.status).send(`Failed to fetch PDF: ${pdfResponse.statusText}`);
     }
 
-    res.status(pdfResponse.status);
+    const arrayBuffer = await pdfResponse.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // Save to disk cache for instantaneous future loads
+    try {
+      fs.writeFileSync(cachedFilePath, buffer);
+    } catch (saveErr) {
+      console.warn("[PdfProxy Cache Warning]", saveErr);
+    }
+
+    res.status(200);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Content-Length", buffer.length.toString());
     res.setHeader("Accept-Ranges", "bytes");
-
-    const contentRange = pdfResponse.headers.get("content-range");
-    if (contentRange) {
-      res.setHeader("Content-Range", contentRange);
-    }
-
-    const contentLength = pdfResponse.headers.get("content-length");
-    if (contentLength) {
-      res.setHeader("Content-Length", contentLength);
-    }
-
     res.removeHeader("X-Frame-Options");
     res.removeHeader("Content-Security-Policy");
 
@@ -845,12 +873,7 @@ app.get("/api/pdf-proxy", async (req, res) => {
       return res.end();
     }
 
-    if (!pdfResponse.body) {
-      return res.end();
-    }
-
-    const stream = Readable.fromWeb(pdfResponse.body as any);
-    stream.pipe(res);
+    return res.send(buffer);
   } catch (err: any) {
     console.error("[PdfProxy Error]", err);
     if (!res.headersSent) {

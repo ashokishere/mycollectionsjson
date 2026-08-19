@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { 
   X, 
   Search, 
@@ -23,18 +22,15 @@ import {
   Layers,
   Expand,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  RefreshCw
 } from 'lucide-react';
 import { SpiritualBook } from '../data/spiritual_books';
 import { getBookSearchIndex, searchInBookIndex, BookSearchIndex } from '../utils/searchIndexService';
 
-// Set up local bundled PDF.js worker with fallback to bundled worker
+// Set up reliable PDF.js worker using static asset endpoint
 if (typeof window !== 'undefined') {
-  try {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker || '/pdfjs-assets/pdf.worker.min.mjs';
-  } catch (_) {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-  }
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdfjs-assets/pdf.worker.min.mjs';
 }
 
 interface SearchMatch {
@@ -56,11 +52,11 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
   const [rotation, setRotation] = useState<number>(0);
   const [pageDimensions, setPageDimensions] = useState<{ width: number; height: number }>({ width: 600, height: 850 });
   const [loading, setLoading] = useState<boolean>(true);
-  const [loadingProgress, setLoadingProgress] = useState<string>('Initializing PDF Engine...');
+  const [loadingProgress, setLoadingProgress] = useState<string>('Initializing Spiritual Book Engine...');
   const [error, setError] = useState<string | null>(null);
 
-  // View modes: 'canvas' (custom search + zoom) vs 'native' (full-featured browser PDF stream)
-  const [viewMode, setViewMode] = useState<'canvas' | 'native'>('canvas');
+  // View modes: 'canvas' (High-res scanned pages & images) vs 'text' (clean typography reader) vs 'native' (continuous browser PDF stream)
+  const [viewMode, setViewMode] = useState<'canvas' | 'text' | 'native'>('canvas');
   const [nativeEngine, setNativeEngine] = useState<'google' | 'direct'>('google');
   const [bookIndex, setBookIndex] = useState<BookSearchIndex | null>(null);
   const [readerFontSize, setReaderFontSize] = useState<number>(18);
@@ -84,6 +80,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const pageTextCacheRef = useRef<Map<number, { text: string; items: any[] }>>(new Map());
   const searchAbortRef = useRef<boolean>(false);
+  const [reloadTrigger, setReloadTrigger] = useState<number>(0);
 
   // Touch swipe support for iPad & mobile
   const touchStartXRef = useRef<number | null>(null);
@@ -108,12 +105,12 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     return Math.min(2.5, Math.max(0.45, Number(fitScale.toFixed(2))));
   }, []);
 
-  // Fetch and Load PDF Document with standard fonts, cmaps, and wasm decoders configured
+  // Fetch and Load PDF Document with standard fonts, cmaps, wasm decoders, and image decoders configured
   useEffect(() => {
     let isCancelled = false;
     setLoading(true);
     setError(null);
-    setLoadingProgress('Connecting to spiritual library server...');
+    setLoadingProgress('Connecting to spiritual library archive...');
 
     // Eagerly preload static search index for instant offline search (vital for GitHub Pages)
     getBookSearchIndex(book.id).then(index => {
@@ -136,40 +133,61 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
         let doc: pdfjsLib.PDFDocumentProxy | null = null;
         let lastErrorMsg = '';
 
-        // Configuration options for PDF.js document loading
-        const configOptions = {
-          cMapUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjsLib.version + '/cmaps/',
-          cMapPacked: true,
-          standardFontDataUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjsLib.version + '/standard_fonts/',
-          wasmUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjsLib.version + '/wasm/',
-          imageDecodersUrl: 'https://unpkg.com/pdfjs-dist@' + pdfjsLib.version + '/image_decoders/',
-          enableXfa: true,
-          isEvalSupported: true,
-          disableRange: false,
-          disableStream: false,
-        };
-
-        // Strategy 1: High-reliability backend stream proxy
+        // Strategy 1: High-reliability backend stream proxy with progress tracker
         try {
-          setLoadingProgress('Connecting to spiritual book archive...');
+          setLoadingProgress('Downloading complete illustrated book...');
           const response = await fetch(proxyUrl);
           const contentType = response.headers.get('content-type') || '';
           
-          // Verify response is valid PDF stream (not a 404 or HTML fallback from static hosts like GitHub Pages)
           if (response.ok && !contentType.includes('text/html')) {
-            const buf = await response.arrayBuffer();
+            const contentLength = +(response.headers.get('content-length') || 0);
+            let buf: ArrayBuffer;
+
+            if (response.body && contentLength > 0) {
+              const reader = response.body.getReader();
+              const chunks: Uint8Array[] = [];
+              let received = 0;
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                if (value) {
+                  chunks.push(value);
+                  received += value.length;
+                  const mb = (received / (1024 * 1024)).toFixed(1);
+                  const totalMb = (contentLength / (1024 * 1024)).toFixed(1);
+                  const pct = Math.min(99, Math.round((received / contentLength) * 100));
+                  if (!isCancelled) {
+                    setLoadingProgress(`Downloading book... ${mb}MB / ${totalMb}MB (${pct}%)`);
+                  }
+                }
+              }
+              const fullArray = new Uint8Array(received);
+              let offset = 0;
+              for (const chunk of chunks) {
+                fullArray.set(chunk, offset);
+                offset += chunk.length;
+              }
+              buf = fullArray.buffer;
+            } else {
+              buf = await response.arrayBuffer();
+            }
+
             if (buf.byteLength > 1000) {
-              setLoadingProgress('Rendering book pages...');
+              if (!isCancelled) {
+                setLoadingProgress('Rendering pages, high-resolution artwork & typography...');
+              }
               const loadingTask = pdfjsLib.getDocument({
                 data: new Uint8Array(buf),
                 cMapUrl: '/pdfjs-assets/cmaps/',
                 cMapPacked: true,
                 standardFontDataUrl: '/pdfjs-assets/standard_fonts/',
                 wasmUrl: '/pdfjs-assets/wasm/',
+                imageDecodersUrl: '/pdfjs-assets/image_decoders/',
                 enableXfa: true,
+                isEvalSupported: true,
                 disableRange: true,
                 disableStream: true,
-              });
+              } as any);
               doc = await loadingTask.promise;
             }
           }
@@ -188,10 +206,10 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
               cMapPacked: true,
               standardFontDataUrl: '/pdfjs-assets/standard_fonts/',
               wasmUrl: '/pdfjs-assets/wasm/',
+              imageDecodersUrl: '/pdfjs-assets/image_decoders/',
               enableXfa: true,
-              disableRange: true,
-              disableStream: true,
-            });
+              isEvalSupported: true,
+            } as any);
             doc = await loadingTask.promise;
           } catch (e: any) {
             console.warn('Strategy 2 (Direct stream) failed:', e);
@@ -211,12 +229,15 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             const optimalScale = calculateOptimalScale(initialViewport.width);
             setScale(optimalScale);
           } catch (_) {}
+        } else {
+          setError(lastErrorMsg || 'Could not load PDF document stream');
         }
 
         setLoading(false);
       } catch (err: any) {
-        console.warn('Direct canvas stream unavailable, active page reader ready:', err);
+        console.warn('Direct canvas stream error:', err);
         if (!isCancelled) {
+          setError(err?.message || 'Failed to render PDF');
           setLoading(false);
         }
       }
@@ -227,7 +248,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
     return () => {
       isCancelled = true;
     };
-  }, [book.pdfUrl, proxyUrl, calculateOptimalScale]);
+  }, [book.pdfUrl, proxyUrl, calculateOptimalScale, reloadTrigger]);
 
   // Fail-safe PDF.js Canvas Rendering Queue Engine
   const isRenderingRef = useRef<boolean>(false);
@@ -720,19 +741,31 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 onClick={() => setViewMode('canvas')}
                 className={`px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                   viewMode === 'canvas' 
-                    ? 'bg-amber-500 text-slate-950 shadow-sm' 
+                    ? 'bg-amber-500 text-slate-950 shadow-sm font-black' 
                     : 'text-slate-400 hover:text-white'
                 }`}
-                title="Custom High-Speed Canvas Reader"
+                title="Scanned Book Pages with original illustrations, photos & typography"
               >
                 <Eye className="w-3 h-3" />
-                <span className="hidden sm:inline">Canvas</span>
+                <span className="hidden sm:inline">Scanned</span>
+              </button>
+              <button
+                onClick={() => setViewMode('text')}
+                className={`px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                  viewMode === 'text' 
+                    ? 'bg-amber-500 text-slate-950 shadow-sm font-black' 
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Clean Typography Reader with font & theme controls"
+              >
+                <BookOpen className="w-3 h-3" />
+                <span className="hidden sm:inline">Text</span>
               </button>
               <button
                 onClick={() => setViewMode('native')}
                 className={`px-2 py-1 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
                   viewMode === 'native' 
-                    ? 'bg-amber-500 text-slate-950 shadow-sm' 
+                    ? 'bg-amber-500 text-slate-950 shadow-sm font-black' 
                     : 'text-slate-400 hover:text-white'
                 }`}
                 title="Continuous Browser View"
@@ -1188,38 +1221,55 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 </div>
               )}
 
-              {error && !loading && (
-                <div className="my-auto max-w-md bg-rose-950/40 border border-rose-500/30 p-6 rounded-2xl text-center space-y-4 shadow-2xl">
-                  <AlertCircle className="w-8 h-8 text-rose-400 mx-auto" />
-                  <div>
-                    <h4 className="text-sm font-bold text-white mb-1">Inline Canvas Stream Blocked</h4>
-                    <p className="text-xs text-rose-300/80 mb-4">{error}</p>
+              {error && !loading && viewMode === 'canvas' && (
+                <div className="my-auto max-w-md bg-slate-900/90 border border-amber-500/30 p-6 rounded-2xl text-center space-y-4 shadow-2xl backdrop-blur-md">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center mx-auto text-amber-400">
+                    <AlertCircle className="w-6 h-6" />
                   </div>
-                  <div className="flex flex-col gap-2 justify-center">
+                  <div>
+                    <h4 className="text-sm font-bold text-white mb-1">Direct Scanned Book Stream</h4>
+                    <p className="text-xs text-slate-300 mb-2">We encountered a temporary network delay loading the heavy graphical scanned stream.</p>
+                    <p className="text-[11px] text-amber-300/80 font-mono bg-black/40 px-2.5 py-1.5 rounded-lg border border-white/5">{error}</p>
+                  </div>
+                  <div className="flex flex-col gap-2 justify-center pt-2">
                     <button
-                      onClick={() => setViewMode('native')}
+                      onClick={() => setReloadTrigger(p => p + 1)}
                       className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
                     >
-                      <Layers className="w-4 h-4" />
+                      <RefreshCw className="w-4 h-4" />
+                      Retry Loading Scanned Book (with Images)
+                    </button>
+                    <button
+                      onClick={() => setViewMode('text')}
+                      className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 border border-white/10 cursor-pointer"
+                    >
+                      <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                      Read in Clean Text Mode
+                    </button>
+                    <button
+                      onClick={() => setViewMode('native')}
+                      className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 border border-white/10 cursor-pointer"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-amber-400" />
                       Switch to Embedded Browser Reader
                     </button>
                     <a
                       href={book.pdfUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 border border-white/10 cursor-pointer"
+                      className="px-4 py-2 bg-transparent hover:bg-white/5 text-slate-400 hover:text-white text-[11px] font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      Open PDF Directly in New Tab
+                      <ExternalLink className="w-3 h-3" />
+                      Open Original PDF in New Tab
                     </a>
                   </div>
                 </div>
               )}
 
-              {/* Canvas Paper View (When Scanned PDF Engine is loaded) */}
+              {/* Canvas Paper View (Scanned PDF Engine with high-res artwork, photos & typography) */}
               {pdfDoc && (
                 <div 
-                  className={`relative shadow-2xl rounded-sm sm:rounded-md bg-white border border-slate-300/80 transition-all ${loading || error ? 'hidden' : 'block'} mb-16`}
+                  className={`relative shadow-2xl rounded-sm sm:rounded-md bg-white border border-slate-300/80 transition-all ${loading ? 'hidden' : 'block'} mb-16`}
                   style={{
                     width: `${pageDimensions.width}px`,
                     minHeight: `${pageDimensions.height}px`,
@@ -1231,7 +1281,7 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                     <span>Page {currentPage} of {numPages}</span>
                     {currentPage <= 2 && (
                       <span className="text-[8px] font-normal text-slate-300 border-l border-white/20 pl-1.5">
-                        Introductory Page
+                        Introductory / Illustrated
                       </span>
                     )}
                   </div>
@@ -1267,121 +1317,17 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
                 </div>
               )}
 
-              {/* Interactive Book Page Paper View (Active Page & Offline Static Reader) */}
-              {!pdfDoc && !loading && (
-                <div 
-                  className={`w-full max-w-3xl rounded-2xl border shadow-2xl p-5 sm:p-10 md:p-12 my-2 sm:my-4 transition-all mb-16 select-text ${
-                    readerTheme === 'ivory'
-                      ? 'bg-[#faf7ee] text-[#2c2824] border-[#e6dcce]'
-                      : readerTheme === 'sepia'
-                      ? 'bg-[#f4ecd8] text-[#3e2e1d] border-[#ded0b1]'
-                      : readerTheme === 'dark'
-                      ? 'bg-slate-900 text-slate-100 border-slate-800'
-                      : 'bg-white text-slate-900 border-slate-200'
-                  }`}
-                  style={{ fontSize: `${readerFontSize}px` }}
-                >
-                  {/* Paper Header */}
-                  <div className="border-b border-black/10 dark:border-white/10 pb-3.5 mb-6 flex flex-wrap items-center justify-between gap-2 text-xs font-sans">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                      <span className="font-bold tracking-wider uppercase text-[11px] text-slate-600 dark:text-slate-300">
-                        {book.title}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2.5">
-                      {activeSearchTerm && (
-                        <span className="bg-amber-500/20 text-amber-800 dark:text-amber-300 px-2.5 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 border border-amber-500/30">
-                          <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                          <span>
-                            {(
-                              (bookIndex?.pages.find(p => p.page === currentPage)?.text || pageTextCacheRef.current.get(currentPage)?.text || '')
-                                .toLowerCase()
-                                .match(new RegExp(activeSearchTerm.trim().toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []
-                            ).length} match(es) on this page
-                          </span>
-                        </span>
-                      )}
-                      <span className="font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[11px]">
-                        Page {currentPage} of {numPages}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Page Text Paragraphs with Golden Highlights */}
-                  {(() => {
-                    const pageData = bookIndex?.pages.find(p => p.page === currentPage) || 
-                      (pageTextCacheRef.current.get(currentPage)?.text ? { page: currentPage, text: pageTextCacheRef.current.get(currentPage)!.text } : null);
-                    const pageText = pageData?.text || '';
-                    const paras = pageText.split(/\n\s*\n|\n/).map(p => p.trim()).filter(Boolean);
-
-                    if (paras.length === 0) {
-                      return (
-                        <div className="text-center py-16 text-slate-400 font-serif italic space-y-3">
-                          <BookOpen className="w-8 h-8 text-amber-500/40 mx-auto" />
-                          <p>Introductory or Illustrated Section • Page {currentPage}</p>
-                          <div className="pt-2 flex justify-center gap-2">
-                            <button
-                              onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
-                              className="px-4 py-2 bg-amber-500 text-slate-950 font-sans font-bold text-xs rounded-xl cursor-pointer hover:bg-amber-400"
-                            >
-                              Go to Next Page &rarr;
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="font-serif leading-[1.85] space-y-4">
-                        {paras.map((paragraph, pIdx) => {
-                          if (!activeSearchTerm.trim()) {
-                            return <p key={pIdx} className="text-justify indent-6">{paragraph}</p>;
-                          }
-                          const term = activeSearchTerm.trim().toLowerCase();
-                          const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-                          const parts = paragraph.split(regex);
-                          return (
-                            <p key={pIdx} className="text-justify indent-6">
-                              {parts.map((part, i) =>
-                                part.toLowerCase() === term ? (
-                                  <mark
-                                    key={i}
-                                    className="bg-amber-300/80 dark:bg-amber-400/40 text-amber-950 dark:text-amber-100 font-bold px-1 py-0.5 rounded shadow-[0_0_8px_rgba(245,158,11,0.5)] border-b-2 border-amber-600 not-italic inline-block mx-0.5"
-                                  >
-                                    {part}
-                                  </mark>
-                                ) : (
-                                  <span key={i}>{part}</span>
-                                )
-                              )}
-                            </p>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-
-                  {/* Paper Footer Navigation */}
-                  <div className="border-t border-black/10 dark:border-white/10 pt-4 mt-8 flex items-center justify-between text-xs text-slate-500 font-sans">
-                    <button
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage <= 1}
-                      className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer flex items-center gap-1 font-semibold transition-all"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" /> Previous
-                    </button>
-                    <span className="font-mono font-bold tracking-widest text-[11px]">
-                      — Page {currentPage} of {numPages} —
-                    </span>
-                    <button
-                      onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
-                      disabled={currentPage >= numPages}
-                      className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer flex items-center gap-1 font-semibold transition-all"
-                    >
-                      Next <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+              {/* Fallback to text reader inside canvas mode if doc didn't load */}
+              {!pdfDoc && !loading && !error && (
+                <div className="my-auto max-w-md text-center p-6 bg-white/5 rounded-2xl border border-white/10 space-y-3">
+                  <BookOpen className="w-8 h-8 text-amber-400 mx-auto" />
+                  <p className="text-sm font-semibold text-white">Ready in Text Mode</p>
+                  <button
+                    onClick={() => setViewMode('text')}
+                    className="px-4 py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl cursor-pointer hover:bg-amber-400"
+                  >
+                    Open Text Reader
+                  </button>
                 </div>
               )}
 
@@ -1410,7 +1356,176 @@ export const PdfViewerModal: React.FC<PdfViewerModalProps> = ({ book, onClose })
             </div>
           )}
 
-          {/* View Mode 2: Full-Featured Embedded Browser PDF Viewer */}
+          {/* View Mode 2: Dedicated Interactive Typography Text Reader */}
+          {viewMode === 'text' && (
+            <div 
+              ref={scrollContainerRef}
+              className="flex-grow h-full overflow-x-auto overflow-y-auto flex flex-col items-center justify-start p-2 sm:p-5 md:p-8 pb-32 sm:pb-28 custom-scrollbar relative"
+            >
+              <div 
+                className={`w-full max-w-3xl rounded-2xl border shadow-2xl p-5 sm:p-10 md:p-12 my-2 sm:my-4 transition-all mb-16 select-text ${
+                  readerTheme === 'ivory'
+                    ? 'bg-[#faf7ee] text-[#2c2824] border-[#e6dcce]'
+                    : readerTheme === 'sepia'
+                    ? 'bg-[#f4ecd8] text-[#3e2e1d] border-[#ded0b1]'
+                    : readerTheme === 'dark'
+                    ? 'bg-slate-900 text-slate-100 border-slate-800'
+                    : 'bg-white text-slate-900 border-slate-200'
+                }`}
+                style={{ fontSize: `${readerFontSize}px` }}
+              >
+                {/* Paper Header with Theme & Font Controls */}
+                <div className="border-b border-black/10 dark:border-white/10 pb-3.5 mb-6 flex flex-wrap items-center justify-between gap-3 text-xs font-sans">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span className="font-bold tracking-wider uppercase text-[11px] text-slate-600 dark:text-slate-300">
+                      {book.title}
+                    </span>
+                  </div>
+
+                  {/* Paper Theme & Typography Controls */}
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-0.5 rounded-lg border border-black/10 dark:border-white/10">
+                      <button
+                        onClick={() => setReaderTheme('ivory')}
+                        className={`w-4 h-4 rounded-full border ${readerTheme === 'ivory' ? 'ring-2 ring-amber-500 scale-110' : 'opacity-70'}`}
+                        style={{ backgroundColor: '#faf7ee', borderColor: '#dcd3c3' }}
+                        title="Ivory Paper"
+                      />
+                      <button
+                        onClick={() => setReaderTheme('sepia')}
+                        className={`w-4 h-4 rounded-full border ${readerTheme === 'sepia' ? 'ring-2 ring-amber-500 scale-110' : 'opacity-70'}`}
+                        style={{ backgroundColor: '#f4ecd8', borderColor: '#d3c19b' }}
+                        title="Sepia Paper"
+                      />
+                      <button
+                        onClick={() => setReaderTheme('white')}
+                        className={`w-4 h-4 rounded-full border ${readerTheme === 'white' ? 'ring-2 ring-amber-500 scale-110' : 'opacity-70'}`}
+                        style={{ backgroundColor: '#ffffff', borderColor: '#d1d5db' }}
+                        title="White Paper"
+                      />
+                      <button
+                        onClick={() => setReaderTheme('dark')}
+                        className={`w-4 h-4 rounded-full border ${readerTheme === 'dark' ? 'ring-2 ring-amber-500 scale-110' : 'opacity-70'}`}
+                        style={{ backgroundColor: '#0f172a', borderColor: '#334155' }}
+                        title="Dark Mode"
+                      />
+                    </div>
+
+                    {/* Font Size */}
+                    <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 px-2 py-0.5 rounded-lg border border-black/10 dark:border-white/10 text-[10px] font-bold">
+                      <button
+                        onClick={() => setReaderFontSize(s => Math.max(13, s - 1))}
+                        className="hover:text-amber-500 px-1 cursor-pointer"
+                        title="Decrease font size"
+                      >
+                        A-
+                      </button>
+                      <span className="opacity-50">|</span>
+                      <button
+                        onClick={() => setReaderFontSize(s => Math.min(28, s + 1))}
+                        className="hover:text-amber-500 px-1 cursor-pointer"
+                        title="Increase font size"
+                      >
+                        A+
+                      </button>
+                    </div>
+
+                    <span className="font-mono font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-[11px]">
+                      Page {currentPage} of {numPages || 1}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Page Text Paragraphs with Golden Highlights */}
+                {(() => {
+                  const pageData = bookIndex?.pages.find(p => p.page === currentPage) || 
+                    (pageTextCacheRef.current.get(currentPage)?.text ? { page: currentPage, text: pageTextCacheRef.current.get(currentPage)!.text } : null);
+                  const pageText = pageData?.text || '';
+                  const paras = pageText.split(/\n\s*\n|\n/).map(p => p.trim()).filter(Boolean);
+
+                  if (paras.length === 0) {
+                    return (
+                      <div className="text-center py-16 text-slate-400 font-serif italic space-y-3">
+                        <BookOpen className="w-8 h-8 text-amber-500/40 mx-auto" />
+                        <p>Introductory or Illustrated Section • Page {currentPage}</p>
+                        <p className="text-xs font-sans not-italic text-slate-500">
+                          Switch to <span className="text-amber-500 font-bold">"Scanned"</span> mode in the top bar to see the original artwork & photos.
+                        </p>
+                        <div className="pt-2 flex justify-center gap-2">
+                          <button
+                            onClick={() => setViewMode('canvas')}
+                            className="px-4 py-2 bg-amber-500 text-slate-950 font-sans font-bold text-xs rounded-xl cursor-pointer hover:bg-amber-400 shadow-md"
+                          >
+                            <Eye className="w-3.5 h-3.5 inline mr-1" />
+                            View Scanned Illustration
+                          </button>
+                          <button
+                            onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
+                            className="px-4 py-2 bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 font-sans font-bold text-xs rounded-xl cursor-pointer hover:bg-black/10 dark:hover:bg-white/10"
+                          >
+                            Next Page &rarr;
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="font-serif leading-[1.85] space-y-4">
+                      {paras.map((paragraph, pIdx) => {
+                        if (!activeSearchTerm.trim()) {
+                          return <p key={pIdx} className="text-justify indent-6">{paragraph}</p>;
+                        }
+                        const term = activeSearchTerm.trim().toLowerCase();
+                        const regex = new RegExp(`(${term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                        const parts = paragraph.split(regex);
+                        return (
+                          <p key={pIdx} className="text-justify indent-6">
+                            {parts.map((part, i) =>
+                              part.toLowerCase() === term ? (
+                                <mark
+                                  key={i}
+                                  className="bg-amber-300/80 dark:bg-amber-400/40 text-amber-950 dark:text-amber-100 font-bold px-1 py-0.5 rounded shadow-[0_0_8px_rgba(245,158,11,0.5)] border-b-2 border-amber-600 not-italic inline-block mx-0.5"
+                                >
+                                  {part}
+                                </mark>
+                              ) : (
+                                <span key={i}>{part}</span>
+                              )
+                            )}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* Paper Footer Navigation */}
+                <div className="border-t border-black/10 dark:border-white/10 pt-4 mt-8 flex items-center justify-between text-xs text-slate-500 font-sans">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer flex items-center gap-1 font-semibold transition-all"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" /> Previous
+                  </button>
+                  <span className="font-mono font-bold tracking-widest text-[11px]">
+                    — Page {currentPage} of {numPages || 1} —
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
+                    disabled={currentPage >= numPages}
+                    className="px-3 py-1.5 rounded-lg border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 disabled:opacity-30 cursor-pointer flex items-center gap-1 font-semibold transition-all"
+                  >
+                    Next <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* View Mode 3: Full-Featured Embedded Browser PDF Viewer */}
           {viewMode === 'native' && (
             <div className="flex-grow h-full w-full bg-slate-900 flex flex-col">
               {/* Native Engine Navigation Strip */}
