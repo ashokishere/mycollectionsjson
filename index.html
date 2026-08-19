@@ -118,22 +118,7 @@
         }
       });
     </script>
-    <script type="module">
-      import('/src/main.tsx')
-        .then(function() {
-          var status = document.getElementById('loader-status');
-          if (status) status.textContent = 'Rendering sanctuary portal...';
-        })
-        .catch(function(err) {
-          console.error("Module launch error:", err);
-          var box = document.getElementById('loader-error-box');
-          var txt = document.getElementById('loader-error-text');
-          if (box && txt) {
-            box.style.display = 'block';
-            txt.textContent = 'Module Loading Error: ' + (err.message || err) + (err.stack ? '\n' + err.stack : '');
-          }
-        });
-    </script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
 
