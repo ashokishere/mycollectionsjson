@@ -11,6 +11,8 @@ on:
       - 'src/data/**'
       - 'package.json'
       - 'vite.config.ts'
+      - 'index.html'
+      - '.github/**'
   workflow_dispatch:
 
 permissions:
@@ -53,7 +55,9 @@ jobs:
         # while still providing visibility in the logs.
 
       - name: Build
-        run: npm run build
+        run: |
+          npm run build
+          cp dist/index.html dist/404.html
 
       - name: Upload Artifacts
         uses: actions/upload-pages-artifact@v3
