@@ -67,9 +67,10 @@ async function main() {
     }
   });
 
-  console.log('Writing Database.xlsx...');
+  console.log('Writing Database.xlsx and public/Database.xlsx...');
   await workbook.xlsx.writeFile('Database.xlsx');
-  console.log('Successfully regenerated Database.xlsx from Database.csv!');
+  await workbook.xlsx.writeFile('public/Database.xlsx');
+  console.log('Successfully regenerated Database.xlsx and public/Database.xlsx from Database.csv!');
 }
 
 main().catch(console.error);

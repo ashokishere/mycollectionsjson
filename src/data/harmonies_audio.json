@@ -9,6 +9,11 @@
       "name": "Kriyananda Songs",
       "icon": "Music",
       "description": "Original devotional compositions, folklore, and melodies written and sung by Swami Kriyananda."
+    },
+    {
+      "name": "Spiritual Wisdom Teachings",
+      "icon": "BookOpen",
+      "description": "Original audio discourses and spiritual wisdom by Paramahansa Yogananda."
     }
   ],
   "tracks": [
@@ -560,6 +565,96 @@
       "tradition": "Ananda",
       "category": "Kriyananda Songs",
       "description": "A sacred and angelic chant to connect with elevated states of light."
+    },
+    {
+      "id": "wisdom-the-great-light-of-god-yogananda-mp4",
+      "title": "The Great Light of God (Video Discourse)",
+      "url": "https://spiritualbooks.eu/wp-content/uploads/2024/11/The-Great-Light-of-God-Paramahansa-Yogananda.mp4",
+      "speaker": "Paramahansa Yogananda",
+      "tradition": "SRF/YSS",
+      "category": "Spiritual Wisdom Teachings",
+      "description": "Paramahansa Yogananda discourse on the Great Light of God."
+    },
+    {
+      "id": "wisdom-awake-in-the-cosmic-dream",
+      "title": "Awake in the Cosmic Dream",
+      "url": "https://spiritualbooks.eu/wp-content/uploads/2024/11/Awake_in_the_Cosmic_Dream.mp3",
+      "speaker": "Paramahansa Yogananda",
+      "tradition": "SRF/YSS",
+      "category": "Spiritual Wisdom Teachings",
+      "description": "Paramahansa Yogananda on awakening from cosmic delusion into supreme reality."
+    },
+    {
+      "id": "wisdom-be-a-smile-millionaire",
+      "title": "Be a Smile Millionaire",
+      "url": "https://spiritualbooks.eu/wp-content/uploads/2024/11/Be_A_Smile_Millionaire.mp3",
+      "speaker": "Paramahansa Yogananda",
+      "tradition": "SRF/YSS",
+      "category": "Spiritual Wisdom Teachings",
+      "description": "Paramahansa Yogananda on radiant inner joy, optimism, and spiritual cheerfulness."
+    },
+    {
+      "id": "wisdom-beholding-the-one-in-all",
+      "title": "Beholding the One in All",
+      "url": "https://spiritualbooks.eu/wp-content/uploads/2024/11/Beholding_the_One_in_All.mp3",
+      "speaker": "Paramahansa Yogananda",
+      "tradition": "SRF/YSS",
+      "category": "Spiritual Wisdom Teachings",
+      "description": "Paramahansa Yogananda on divine omnipresence and unity consciousness."
+    },
+    {
+      "id": "wisdom-follow-the-path-of-christ-krishna-and-the-masters",
+      "title": "Follow the Path of Christ, Krishna and the Masters",
+      "url": "https://spiritualbooks.eu/wp-content/uploads/2024/11/Follow_the_Path_of_Christ_Krishna_and_the_Masters.mp3",
+      "speaker": "Paramahansa Yogananda",
+      "tradition": "SRF/YSS",
+      "category": "Spiritual Wisdom Teachings",
+      "description": "Paramahansa Yogananda on the universal spiritual path taught by Christ and Krishna."
+    },
+    {
+      "id": "wisdom-in-the-glory-of-the-spirit",
+      "title": "In the Glory of the Spirit",
+      "url": "https://spiritualbooks.eu/wp-content/uploads/2024/11/In_the_Glory_of_the_Spirit.mp3",
+      "speaker": "Paramahansa Yogananda",
+      "tradition": "SRF/YSS",
+      "category": "Spiritual Wisdom Teachings",
+      "description": "Paramahansa Yogananda on living immersed in the bliss and glory of Spirit."
+    },
+    {
+      "id": "wisdom-one-life-vs-reincarnation",
+      "title": "One Life Vs. Reincarnation",
+      "url": "https://spiritualbooks.eu/wp-content/uploads/2024/11/One_Life_Vs._Reincarnation.mp3",
+      "speaker": "Paramahansa Yogananda",
+      "tradition": "SRF/YSS",
+      "category": "Spiritual Wisdom Teachings",
+      "description": "Paramahansa Yogananda clarifying cosmic evolution, karma, and reincarnation."
+    },
+    {
+      "id": "wisdom-removing-all-sorrow-and-suffering",
+      "title": "Removing All Sorrow and Suffering",
+      "url": "https://spiritualbooks.eu/wp-content/uploads/2024/11/Removing_All_Sorrow_and_Suffering.mp3",
+      "speaker": "Paramahansa Yogananda",
+      "tradition": "SRF/YSS",
+      "category": "Spiritual Wisdom Teachings",
+      "description": "Paramahansa Yogananda on the spiritual science to eradicate misery and sorrow."
+    },
+    {
+      "id": "wisdom-self-realization-inner-and-outer-path",
+      "title": "Self-Realization — The Inner and the Outer Path",
+      "url": "https://spiritualbooks.eu/wp-content/uploads/2024/11/Self-Realization_-_the_Inner_and_the_Outer_Path.mp3",
+      "speaker": "Paramahansa Yogananda",
+      "tradition": "SRF/YSS",
+      "category": "Spiritual Wisdom Teachings",
+      "description": "Paramahansa Yogananda on balancing meditation and outer duties on the spiritual path."
+    },
+    {
+      "id": "wisdom-the-great-light-of-god-audio",
+      "title": "The Great Light of God (Audio Discourse)",
+      "url": "https://spiritualbooks.eu/wp-content/uploads/2024/11/The_Great_Light_of_God.mp3",
+      "speaker": "Paramahansa Yogananda",
+      "tradition": "SRF/YSS",
+      "category": "Spiritual Wisdom Teachings",
+      "description": "Paramahansa Yogananda on perceiving the divine luminous radiance of God."
     }
   ]
 }

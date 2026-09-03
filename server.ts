@@ -190,7 +190,7 @@ async function convertCsvToData(csvPath: string) {
   }
 
   const headerRow = parsedRows[headerRowIndex];
-  let idIdx = 0, titleIdx = 1, urlIdx = 2, tagsIdx = 3;
+  let idIdx = 0, titleIdx = 1, urlIdx = 2, tagsIdx = 3, talkByIdx = -1;
 
   if (headerRow) {
     headerRow.forEach((cell, idx) => {
@@ -199,6 +199,7 @@ async function convertCsvToData(csvPath: string) {
       else if (c.includes("title")) titleIdx = idx;
       else if (c.includes("url") || c.includes("link") || c.includes("youtube")) urlIdx = idx;
       else if (c.includes("tag") || c.includes("theme") || c.includes("category") || c.includes("topic")) tagsIdx = idx;
+      else if (c.includes("talk by") || c.includes("author") || c.includes("speaker")) talkByIdx = idx;
     });
   }
 
@@ -217,6 +218,12 @@ async function convertCsvToData(csvPath: string) {
     
     const rawTagsString = String(row[tagsIdx] || "");
     const rawTags = rawTagsString.split(/[|,;]/).map(t => t.trim()).filter(t => t !== "");
+    if (talkByIdx !== -1) {
+      const talkBy = String(row[talkByIdx] || "").trim();
+      if (talkBy && !rawTags.includes(talkBy)) {
+        rawTags.push(talkBy);
+      }
+    }
     
     const normalizedTags = Array.from(new Set(rawTags.map(t => {
       const lower = t.toLowerCase();

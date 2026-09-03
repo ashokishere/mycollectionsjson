@@ -1192,5 +1192,1096 @@
         "icon": "Music"
       }
     ]
+  },
+  {
+    "id": "kriyananda-chants-yogananda",
+    "name": "Kriyananda Chants Yogananda",
+    "description": "Sacred chants of Paramahansa Yogananda sung and played by Swami Kriyananda.",
+    "themeColor": "text-amber-400",
+    "accentColor": "amber",
+    "icon": "Flame",
+    "artist": "Swami Kriyananda",
+    "tags": [
+      "Swami Kriyananda",
+      "Swamy Kiryananda",
+      "Chants",
+      "Devotional Chants"
+    ],
+    "tracks": [
+      {
+        "id": "46vTBeDN18U",
+        "title": "Do Not Dry the Ocean of My Love",
+        "desc": "Devotional song by Swami Kriyananda (Kriyananda Chants Yogananda).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Kriyananda Chants Yogananda",
+          "Do Not",
+          "Dry",
+          "Ocean",
+          "Love"
+        ]
+      },
+      {
+        "id": "nGFiOpU0wWY",
+        "title": "I Will Be Thine Always",
+        "desc": "Devotional song by Swami Kriyananda (Kriyananda Chants Yogananda).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Kriyananda Chants Yogananda",
+          "Will",
+          "Thine",
+          "Always"
+        ]
+      },
+      {
+        "id": "dOVPUGgyAOg",
+        "title": "Door of My Heart",
+        "desc": "Devotional song by Swami Kriyananda (Kriyananda Chants Yogananda).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Kriyananda Chants Yogananda",
+          "Door",
+          "Heart"
+        ]
+      },
+      {
+        "id": "DZ8h-vMwIAo",
+        "title": "I Have Been Roaming",
+        "desc": "Devotional song by Swami Kriyananda (Kriyananda Chants Yogananda).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Kriyananda Chants Yogananda",
+          "Have",
+          "Been",
+          "Roaming"
+        ]
+      },
+      {
+        "id": "WX74Xo0s3oI",
+        "title": "Lord, When in Darkness",
+        "desc": "Devotional song by Swami Kriyananda (Kriyananda Chants Yogananda).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Kriyananda Chants Yogananda",
+          "Lord",
+          "When",
+          "Darkness"
+        ]
+      },
+      {
+        "id": "B66fhAYZ9WQ",
+        "title": "Will That Day Come to Me, Ma",
+        "desc": "Devotional song by Swami Kriyananda (Kriyananda Chants Yogananda).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Kriyananda Chants Yogananda",
+          "Will",
+          "That",
+          "Day",
+          "Come"
+        ]
+      },
+      {
+        "id": "VokbXlBluOo",
+        "title": "Blue Lotus Feet",
+        "desc": "Devotional song by Swami Kriyananda (Kriyananda Chants Yogananda).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Kriyananda Chants Yogananda",
+          "Blue",
+          "Lotus",
+          "Feet"
+        ]
+      },
+      {
+        "id": "EZHA9e96Kcs",
+        "title": "When I Awake",
+        "desc": "Devotional song by Swami Kriyananda (Kriyananda Chants Yogananda).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Kriyananda Chants Yogananda",
+          "When",
+          "Awake"
+        ]
+      },
+      {
+        "id": "xHYY33G42Ys",
+        "title": "Om Namo Bhagavate",
+        "desc": "Devotional song by Swami Kriyananda (Kriyananda Chants Yogananda).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Kriyananda Chants Yogananda",
+          "Namo",
+          "Bhagavate"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "o-god-beautiful",
+    "name": "O God Beautiful",
+    "description": "Devotional chants and inspirational songs of soul longing and joy.",
+    "themeColor": "text-rose-400",
+    "accentColor": "rose",
+    "icon": "Heart",
+    "artist": "Swami Kriyananda",
+    "tags": [
+      "Swami Kriyananda",
+      "Swamy Kiryananda",
+      "Chants",
+      "Devotional Chants"
+    ],
+    "tracks": [
+      {
+        "id": "R-NnX0FA69I",
+        "title": "Dawn Chant",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Dawn",
+          "Chant"
+        ]
+      },
+      {
+        "id": "01EYgZI4QE8",
+        "title": "Deliver Us from Delusion",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Deliver",
+          "From",
+          "Delusion"
+        ]
+      },
+      {
+        "id": "iTcWz2ZjRsY",
+        "title": "Door of My Heart",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Door",
+          "Heart"
+        ]
+      },
+      {
+        "id": "0uPBYW72s8U",
+        "title": "Listen, Listen, Listen",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Listen"
+        ]
+      },
+      {
+        "id": "lQaCc9UAUqk",
+        "title": "I Am Free",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Free"
+        ]
+      },
+      {
+        "id": "NZwpn7IwH0o",
+        "title": "Thou Art My Life",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Thou",
+          "Art",
+          "Life"
+        ]
+      },
+      {
+        "id": "5xWsG8a5hMU",
+        "title": "In the Temple of Silence",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Temple",
+          "Silence"
+        ]
+      },
+      {
+        "id": "W6H1eEDWs54",
+        "title": "Who Is in My Temple",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Who",
+          "Temple"
+        ]
+      },
+      {
+        "id": "yVR9LHwzdjA",
+        "title": "Polestar of My Life",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Polestar",
+          "Life"
+        ]
+      },
+      {
+        "id": "6-T3HaTLhRk",
+        "title": "I Give You My Soul Call",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Give",
+          "You",
+          "Soul",
+          "Call"
+        ]
+      },
+      {
+        "id": "TqVqG0Tsing",
+        "title": "Divine Love Sorrows",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Divine",
+          "Love",
+          "Sorrows"
+        ]
+      },
+      {
+        "id": "eP0yjkXzvN0",
+        "title": "Blue Lotus Feet",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Blue",
+          "Lotus",
+          "Feet"
+        ]
+      },
+      {
+        "id": "OhhEoeHMJxY",
+        "title": "O God Beautiful",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "God",
+          "Beautiful"
+        ]
+      },
+      {
+        "id": "wFpOB2fNLFM",
+        "title": "Jenny Will Love Me",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Jenny",
+          "Will",
+          "Love"
+        ]
+      },
+      {
+        "id": "UbdVU0FvKI0",
+        "title": "Springtime in Romania",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Springtime",
+          "Romania"
+        ]
+      },
+      {
+        "id": "pSOW18RIzJM",
+        "title": "The Hill That Was Tara",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Hill",
+          "That",
+          "Was",
+          "Tara"
+        ]
+      },
+      {
+        "id": "wsadTliaOLw",
+        "title": "Song of the Nightingale",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Song",
+          "Nightingale"
+        ]
+      },
+      {
+        "id": "l7n9l9VbLGg",
+        "title": "Imogen's Song",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Imogens",
+          "Song"
+        ]
+      },
+      {
+        "id": "AOgBIVsXmZQ",
+        "title": "I Live Without Fear",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Live",
+          "Without",
+          "Fear"
+        ]
+      },
+      {
+        "id": "xAHNai6x5_4",
+        "title": "Have You Seen Sorrento?",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Have",
+          "You",
+          "Seen",
+          "Sorrento"
+        ]
+      },
+      {
+        "id": "3FMyunhwGzc",
+        "title": "In the Spirit",
+        "desc": "Devotional song by Swami Kriyananda (O God Beautiful).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "O God Beautiful",
+          "Spirit"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "soul-songs-kriyananda",
+    "name": "Soul Songs",
+    "description": "Uplifting melodies, folklore, and devotional soul expressions by Swami Kriyananda.",
+    "themeColor": "text-indigo-400",
+    "accentColor": "indigo",
+    "icon": "Music",
+    "artist": "Swami Kriyananda",
+    "tags": [
+      "Swami Kriyananda",
+      "Swamy Kiryananda",
+      "Chants",
+      "Songs"
+    ],
+    "tracks": [
+      {
+        "id": "YJSY28qKSwc",
+        "title": "Mother of Us All",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Mother",
+          "All"
+        ]
+      },
+      {
+        "id": "RNHF19b5D8s",
+        "title": "Memories",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Memories"
+        ]
+      },
+      {
+        "id": "xpV0eG7JHJA",
+        "title": "Deirdre's Sorrows",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Deirdres",
+          "Sorrows"
+        ]
+      },
+      {
+        "id": "lKTD-K5NDUU",
+        "title": "Irish Lullaby",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Irish",
+          "Lullaby"
+        ]
+      },
+      {
+        "id": "jG95RXgLDvE",
+        "title": "Good Night, Sweetheart",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Good",
+          "Night",
+          "Sweetheart"
+        ]
+      },
+      {
+        "id": "mqbQtU4nzRI",
+        "title": "Who Is Silvia?",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Who",
+          "Silvia"
+        ]
+      },
+      {
+        "id": "OOmUYs3QhEM",
+        "title": "Memories of That Isle",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Memories",
+          "That",
+          "Isle"
+        ]
+      },
+      {
+        "id": "L9Gnt1gqZbI",
+        "title": "Dare to Be Different!",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Dare",
+          "Different"
+        ]
+      },
+      {
+        "id": "7F4fZgOdh2Q",
+        "title": "Dublin Town",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Dublin",
+          "Town"
+        ]
+      },
+      {
+        "id": "BSN3yhFY-XY",
+        "title": "Walk Like a Man",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Walk",
+          "Like",
+          "Man"
+        ]
+      },
+      {
+        "id": "fLCkB1ilGcw",
+        "title": "Home Is a Green Hill",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Home",
+          "Green",
+          "Hill"
+        ]
+      },
+      {
+        "id": "1XaomJfDea8",
+        "title": "Peace",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Peace"
+        ]
+      },
+      {
+        "id": "BBVUSaGOkms",
+        "title": "Ra Ma",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Ra Ma"
+        ]
+      },
+      {
+        "id": "gRQUxysVfhc",
+        "title": "Love Is a Magician",
+        "desc": "Devotional song by Swami Kriyananda (Soul Songs).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Soul Songs",
+          "Love",
+          "Magician"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "windows-on-the-world",
+    "name": "Windows on the World",
+    "description": "Global spiritual songs and contemplative musical journeys across sacred traditions.",
+    "themeColor": "text-cyan-400",
+    "accentColor": "cyan",
+    "icon": "Compass",
+    "artist": "Swami Kriyananda",
+    "tags": [
+      "Swami Kriyananda",
+      "Swamy Kiryananda",
+      "Chants",
+      "Songs"
+    ],
+    "tracks": [
+      {
+        "id": "9eTpuOozsMg",
+        "title": "Mother of Us All",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Mother",
+          "All"
+        ]
+      },
+      {
+        "id": "NKdb_RG55lk",
+        "title": "Through Many Lives",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Through",
+          "Many",
+          "Lives"
+        ]
+      },
+      {
+        "id": "dbYtPk0d2Lk",
+        "title": "Krishna’s Flute",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Krishnas",
+          "Flute"
+        ]
+      },
+      {
+        "id": "BSSnbl3ZvOM",
+        "title": "Wander with Thee",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Wander",
+          "Thee"
+        ]
+      },
+      {
+        "id": "WZyJETlxFmU",
+        "title": "Cloisters",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Cloisters"
+        ]
+      },
+      {
+        "id": "cdkRvCe8Fb4",
+        "title": "God’s Call Within",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Gods",
+          "Call",
+          "Within"
+        ]
+      },
+      {
+        "id": "yUrJCGxQ5N4",
+        "title": "I Live Without Fear",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Live",
+          "Without",
+          "Fear"
+        ]
+      },
+      {
+        "id": "oGZtQXjvUpk",
+        "title": "I’ve Passed My Life as a Stranger",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Ive",
+          "Passed",
+          "Life",
+          "Stranger"
+        ]
+      },
+      {
+        "id": "BH0I-WRgCnw",
+        "title": "Lord Most High",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Lord",
+          "Most",
+          "High"
+        ]
+      },
+      {
+        "id": "WB566jWanq8",
+        "title": "Monasteries",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Monasteries"
+        ]
+      },
+      {
+        "id": "YfAfpXeaVcY",
+        "title": "Life Flows on Like a River",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Life",
+          "Flows",
+          "Like",
+          "River"
+        ]
+      },
+      {
+        "id": "fmHDBBn4fsQ",
+        "title": "Farther Away Than the Stars",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Farther",
+          "Away",
+          "Than",
+          "Stars"
+        ]
+      },
+      {
+        "id": "rk25hOuJR1Q",
+        "title": "Christmas Mystery",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Christmas",
+          "Mystery"
+        ]
+      },
+      {
+        "id": "PHtuzSFSLdk",
+        "title": "Peace",
+        "desc": "Devotional song by Swami Kriyananda (Windows on the World).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Windows on the World",
+          "Peace"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "song-of-the-nightingale",
+    "name": "Song of the Nightingale",
+    "description": "Mystical melodies, prayers of peace, and soul poetry by Swami Kriyananda.",
+    "themeColor": "text-emerald-400",
+    "accentColor": "emerald",
+    "icon": "Sun",
+    "artist": "Swami Kriyananda",
+    "tags": [
+      "Swami Kriyananda",
+      "Swamy Kiryananda",
+      "Chants",
+      "Songs"
+    ],
+    "tracks": [
+      {
+        "id": "gtAVN2OED5I",
+        "title": "Song of the Nightingale",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Song",
+          "Nightingale"
+        ]
+      },
+      {
+        "id": "IBZfpIbzAIo",
+        "title": "Lullaby",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Lullaby"
+        ]
+      },
+      {
+        "id": "I43zBnoA4wE",
+        "title": "Irish Lullaby",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Irish",
+          "Lullaby"
+        ]
+      },
+      {
+        "id": "QI1NOwR1NBY",
+        "title": "Go with Love",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Love"
+        ]
+      },
+      {
+        "id": "JchM6jhzRUo",
+        "title": "Chinese Garden",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Chinese",
+          "Garden"
+        ]
+      },
+      {
+        "id": "3FsrlDgKfkA",
+        "title": "Temple of Sleep",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Temple",
+          "Sleep"
+        ]
+      },
+      {
+        "id": "p2zGAxwznOU",
+        "title": "Life Is a Dream",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Life",
+          "Dream"
+        ]
+      },
+      {
+        "id": "h-JsJf5MIQo",
+        "title": "Goodnight, Sweetheart",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Goodnight",
+          "Sweetheart"
+        ]
+      },
+      {
+        "id": "MN-AqPOv2N0",
+        "title": "Galilee",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Galilee"
+        ]
+      },
+      {
+        "id": "LZ7ChCLrfYI",
+        "title": "Canticle of the Creatures",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Canticle",
+          "Creatures"
+        ]
+      },
+      {
+        "id": "5hhnMDE215A",
+        "title": "Desert Solitude",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Desert",
+          "Solitude"
+        ]
+      },
+      {
+        "id": "x1DF_9nCdNI",
+        "title": "Psalm of David",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Psalm",
+          "David"
+        ]
+      },
+      {
+        "id": "Anmf7oi7q08",
+        "title": "Make Us Channels of Thy Peace",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Make",
+          "Channels",
+          "Thy",
+          "Peace"
+        ]
+      },
+      {
+        "id": "5E-MpOhOwwQ",
+        "title": "Cherry Blossoms in Kyoto",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Cherry",
+          "Blossoms",
+          "Kyoto"
+        ]
+      },
+      {
+        "id": "kXeruTp_eJo",
+        "title": "When Thy Shining Foot Shall Pass",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "When",
+          "Thy",
+          "Shining",
+          "Foot",
+          "Shall"
+        ]
+      },
+      {
+        "id": "yKwsJUzLBac",
+        "title": "Life Is the Quest for Joy",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "Life",
+          "Quest",
+          "Joy"
+        ]
+      },
+      {
+        "id": "9kHa8722ddg",
+        "title": "When My Dream's Dream Is Done",
+        "desc": "Devotional song by Swami Kriyananda (Song of the Nightingale).",
+        "icon": "Music",
+        "tags": [
+          "Swami Kriyananda",
+          "Swamy Kiryananda",
+          "Song of the Nightingale",
+          "When",
+          "Dreams",
+          "Dream",
+          "Done"
+        ]
+      }
+    ]
   }
 ]

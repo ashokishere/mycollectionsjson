@@ -1,5 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
+@source not "../public";
+@source not "../uploads";
+@source not "../node_modules";
 
 @theme {
   --font-sans: "Inter", sans-serif;
@@ -127,7 +129,7 @@
     .bg-rose-600 .text-white,
     .bg-rose-500 .text-white,
     .bg-emerald-600 .text-white,
-    .bg-emerald-600/20 .text-white,
+    .bg-emerald-600\/20 .text-white,
     .bg-indigo-600\/20 .text-indigo-400,
     .bg-indigo-600\/25 .text-indigo-400,
     .bg-rose-500\/20 .text-rose-400,

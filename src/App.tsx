@@ -62,7 +62,8 @@ import {
   Library,
   ExternalLink,
   Book,
-  Repeat
+  Repeat,
+  ListMusic
 } from 'lucide-react';
 import { initialVideos, loadVideosDatabase, type Video } from './data/videos';
 import { SPIRITUAL_BOOKS, type SpiritualBook } from './data/spiritual_books';
@@ -72,6 +73,7 @@ import devotionalAlbums from './data/devotional_albums.json';
 import instrumentalAlbums from './data/instrumental_albums.json';
 import screensaverShorts from './data/screensaver_shorts.json';
 import { cn } from './lib/utils';
+import KriyanandaSongsPlaylistDrawer from './components/KriyanandaSongsPlaylistDrawer';
 
 const TranscriptReader = lazy(() => import('./components/TranscriptReader'));
 const AudioPlayerSection = lazy(() => import('./components/AudioPlayerSection'));
@@ -125,6 +127,24 @@ const VIRTUAL_TOURS: Video[] = [
 
 // Static Affirmations data
 const AFFIRMATIONS_TOURS: Video[] = [
+  {
+    id: "CHUjXLIB3s8_30m",
+    title: "Evening Meditation With SRF Monastic | 2026 SRF World Convocation | Day 6 (0:49 - 20:00)",
+    url: "https://www.youtube.com/watch?v=CHUjXLIB3s8&t=49s&end=1200s",
+    tags: ["Guided Meditation", "30 Min Meditation", "30 Mins Meditation", "Meditation", "2026", "2026 Convocation", "Convocation", "SRF Monastics", "SRF"]
+  },
+  {
+    id: "wM5C5fFyFGg_30m",
+    title: "Morning Meditation With SRF Monastic | 2026 SRF World Convocation | Day 3 (0:51 - 20:00)",
+    url: "https://www.youtube.com/watch?v=wM5C5fFyFGg&t=51s&end=1200s",
+    tags: ["Guided Meditation", "30 Min Meditation", "30 Mins Meditation", "Meditation", "2026", "2026 Convocation", "Convocation", "SRF Monastics", "SRF"]
+  },
+  {
+    id: "ZMrRHIMRd6U_30m",
+    title: "Morning Guided Meditation With SRF Monastic | 2026 SRF World Convocation | Day 6 (0:00 - 30:00)",
+    url: "https://www.youtube.com/watch?v=ZMrRHIMRd6U&t=0s&end=1800s",
+    tags: ["Guided Meditation", "30 Min Meditation", "30 Mins Meditation", "Meditation", "2026", "2026 Convocation", "Convocation", "SRF Monastics", "SRF"]
+  },
   {
     id: "0q62SKQqdhs_20m",
     title: "20-Minute Guided Meditation | Brother Chidananda",
@@ -241,49 +261,119 @@ const WISDOM_TEACHINGS: Video[] = [
     id: "v6WX4LXOyZU",
     title: "Paramahansa Yogananda on the Dream-Nature of the World",
     url: "https://www.youtube.com/watch?v=v6WX4LXOyZU",
-    tags: ["Wisdom", "Teachings"]
+    tags: ["Wisdom", "Teachings", "Spiritual Wisdom"]
   },
   {
     id: "aHPNZdAFLdA",
     title: "Paramahansa Yogananda on Kriya Yoga — The Greatest Proof of God",
     url: "https://www.youtube.com/watch?v=aHPNZdAFLdA",
-    tags: ["Wisdom", "Teachings"]
+    tags: ["Wisdom", "Teachings", "Spiritual Wisdom"]
   },
   {
     id: "7MuoGZ0yx20",
     title: "Paramahansa Yogananda on Kriya Yoga — The Key to Heaven",
     url: "https://www.youtube.com/watch?v=7MuoGZ0yx20",
-    tags: ["Wisdom", "Teachings"]
+    tags: ["Wisdom", "Teachings", "Spiritual Wisdom"]
   },
   {
     id: "ZXPdmWX8VB4",
     title: "Paramahansa Yogananda on Thinking of Nothing But God for One Day",
     url: "https://www.youtube.com/watch?v=ZXPdmWX8VB4",
-    tags: ["Wisdom", "Teachings"]
+    tags: ["Wisdom", "Teachings", "Spiritual Wisdom"]
   },
   {
     id: "l2KMm9mxTFo",
     title: "Paramahansa Yogananda on Finding Happiness Within",
     url: "https://www.youtube.com/watch?v=l2KMm9mxTFo",
-    tags: ["Wisdom", "Teachings"]
+    tags: ["Wisdom", "Teachings", "Spiritual Wisdom"]
   },
   {
     id: "NShLqqJNBKQ",
     title: "Paramahansa Yogananda on Karma",
     url: "https://www.youtube.com/watch?v=NShLqqJNBKQ",
-    tags: ["Wisdom", "Teachings"]
+    tags: ["Wisdom", "Teachings", "Spiritual Wisdom"]
   },
   {
     id: "rdc5khxI0Hw",
     title: "Paramahansa Yogananda on How to Destroy Suffering by Its Roots",
     url: "https://www.youtube.com/watch?v=rdc5khxI0Hw",
-    tags: ["Wisdom", "Teachings"]
+    tags: ["Wisdom", "Teachings", "Spiritual Wisdom"]
   },
   {
     id: "krd41uFL2s4",
     title: "Paramahansa Yogananda on Loving God",
     url: "https://www.youtube.com/watch?v=krd41uFL2s4",
-    tags: ["Wisdom", "Teachings"]
+    tags: ["Wisdom", "Teachings", "Spiritual Wisdom"]
+  },
+  {
+    id: "wisdom-the-great-light-of-god-yogananda-mp4",
+    title: "The Great Light of God (Video Discourse)",
+    url: "https://spiritualbooks.eu/wp-content/uploads/2024/11/The-Great-Light-of-God-Paramahansa-Yogananda.mp4",
+    thumbnail: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=320&auto=format&fit=crop&q=60",
+    tags: ["Wisdom", "Teachings", "Paramahansa Yogananda", "Video", "Spiritual Wisdom"]
+  },
+  {
+    id: "wisdom-awake-in-the-cosmic-dream",
+    title: "Awake in the Cosmic Dream",
+    url: "https://spiritualbooks.eu/wp-content/uploads/2024/11/Awake_in_the_Cosmic_Dream.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=320&auto=format&fit=crop&q=60",
+    tags: ["Wisdom", "Teachings", "Paramahansa Yogananda", "Audio", "MP3", "Spiritual Wisdom"]
+  },
+  {
+    id: "wisdom-be-a-smile-millionaire",
+    title: "Be a Smile Millionaire",
+    url: "https://spiritualbooks.eu/wp-content/uploads/2024/11/Be_A_Smile_Millionaire.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=320&auto=format&fit=crop&q=60",
+    tags: ["Wisdom", "Teachings", "Paramahansa Yogananda", "Audio", "MP3", "Spiritual Wisdom"]
+  },
+  {
+    id: "wisdom-beholding-the-one-in-all",
+    title: "Beholding the One in All",
+    url: "https://spiritualbooks.eu/wp-content/uploads/2024/11/Beholding_the_One_in_All.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?w=320&auto=format&fit=crop&q=60",
+    tags: ["Wisdom", "Teachings", "Paramahansa Yogananda", "Audio", "MP3", "Spiritual Wisdom"]
+  },
+  {
+    id: "wisdom-follow-the-path-of-christ-krishna-and-the-masters",
+    title: "Follow the Path of Christ, Krishna and the Masters",
+    url: "https://spiritualbooks.eu/wp-content/uploads/2024/11/Follow_the_Path_of_Christ_Krishna_and_the_Masters.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1499209974431-9dddcece7f88?w=320&auto=format&fit=crop&q=60",
+    tags: ["Wisdom", "Teachings", "Paramahansa Yogananda", "Audio", "MP3", "Spiritual Wisdom"]
+  },
+  {
+    id: "wisdom-in-the-glory-of-the-spirit",
+    title: "In the Glory of the Spirit",
+    url: "https://spiritualbooks.eu/wp-content/uploads/2024/11/In_the_Glory_of_the_Spirit.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=320&auto=format&fit=crop&q=60",
+    tags: ["Wisdom", "Teachings", "Paramahansa Yogananda", "Audio", "MP3", "Spiritual Wisdom"]
+  },
+  {
+    id: "wisdom-one-life-vs-reincarnation",
+    title: "One Life Vs. Reincarnation",
+    url: "https://spiritualbooks.eu/wp-content/uploads/2024/11/One_Life_Vs._Reincarnation.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=320&auto=format&fit=crop&q=60",
+    tags: ["Wisdom", "Teachings", "Paramahansa Yogananda", "Audio", "MP3", "Spiritual Wisdom"]
+  },
+  {
+    id: "wisdom-removing-all-sorrow-and-suffering",
+    title: "Removing All Sorrow and Suffering",
+    url: "https://spiritualbooks.eu/wp-content/uploads/2024/11/Removing_All_Sorrow_and_Suffering.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=320&auto=format&fit=crop&q=60",
+    tags: ["Wisdom", "Teachings", "Paramahansa Yogananda", "Audio", "MP3", "Spiritual Wisdom"]
+  },
+  {
+    id: "wisdom-self-realization-inner-and-outer-path",
+    title: "Self-Realization — The Inner and the Outer Path",
+    url: "https://spiritualbooks.eu/wp-content/uploads/2024/11/Self-Realization_-_the_Inner_and_the_Outer_Path.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=320&auto=format&fit=crop&q=60",
+    tags: ["Wisdom", "Teachings", "Paramahansa Yogananda", "Audio", "MP3", "Spiritual Wisdom"]
+  },
+  {
+    id: "wisdom-the-great-light-of-god-audio",
+    title: "The Great Light of God (Audio Discourse)",
+    url: "https://spiritualbooks.eu/wp-content/uploads/2024/11/The_Great_Light_of_God.mp3",
+    thumbnail: "https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=320&auto=format&fit=crop&q=60",
+    tags: ["Wisdom", "Teachings", "Paramahansa Yogananda", "Audio", "MP3", "Spiritual Wisdom"]
   }
 ];
 
@@ -346,6 +436,7 @@ const getEndSecondsFromUrl = (url: string): number => {
 
 // Unified function to get high-fidelity thumbnails
 const getVideoThumbnail = (video: Video) => {
+  if (video.thumbnail) return video.thumbnail;
   if (video.id.startsWith('tour-') || !getYoutubeId(video.url)) {
     if (video.id.includes('headquarters')) {
       return "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=320&auto=format&fit=crop&q=60";
@@ -355,6 +446,8 @@ const getVideoThumbnail = (video: Video) => {
       return "https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=320&auto=format&fit=crop&q=60";
     } else if (video.id.includes('encinitas')) {
       return "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=320&auto=format&fit=crop&q=60";
+    } else if (video.id.startsWith('wisdom-') || video.tags?.includes('Wisdom')) {
+      return "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=320&auto=format&fit=crop&q=60";
     }
     return "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?w=320&auto=format&fit=crop&q=60";
   }
@@ -368,12 +461,15 @@ export default function App() {
     const albumTracks: Video[] = [];
     devotionalAlbums.forEach(album => {
       if (album.tracks && Array.isArray(album.tracks)) {
+        const albumTags = (album as any).tags || [];
+        const albumArtist = (album as any).artist ? [(album as any).artist] : [];
         album.tracks.forEach(track => {
+          const trackTags = (track as any).tags || [];
           albumTracks.push({
             id: track.id,
             title: track.title,
             url: `https://www.youtube.com/watch?v=${track.id}`,
-            tags: ["Devotional Chants", "Spiritual Album", album.name]
+            tags: Array.from(new Set(["Devotional Chants", "Spiritual Album", album.name, ...albumArtist, ...albumTags, ...trackTags]))
           });
         });
       }
@@ -407,13 +503,16 @@ export default function App() {
       }
     }
 
-    const all = [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks, ...baseVideos];
-    const seen = new Set<string>();
-    return all.filter(v => {
-      if (seen.has(v.id)) return false;
-      seen.add(v.id);
-      return true;
+    const videoMap: Record<string, Video> = {};
+    baseVideos.forEach(v => { videoMap[v.id] = { ...v }; });
+    [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks].forEach(v => {
+      if (videoMap[v.id]) {
+        videoMap[v.id].tags = Array.from(new Set([...videoMap[v.id].tags, ...v.tags]));
+      } else {
+        videoMap[v.id] = { ...v };
+      }
     });
+    return Object.values(videoMap);
   });
   const [isVirtualToursOpen, setIsVirtualToursOpen] = useState(false);
   const [isAffirmationsOpen, setIsAffirmationsOpen] = useState(false);
@@ -443,6 +542,7 @@ export default function App() {
   const [activeInstrumentalAlbumId, setActiveInstrumentalAlbumId] = useState<string>("instrumental-the-divine-gypsy");
   const [mobileInstrumentalAlbumView, setMobileInstrumentalAlbumView] = useState<'list' | 'tracks'>('list');
   
+  const [isKriyanandaSongsOpen, setIsKriyanandaSongsOpen] = useState(false);
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
 
   // Screensaver Mode State
@@ -534,12 +634,15 @@ export default function App() {
       const albumTracks: Video[] = [];
       devotionalAlbums.forEach(album => {
         if (album.tracks && Array.isArray(album.tracks)) {
+          const albumTags = (album as any).tags || [];
+          const albumArtist = (album as any).artist ? [(album as any).artist] : [];
           album.tracks.forEach(track => {
+            const trackTags = (track as any).tags || [];
             albumTracks.push({
               id: track.id,
               title: track.title,
               url: `https://www.youtube.com/watch?v=${track.id}`,
-              tags: ["Devotional Chants", "Spiritual Album", album.name]
+              tags: Array.from(new Set(["Devotional Chants", "Spiritual Album", album.name, ...albumArtist, ...albumTags, ...trackTags]))
             });
           });
         }
@@ -572,13 +675,16 @@ export default function App() {
         }
       }
 
-      const all = [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks, ...baseVideos];
-      const seen = new Set<string>();
-      const deduplicated = all.filter(v => {
-        if (seen.has(v.id)) return false;
-        seen.add(v.id);
-        return true;
+      const videoMap: Record<string, Video> = {};
+      baseVideos.forEach(v => { videoMap[v.id] = { ...v }; });
+      [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks].forEach(v => {
+        if (videoMap[v.id]) {
+          videoMap[v.id].tags = Array.from(new Set([...videoMap[v.id].tags, ...v.tags]));
+        } else {
+          videoMap[v.id] = { ...v };
+        }
       });
+      const deduplicated: Video[] = Object.values(videoMap);
 
       setVideos(deduplicated);
     }).catch(err => {
@@ -820,6 +926,20 @@ export default function App() {
     };
   }, [isActiveScreensaverMode]);
 
+  const closeAllFloatingPanels = () => {
+    setIsFavoritesOpen(false);
+    setIsOceanLoveOpen(false);
+    setIsInstrumentalOpen(false);
+    setIsKriyanandaSongsOpen(false);
+    setIsVirtualToursOpen(false);
+    setIsAffirmationsOpen(false);
+    setIsWisdomOpen(false);
+    setIsWorkspaceOpen(false);
+    setIsScreensaverOpen(false);
+    setIsCalendarOpen(false);
+    setIsBooksOpen(false);
+  };
+
   const addAlbumSequence = (albumId: string, mode: 'replace' | 'append' = 'replace') => {
     let album: any = devotionalAlbums.find(a => a.id === albumId);
     if (!album) {
@@ -1039,7 +1159,7 @@ export default function App() {
     }
 
     const headerRow = parsedRows[headerRowIndex];
-    let idIdx = 0, titleIdx = 1, urlIdx = 2, tagsIdx = 3;
+    let idIdx = 0, titleIdx = 1, urlIdx = 2, tagsIdx = 3, talkByIdx = -1;
 
     if (headerRow) {
       headerRow.forEach((cell, idx) => {
@@ -1048,6 +1168,7 @@ export default function App() {
         else if (c.includes("title")) titleIdx = idx;
         else if (c.includes("url") || c.includes("link") || c.includes("youtube")) urlIdx = idx;
         else if (c.includes("tag") || c.includes("theme") || c.includes("category") || c.includes("topic")) tagsIdx = idx;
+        else if (c.includes("talk by") || c.includes("author") || c.includes("speaker")) talkByIdx = idx;
       });
     }
 
@@ -1066,6 +1187,12 @@ export default function App() {
       
       const rawTagsString = String(row[tagsIdx] || "");
       const rawTags = rawTagsString.split(/[|,;]/).map(t => t.trim()).filter(t => t !== "");
+      if (talkByIdx !== -1) {
+        const talkBy = String(row[talkByIdx] || "").trim();
+        if (talkBy && !rawTags.includes(talkBy)) {
+          rawTags.push(talkBy);
+        }
+      }
       
       const normalizedTags = Array.from(new Set(rawTags.map(t => {
         const lower = t.toLowerCase();
@@ -1372,10 +1499,12 @@ export default function App() {
         languages.add(tag);
       } else if (
         tag.startsWith('Swami') || 
+        tag.startsWith('Swamy') || 
         tag.startsWith('Brother') || 
         tag.startsWith('Sri') || 
         tag.startsWith('Sister') ||
-        lowerTag.includes('brahmani')
+        lowerTag.includes('brahmani') ||
+        lowerTag.includes('kriyananda')
       ) {
         speakers.add(tag);
       } else {
@@ -2154,6 +2283,43 @@ export default function App() {
                   </div>
                 );
               })}
+              <div className="h-5 w-px bg-white/10 mx-1 hidden sm:block" />
+              <button
+                onClick={() => {
+                  const next = !isKriyanandaSongsOpen;
+                  closeAllFloatingPanels();
+                  setIsKriyanandaSongsOpen(next);
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-sm shrink-0",
+                  isKriyanandaSongsOpen
+                    ? "bg-amber-600 text-white border-amber-400 scale-105 shadow-md"
+                    : "bg-white/5 hover:bg-white/10 text-slate-300 border-white/10 hover:border-amber-400/40"
+                )}
+                title="Swamy Kriyananda Albums"
+              >
+                <ListMusic className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">Kriyananda Albums</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-white/10 text-slate-400 text-[8px] font-mono">5</span>
+              </button>
+              <button
+                onClick={() => {
+                  const next = !isWisdomOpen;
+                  closeAllFloatingPanels();
+                  setIsWisdomOpen(next);
+                }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all cursor-pointer shadow-sm shrink-0",
+                  isWisdomOpen
+                    ? "bg-indigo-600 text-white border-indigo-400 scale-105 shadow-md"
+                    : "bg-white/5 hover:bg-white/10 text-slate-300 border-white/10 hover:border-indigo-400/40"
+                )}
+                title="Spiritual Wisdom Teachings"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden sm:inline">Spiritual Wisdom</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-white/10 text-slate-400 text-[8px] font-mono">{WISDOM_TEACHINGS.length}</span>
+              </button>
             </div>
           </div>
 
@@ -2192,7 +2358,42 @@ export default function App() {
           )}
         >
           <div className="relative w-full aspect-video bg-black rounded-3xl overflow-hidden shadow-2xl border border-white/10 max-h-[60vh]">
-            {activeVideo && (activeVideo.id.startsWith('tour-') || !getYoutubeId(activeVideo.url)) ? (
+            {activeVideo && (activeVideo.url.endsWith('.mp4') || activeVideo.url.includes('.mp4')) ? (
+              <video
+                key={activeVideo.id}
+                src={activeVideo.url}
+                controls
+                autoPlay
+                className="absolute inset-0 w-full h-full object-contain bg-black"
+                onEnded={handleNextInPlaylist}
+              />
+            ) : activeVideo && (activeVideo.url.endsWith('.mp3') || activeVideo.url.includes('.mp3')) ? (
+              <div key={activeVideo.id} className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-6 bg-gradient-to-b from-indigo-950/80 via-slate-950 to-slate-950 select-none">
+                <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl bg-indigo-900/40 border border-indigo-500/30 flex items-center justify-center shadow-2xl mb-3 sm:mb-4 overflow-hidden relative group">
+                  <img
+                    src={getVideoThumbnail(activeVideo)}
+                    alt=""
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-indigo-950/40 backdrop-blur-[1px] flex items-center justify-center">
+                    <Volume2 className="w-7 h-7 sm:w-9 sm:h-9 text-indigo-300 drop-shadow animate-pulse" />
+                  </div>
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-white text-center max-w-lg mb-1 line-clamp-2 px-4">
+                  {activeVideo.title}
+                </h3>
+                <p className="text-[9.5px] sm:text-xs text-indigo-400 font-semibold uppercase tracking-widest mb-3 sm:mb-4">
+                  Paramahansa Yogananda • Spiritual Wisdom Audio
+                </p>
+                <audio
+                  src={activeVideo.url}
+                  controls
+                  autoPlay
+                  className="w-full max-w-md accent-indigo-500 shadow-xl"
+                  onEnded={handleNextInPlaylist}
+                />
+              </div>
+            ) : activeVideo && (activeVideo.id.startsWith('tour-') || !getYoutubeId(activeVideo.url)) ? (
               <iframe
                 src={activeVideo.url}
                 title={activeVideo.title}
@@ -3031,7 +3232,11 @@ export default function App() {
               className="flex flex-col gap-3"
             >
               <button
-                onClick={() => { setIsFavoritesOpen(!isFavoritesOpen); setIsWorkspaceOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
+                onClick={() => {
+                  const next = !isFavoritesOpen;
+                  closeAllFloatingPanels();
+                  setIsFavoritesOpen(next);
+                }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isFavoritesOpen 
@@ -3044,7 +3249,11 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsOceanLoveOpen(!isOceanLoveOpen); setIsFavoritesOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
+                onClick={() => {
+                  const next = !isOceanLoveOpen;
+                  closeAllFloatingPanels();
+                  setIsOceanLoveOpen(next);
+                }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isOceanLoveOpen 
@@ -3057,7 +3266,11 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsInstrumentalOpen(!isInstrumentalOpen); setIsOceanLoveOpen(false); setIsFavoritesOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
+                onClick={() => {
+                  const next = !isInstrumentalOpen;
+                  closeAllFloatingPanels();
+                  setIsInstrumentalOpen(next);
+                }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isInstrumentalOpen 
@@ -3070,7 +3283,28 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsVirtualToursOpen(!isVirtualToursOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
+                onClick={() => {
+                  const next = !isKriyanandaSongsOpen;
+                  closeAllFloatingPanels();
+                  setIsKriyanandaSongsOpen(next);
+                }}
+                className={cn(
+                  "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
+                  isKriyanandaSongsOpen 
+                    ? "bg-amber-600 text-white border-amber-400 scale-110" 
+                    : "bg-white/10 border-white/20 text-amber-400/80 hover:bg-white/20 hover:text-amber-400"
+                )}
+                title="Swamy Kriyananda Albums"
+              >
+                <ListMusic className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => {
+                  const next = !isVirtualToursOpen;
+                  closeAllFloatingPanels();
+                  setIsVirtualToursOpen(next);
+                }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isVirtualToursOpen 
@@ -3083,7 +3317,11 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsAffirmationsOpen(!isAffirmationsOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
+                onClick={() => {
+                  const next = !isAffirmationsOpen;
+                  closeAllFloatingPanels();
+                  setIsAffirmationsOpen(next);
+                }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isAffirmationsOpen 
@@ -3096,7 +3334,11 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWisdomOpen(!isWisdomOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsWorkspaceOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
+                onClick={() => {
+                  const next = !isWisdomOpen;
+                  closeAllFloatingPanels();
+                  setIsWisdomOpen(next);
+                }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWisdomOpen 
@@ -3109,7 +3351,11 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsWorkspaceOpen(!isWorkspaceOpen); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); setIsScreensaverOpen(false); }}
+                onClick={() => {
+                  const next = !isWorkspaceOpen;
+                  closeAllFloatingPanels();
+                  setIsWorkspaceOpen(next);
+                }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl",
                   isWorkspaceOpen 
@@ -3129,7 +3375,11 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsScreensaverOpen(!isScreensaverOpen); setIsWorkspaceOpen(false); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsCalendarOpen(false); }}
+                onClick={() => {
+                  const next = !isScreensaverOpen;
+                  closeAllFloatingPanels();
+                  setIsScreensaverOpen(next);
+                }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl relative",
                   isScreensaverOpen 
@@ -3142,7 +3392,11 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsCalendarOpen(!isCalendarOpen); setIsBooksOpen(false); setIsWorkspaceOpen(false); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsScreensaverOpen(false); }}
+                onClick={() => {
+                  const next = !isCalendarOpen;
+                  closeAllFloatingPanels();
+                  setIsCalendarOpen(next);
+                }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl relative cursor-pointer",
                   isCalendarOpen 
@@ -3158,7 +3412,11 @@ export default function App() {
               </button>
 
               <button
-                onClick={() => { setIsBooksOpen(!isBooksOpen); setIsCalendarOpen(false); setIsWorkspaceOpen(false); setIsFavoritesOpen(false); setIsOceanLoveOpen(false); setIsInstrumentalOpen(false); setIsVirtualToursOpen(false); setIsAffirmationsOpen(false); setIsWisdomOpen(false); setIsScreensaverOpen(false); }}
+                onClick={() => {
+                  const next = !isBooksOpen;
+                  closeAllFloatingPanels();
+                  setIsBooksOpen(next);
+                }}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center rounded-2xl backdrop-blur-xl border transition-all shadow-xl relative cursor-pointer",
                   isBooksOpen 
@@ -3522,6 +3780,8 @@ export default function App() {
               <div className="flex-grow overflow-y-auto p-4 space-y-3 custom-scrollbar">
                 {WISDOM_TEACHINGS.map((video) => {
                   const isInPlaylist = playlist.some(p => p.id === video.id);
+                  const isAudio = video.url.includes('.mp3');
+                  const isMp4 = video.url.includes('.mp4');
                   return (
                     <div
                       key={video.id}
@@ -3539,29 +3799,41 @@ export default function App() {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
                           />
                           <div className="absolute inset-0 bg-black/15" />
+                          {isAudio && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[0.5px]">
+                              <Volume2 className="w-4 h-4 text-indigo-300" />
+                            </div>
+                          )}
+                          {isMp4 && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[0.5px]">
+                              <Play className="w-3.5 h-3.5 text-indigo-300 fill-current" />
+                            </div>
+                          )}
                         </div>
                         <div className="min-w-0 flex-grow">
                           <p className="text-[10px] sm:text-[10.5px] font-bold text-white leading-snug group-hover:text-indigo-300 transition-colors line-clamp-2" title={video.title}>
                             {video.title}
                           </p>
                           <p className="text-[8px] text-indigo-400 mt-1 font-semibold font-mono tracking-wider uppercase flex items-center gap-1">
-                            🕉️ Teachings Talk
+                            {isAudio ? "🎙️ Audio Discourse (MP3)" : isMp4 ? "🎬 Video Talk (MP4)" : "🕉️ Teachings Talk"}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveVideoId(video.id);
-                            setIsReaderOpen(true);
-                            setIsWisdomOpen(false);
-                          }}
-                          className="w-7 h-7 bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/25 text-indigo-400 hover:text-white rounded-xl flex items-center justify-center transition-all cursor-pointer"
-                          title="Read Transcript / Text"
-                        >
-                          <BookOpen className="w-3.5 h-3.5" />
-                        </button>
+                        {!isAudio && !isMp4 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveVideoId(video.id);
+                              setIsReaderOpen(true);
+                              setIsWisdomOpen(false);
+                            }}
+                            className="w-7 h-7 bg-indigo-500/10 hover:bg-indigo-500 border border-indigo-500/25 text-indigo-400 hover:text-white rounded-xl flex items-center justify-center transition-all cursor-pointer"
+                            title="Read Transcript / Text"
+                          >
+                            <BookOpen className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -4057,6 +4329,47 @@ export default function App() {
             </motion.div>
           </>
         )}
+
+        <KriyanandaSongsPlaylistDrawer
+          isOpen={isKriyanandaSongsOpen}
+          onClose={() => setIsKriyanandaSongsOpen(false)}
+          videos={videos}
+          activeVideoId={activeVideoId}
+          onSelectVideo={(id) => {
+            setActiveVideoId(id);
+            setIsKriyanandaSongsOpen(false);
+          }}
+          playlist={playlist}
+          onTogglePlaylistItem={(video) => {
+            const exists = playlist.some(p => p.id === video.id);
+            if (exists) {
+              removeFromPlaylist(video.id);
+            } else {
+              addToPlaylist(video);
+            }
+          }}
+          onPlaySequence={(seq, mode) => {
+            if (mode === 'replace') {
+              setPlaylist(seq);
+              if (seq.length > 0) {
+                setActiveVideoId(seq[0].id);
+              }
+              localStorage.setItem('laughter_bubble_playlist', JSON.stringify(seq));
+            } else {
+              setPlaylist(prev => {
+                const newItems = seq.filter(v => !prev.some(p => p.id === v.id));
+                const updated = [...prev, ...newItems];
+                localStorage.setItem('laughter_bubble_playlist', JSON.stringify(updated));
+                return updated;
+              });
+              if (!activeVideoId && seq.length > 0) {
+                setActiveVideoId(seq[0].id);
+              }
+            }
+            triggerPetals();
+          }}
+          triggerPetals={triggerPetals}
+        />
 
         {isWorkspaceOpen && (
           <>

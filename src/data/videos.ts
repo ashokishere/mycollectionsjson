@@ -3,6 +3,7 @@ export interface Video {
   title: string;
   url: string;
   tags: string[];
+  thumbnail?: string;
 }
 
 export const initialVideos: Video[] = [];
