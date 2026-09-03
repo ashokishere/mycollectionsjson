@@ -532,7 +532,13 @@ export default function App() {
   const [lastSynced, setLastSynced] = useState<string | null>(null);
   const [showPetals, setShowPetals] = useState(false);
   const [activeMessage, setActiveMessage] = useState<string | null>(null);
-  const [currentTheme, setCurrentTheme] = useState<string>(() => localStorage.getItem('app_theme') || 'default');
+  const [currentTheme, setCurrentTheme] = useState<string>(() => {
+    try {
+      return localStorage.getItem('app_theme') || 'default';
+    } catch {
+      return 'default';
+    }
+  });
   const [isFavoritesOpen, setIsFavoritesOpen] = useState(false);
   const [isOceanLoveOpen, setIsOceanLoveOpen] = useState(false);
   const [activeAlbumId, setActiveAlbumId] = useState<string>("ocean-of-love");
@@ -1037,17 +1043,16 @@ export default function App() {
 
   // Load playlist from local storage & admin auth state
   useEffect(() => {
-    const saved = localStorage.getItem('laughter_bubble_playlist') || localStorage.getItem('zenstream_playlist');
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem('laughter_bubble_playlist') || localStorage.getItem('zenstream_playlist');
+      if (saved) {
         setPlaylist(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse saved playlist');
       }
-    }
-
-    if (localStorage.getItem('admin_auth_token') === 'true') {
-      setIsAdminAuthenticated(true);
+      if (localStorage.getItem('admin_auth_token') === 'true') {
+        setIsAdminAuthenticated(true);
+      }
+    } catch (e) {
+      console.error('Failed to parse saved storage state:', e);
     }
     
     // Fetch live-updated catalog from server

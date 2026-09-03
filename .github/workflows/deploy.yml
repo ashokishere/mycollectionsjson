@@ -55,6 +55,8 @@ jobs:
         # while still providing visibility in the logs.
 
       - name: Build
+        env:
+          VITE_BASE_PATH: /mycollectionsjson/
         run: |
           npm run build
           cp dist/index.html dist/404.html
