@@ -906,6 +906,40 @@ app.use("/pdfjs-assets/standard_fonts", express.static(path.join(pdfAssetsDir, "
 app.use("/pdfjs-assets/wasm", express.static(path.join(pdfAssetsDir, "wasm"), { maxAge: "30d" }));
 app.use("/pdfjs-assets/image_decoders", express.static(path.join(pdfAssetsDir, "image_decoders"), { maxAge: "30d" }));
 
+// Favicon handlers
+app.get("/favicon.ico", (req, res) => {
+  const icoPath = path.join(process.cwd(), "public/favicon.ico");
+  if (fs.existsSync(icoPath)) {
+    res.setHeader("Content-Type", "image/x-icon");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.sendFile(icoPath);
+  }
+  const svgPath = path.join(process.cwd(), "public/favicon.svg");
+  if (fs.existsSync(svgPath)) {
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.sendFile(svgPath);
+  }
+  res.status(204).end();
+});
+
+app.get("/favicon.svg", (req, res) => {
+  const svgPath = path.join(process.cwd(), "public/favicon.svg");
+  if (fs.existsSync(svgPath)) {
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.setHeader("Cache-Control", "public, max-age=86400");
+    return res.sendFile(svgPath);
+  }
+  res.status(404).end();
+});
+
+// Serve compiled assets if present to satisfy any cached browser/iframe requests gracefully
+const distPath = path.join(process.cwd(), "dist");
+const distAssetsPath = path.join(distPath, "assets");
+if (fs.existsSync(distAssetsPath)) {
+  app.use("/assets", express.static(distAssetsPath));
+}
+
 // ---------------- Vite Middleware / Production Server ----------------
 
 async function startServer() {
@@ -916,7 +950,6 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
     app.get("*all", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
