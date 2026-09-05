@@ -2283,5 +2283,75 @@
         ]
       }
     ]
+  },
+  {
+    "id": "samadhi",
+    "name": "Samadhi",
+    "description": "Paramahansa Yogananda's poem 'Samadhi' from Autobiography of a Yogi Chapter 14 recited across Indian languages (12:00 - 17:05).",
+    "themeColor": "text-purple-400",
+    "accentColor": "purple",
+    "icon": "Sparkles",
+    "tracks": [
+      {
+        "id": "D3a5vG5D92o",
+        "title": "Samadhi (Tamil) — பேரண்ட உணர்வின்‌ ஓர்‌ அனுபவம்",
+        "desc": "Autobiography of a Yogi Ch. 14 poem recital (12:00 - 17:05).",
+        "icon": "Sparkles",
+        "url": "https://www.youtube.com/watch?v=D3a5vG5D92o&t=720s&end=1025s",
+        "tags": [
+          "Samadhi",
+          "Tamil",
+          "Autobiography of a Yogi",
+          "YSS",
+          "Paramahansa Yogananda",
+          "Spiritual Album"
+        ]
+      },
+      {
+        "id": "SaXbYL55cBE",
+        "title": "Samadhi (Malayalam) — സമാധിലാഭം",
+        "desc": "Autobiography of a Yogi Ch. 14 poem recital (12:00 - 17:05).",
+        "icon": "Sparkles",
+        "url": "https://www.youtube.com/watch?v=SaXbYL55cBE&t=720s&end=1025s",
+        "tags": [
+          "Samadhi",
+          "Malayalam",
+          "Autobiography of a Yogi",
+          "YSS",
+          "Paramahansa Yogananda",
+          "Spiritual Album"
+        ]
+      },
+      {
+        "id": "px1nfZ02WGk",
+        "title": "Samadhi (Bengali) — সমাধির অনুভূতি",
+        "desc": "Autobiography of a Yogi Ch. 14 poem recital (12:00 - 17:05).",
+        "icon": "Sparkles",
+        "url": "https://www.youtube.com/watch?v=px1nfZ02WGk&t=720s&end=1025s",
+        "tags": [
+          "Samadhi",
+          "Bengali",
+          "Autobiography of a Yogi",
+          "YSS",
+          "Paramahansa Yogananda",
+          "Spiritual Album"
+        ]
+      },
+      {
+        "id": "M1ODi9I2ULk",
+        "title": "Samadhi (Hindi) — समाधि—लाभ",
+        "desc": "Autobiography of a Yogi Ch. 14 poem recital (12:00 - 17:05).",
+        "icon": "Sparkles",
+        "url": "https://www.youtube.com/watch?v=M1ODi9I2ULk&t=720s&end=1025s",
+        "tags": [
+          "Samadhi",
+          "Hindi",
+          "Autobiography of a Yogi",
+          "YSS",
+          "Paramahansa Yogananda",
+          "Spiritual Album"
+        ]
+      }
+    ]
   }
 ]

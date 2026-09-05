@@ -468,7 +468,7 @@ export default function App() {
           albumTracks.push({
             id: track.id,
             title: track.title,
-            url: `https://www.youtube.com/watch?v=${track.id}`,
+            url: (track as any).url || `https://www.youtube.com/watch?v=${track.id}`,
             tags: Array.from(new Set(["Devotional Chants", "Spiritual Album", album.name, ...albumArtist, ...albumTags, ...trackTags]))
           });
         });
@@ -508,6 +508,9 @@ export default function App() {
     [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks].forEach(v => {
       if (videoMap[v.id]) {
         videoMap[v.id].tags = Array.from(new Set([...videoMap[v.id].tags, ...v.tags]));
+        if (v.url && v.url.includes('&t=')) {
+          videoMap[v.id].url = v.url;
+        }
       } else {
         videoMap[v.id] = { ...v };
       }
@@ -647,7 +650,7 @@ export default function App() {
             albumTracks.push({
               id: track.id,
               title: track.title,
-              url: `https://www.youtube.com/watch?v=${track.id}`,
+              url: (track as any).url || `https://www.youtube.com/watch?v=${track.id}`,
               tags: Array.from(new Set(["Devotional Chants", "Spiritual Album", album.name, ...albumArtist, ...albumTags, ...trackTags]))
             });
           });
@@ -683,9 +686,22 @@ export default function App() {
 
       const videoMap: Record<string, Video> = {};
       baseVideos.forEach(v => { videoMap[v.id] = { ...v }; });
+      fullVideosData.forEach(v => {
+        if (videoMap[v.id]) {
+          if (v.url && v.url.includes('&t=')) {
+            videoMap[v.id].url = v.url;
+          }
+          if (v.tags && v.tags.includes('Samadhi') && !videoMap[v.id].tags.includes('Samadhi')) {
+            videoMap[v.id].tags = Array.from(new Set([...videoMap[v.id].tags, ...v.tags]));
+          }
+        }
+      });
       [...VIRTUAL_TOURS, ...AFFIRMATIONS_TOURS, ...WISDOM_TEACHINGS, ...albumTracks, ...instrumentalTracks].forEach(v => {
         if (videoMap[v.id]) {
           videoMap[v.id].tags = Array.from(new Set([...videoMap[v.id].tags, ...v.tags]));
+          if (v.url && v.url.includes('&t=')) {
+            videoMap[v.id].url = v.url;
+          }
         } else {
           videoMap[v.id] = { ...v };
         }
@@ -955,8 +971,19 @@ export default function App() {
 
     const orderedVideos: Video[] = [];
     album.tracks.forEach((track: any) => {
-      const found = videos.find(v => v.id === track.id);
+      let found = videos.find(v => v.id === track.id);
+      if (!found) {
+        found = {
+          id: track.id,
+          title: track.title,
+          url: track.url || `https://www.youtube.com/watch?v=${track.id}`,
+          tags: ["Devotional Chants", "Spiritual Album", album.name, ...(track.tags || [])]
+        };
+      }
       if (found) {
+        if (track.url && track.url.includes('&t=')) {
+          found = { ...found, url: track.url };
+        }
         orderedVideos.push(found);
       }
     });
@@ -992,9 +1019,18 @@ export default function App() {
           found = {
             id: track.id,
             title: track.title,
-            url: `https://www.youtube.com/watch?v=${track.id}`,
-            tags: ["Devotional Chants", "Spiritual Album", album.name]
+            url: (track as any).url || `https://www.youtube.com/watch?v=${track.id}`,
+            tags: ["Devotional Chants", "Spiritual Album", album.name, ...((track as any).tags || [])]
           };
+          break;
+        }
+      }
+    }
+    if (found) {
+      for (const album of devotionalAlbums) {
+        const track = album.tracks.find((t: any) => t.id === videoId);
+        if (track && (track as any).url && (track as any).url.includes('&t=')) {
+          found = { ...found, url: (track as any).url };
           break;
         }
       }
@@ -1071,8 +1107,8 @@ export default function App() {
           albumTracks.push({
             id: track.id,
             title: track.title,
-            url: `https://www.youtube.com/watch?v=${track.id}`,
-            tags: ["Devotional Chants", "Spiritual Album", album.name]
+            url: (track as any).url || `https://www.youtube.com/watch?v=${track.id}`,
+            tags: ["Devotional Chants", "Spiritual Album", album.name, ...((track as any).tags || [])]
           });
         });
       }
@@ -3906,7 +3942,7 @@ export default function App() {
                     <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold block mb-0.5">Select Album</span>
                   </div>
                   {devotionalAlbums.map((album) => {
-                    const AlbumIcon = { Heart, Music, Compass, Sun, Flame, Smile }[album.icon] || Heart;
+                    const AlbumIcon = { Heart, Music, Compass, Sun, Flame, Smile, Sparkles }[album.icon] || Heart;
                     const isActive = activeAlbumId === album.id;
                     const trackCount = album.tracks?.length || 0;
                     
@@ -4001,6 +4037,10 @@ export default function App() {
                         accentText = "text-emerald-400 group-hover:text-emerald-300";
                         bgAccent = "bg-emerald-600 hover:bg-emerald-500 text-white";
                         ringColor = "group-hover:border-emerald-500/40";
+                      } else if (activeAlbum.accentColor === "purple") {
+                        accentText = "text-purple-400 group-hover:text-purple-300";
+                        bgAccent = "bg-purple-600 hover:bg-purple-500 text-white";
+                        ringColor = "group-hover:border-purple-500/40";
                       }
 
                       return (
